@@ -9,6 +9,7 @@ FORMAT="${1:-svg}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SRC_DIR="$ROOT/mindmaps"
 OUT_DIR="$ROOT/dist"
+PUPPETEER_CONFIG="$ROOT/scripts/puppeteer-config.json"
 
 if [[ ! -d "$SRC_DIR" ]]; then
   echo "No mindmaps/ directory at $SRC_DIR" >&2
@@ -36,7 +37,7 @@ for src in "$SRC_DIR"/**/*.mmd; do
   out="$OUT_DIR/${rel%.mmd}.$FORMAT"
   mkdir -p "$(dirname "$out")"
   echo "→ $rel -> ${out#$ROOT/}"
-  $MMDC -i "$src" -o "$out" -b transparent
+  $MMDC -p "$PUPPETEER_CONFIG" -i "$src" -o "$out" -b transparent
   count=$((count+1))
 done
 
