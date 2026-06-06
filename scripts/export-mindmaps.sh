@@ -9,6 +9,18 @@ FORMAT="${1:-svg}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SRC_DIR="$ROOT/mindmaps"
 OUT_DIR="$ROOT/dist"
+PUPPETEER_CONFIG="$ROOT/scripts/puppeteer-config.cjs"
+MMDC_ARGS=()
+
+# GitHub-hosted runners can block Chromium sandboxing; use dedicated config there.
+if [[ -n "${CI:-}" ]]; then
+  if [[ -f "$PUPPETEER_CONFIG" ]]; then
+    MMDC_ARGS+=(-p "$PUPPETEER_CONFIG")
+  else
+    echo "CI mode requires Puppeteer config at $PUPPETEER_CONFIG" >&2
+    exit 1
+  fi
+fi
 
 if [[ ! -d "$SRC_DIR" ]]; then
   echo "No mindmaps/ directory at $SRC_DIR" >&2
@@ -19,9 +31,9 @@ mkdir -p "$OUT_DIR"
 
 # Prefer locally-installed mmdc, fall back to npx.
 if [[ -x "$ROOT/node_modules/.bin/mmdc" ]]; then
-  MMDC="$ROOT/node_modules/.bin/mmdc"
+  MMDC=("$ROOT/node_modules/.bin/mmdc")
 else
-  MMDC="npx --yes -p @mermaid-js/mermaid-cli mmdc"
+  MMDC=(npx --yes -p @mermaid-js/mermaid-cli mmdc)
 fi
 
 shopt -s nullglob globstar
@@ -36,7 +48,7 @@ for src in "$SRC_DIR"/**/*.mmd; do
   out="$OUT_DIR/${rel%.mmd}.$FORMAT"
   mkdir -p "$(dirname "$out")"
   echo "→ $rel -> ${out#$ROOT/}"
-  $MMDC -i "$src" -o "$out" -b transparent
+  "${MMDC[@]}" "${MMDC_ARGS[@]}" -i "$src" -o "$out" -b transparent
   count=$((count+1))
 done
 
