@@ -6,6 +6,7 @@ on:
     paths:
       - 'mindmaps/**'
       - 'editor/**'
+      - 'portal/**'
       - 'scripts/**'
       - 'package.json'
       - '.github/workflows/mindmaps.yml'
@@ -13,6 +14,7 @@ on:
     paths:
       - 'mindmaps/**'
       - 'editor/**'
+      - 'portal/**'
       - 'scripts/**'
       - 'package.json'
   workflow_dispatch:
@@ -51,15 +53,15 @@ jobs:
       - name: Export mindmaps to SVG
         run: npm run export
 
-      - name: Build HTML index
-        run: node scripts/build-index.mjs
-
       - name: Copy drawio.svg (if any)
         run: |
           if compgen -G "mindmaps/**/*.drawio.svg" > /dev/null; then
-            mkdir -p dist
-            rsync -R mindmaps/**/*.drawio.svg dist/ || true
+            mkdir -p dist/visualization
+            rsync -R mindmaps/**/*.drawio.svg dist/visualization/ || true
           fi
+
+      - name: Build HTML index
+        run: node scripts/build-index.mjs
 
       - name: Upload preview artifact
         uses: actions/upload-artifact@v4

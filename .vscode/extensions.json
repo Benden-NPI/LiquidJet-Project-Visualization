@@ -2,7 +2,6 @@
   "recommendations": [
     "bierner.markdown-mermaid",
     "tomoyukim.vscode-mermaid-editor",
-    "mermaidchart.vscode-mermaid-chart",
     "hediet.vscode-drawio",
     "yzhang.markdown-all-in-one",
     "davidanson.vscode-markdownlint",

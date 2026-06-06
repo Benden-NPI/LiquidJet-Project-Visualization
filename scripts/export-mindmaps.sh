@@ -8,7 +8,8 @@ set -euo pipefail
 FORMAT="${1:-svg}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SRC_DIR="$ROOT/mindmaps"
-OUT_DIR="$ROOT/dist"
+# Rendered diagrams live under the visualization sub-section of the portal.
+OUT_DIR="$ROOT/dist/visualization"
 PUPPETEER_CONFIG="$ROOT/scripts/puppeteer-config.json"
 
 if [[ ! -d "$SRC_DIR" ]]; then
