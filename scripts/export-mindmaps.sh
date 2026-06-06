@@ -24,6 +24,15 @@ else
   MMDC="npx --yes -p @mermaid-js/mermaid-cli mmdc"
 fi
 
+if [[ -z "${PUPPETEER_EXECUTABLE_PATH:-}" ]]; then
+  for candidate in chromium-browser chromium google-chrome-stable google-chrome; do
+    if command -v "$candidate" >/dev/null 2>&1; then
+      export PUPPETEER_EXECUTABLE_PATH="$(command -v "$candidate")"
+      break
+    fi
+  done
+fi
+
 shopt -s nullglob globstar
 count=0
 for src in "$SRC_DIR"/**/*.mmd; do
@@ -36,7 +45,7 @@ for src in "$SRC_DIR"/**/*.mmd; do
   out="$OUT_DIR/${rel%.mmd}.$FORMAT"
   mkdir -p "$(dirname "$out")"
   echo "→ $rel -> ${out#$ROOT/}"
-  $MMDC -i "$src" -o "$out" -b transparent
+  $MMDC -i "$src" -o "$out" -b transparent -p "$ROOT/scripts/puppeteer-config.json"
   count=$((count+1))
 done
 
