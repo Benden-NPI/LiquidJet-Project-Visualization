@@ -1,0 +1,16 @@
+{
+  "name": "liquidjet-project-visualization",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Mindmap & visualization workspace for early-stage project scoping.",
+  "scripts": {
+    "export": "bash scripts/export-mindmaps.sh svg",
+    "export:png": "bash scripts/export-mindmaps.sh png",
+    "preview": "bash scripts/export-mindmaps.sh svg && node scripts/build-index.mjs",
+    "edit": "node scripts/editor-server.mjs",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "@mermaid-js/mermaid-cli": "^11.4.0"
+  }
+}

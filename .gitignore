@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+
+# Generated previews next to source files
+mindmaps/**/*.svg
+mindmaps/**/*.png
+!mindmaps/**/*.drawio.svg

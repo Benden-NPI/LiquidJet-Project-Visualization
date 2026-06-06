@@ -1,0 +1,84 @@
+name: Build Mindmap Preview
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'mindmaps/**'
+      - 'scripts/**'
+      - 'package.json'
+      - '.github/workflows/mindmaps.yml'
+  pull_request:
+    paths:
+      - 'mindmaps/**'
+      - 'scripts/**'
+      - 'package.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install mermaid-cli
+        run: npm install --no-audit --no-fund
+
+      # mmdc uses Chromium under the hood
+      - name: Install Chromium deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libxkbcommon0 \
+            libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libpango-1.0-0 \
+            libcairo2 libasound2t64 libpangocairo-1.0-0
+
+      - name: Export mindmaps to SVG
+        run: npm run export
+
+      - name: Build HTML index
+        run: node scripts/build-index.mjs
+
+      - name: Copy drawio.svg (if any)
+        run: |
+          if compgen -G "mindmaps/**/*.drawio.svg" > /dev/null; then
+            mkdir -p dist
+            rsync -R mindmaps/**/*.drawio.svg dist/ || true
+          fi
+
+      - name: Upload preview artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mindmap-preview
+          path: dist
+          if-no-files-found: warn
+
+      - name: Upload Pages artifact
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,46 @@
+{
+  "files.associations": {
+    "*.mmd": "mermaid",
+    "*.mermaid": "mermaid"
+  },
+  "files.exclude": {
+    "**/node_modules": true,
+    "dist": true
+  },
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.patterns": {
+    "*.mmd": "${capture}.svg, ${capture}.png",
+    "*.drawio": "${capture}.svg, ${capture}.png"
+  },
+  "markdown.preview.breaks": true,
+  "markdown-mermaid.lightModeTheme": "default",
+  "markdown-mermaid.darkModeTheme": "dark",
+  "mermaid-editor.preview.theme": "default",
+  "mermaid-editor.generate.outputPath": "${fileDirname}",
+  "mermaid-editor.generate.type": "svg",
+  "hediet.vscode-drawio.theme": "Kennedy",
+  "hediet.vscode-drawio.codeLinkActivated": true,
+  "[mermaid]": {
+    "editor.tabSize": 2,
+    "editor.wordWrap": "on"
+  },
+  "[markdown]": {
+    "editor.wordWrap": "on",
+    "editor.quickSuggestions": {
+      "comments": "off",
+      "strings": "off",
+      "other": "on"
+    }
+  },
+  "cSpell.words": [
+    "drawio",
+    "Excalidraw",
+    "LiquidJet",
+    "Markmap",
+    "mermaidchart",
+    "mindmap",
+    "mindmaps",
+    "mmdc",
+    "PlantUML"
+  ]
+}

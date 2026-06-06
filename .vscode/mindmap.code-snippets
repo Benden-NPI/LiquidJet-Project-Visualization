@@ -1,0 +1,79 @@
+{
+  "Mermaid Mindmap": {
+    "scope": "mermaid,markdown",
+    "prefix": "mmind",
+    "body": [
+      "mindmap",
+      "  root((${1:Topic}))",
+      "    ${2:Branch A}",
+      "      ${3:Item}",
+      "    ${4:Branch B}",
+      "      ${5:Item}",
+      "$0"
+    ],
+    "description": "Insert a Mermaid mindmap skeleton"
+  },
+  "Mermaid Flowchart": {
+    "scope": "mermaid,markdown",
+    "prefix": "mflow",
+    "body": [
+      "flowchart ${1|TD,LR,BT,RL|}",
+      "  A[${2:Start}] --> B{${3:Decision}}",
+      "  B -- ${4:Yes} --> C[${5:Do X}]",
+      "  B -- ${6:No}  --> D[${7:Do Y}]",
+      "$0"
+    ],
+    "description": "Insert a Mermaid flowchart"
+  },
+  "Mermaid Sequence": {
+    "scope": "mermaid,markdown",
+    "prefix": "mseq",
+    "body": [
+      "sequenceDiagram",
+      "  participant ${1:User}",
+      "  participant ${2:System}",
+      "  ${1:User}->>${2:System}: ${3:Request}",
+      "  ${2:System}-->>${1:User}: ${4:Response}",
+      "$0"
+    ],
+    "description": "Insert a Mermaid sequence diagram"
+  },
+  "Mermaid Block in Markdown": {
+    "scope": "markdown",
+    "prefix": "mblock",
+    "body": [
+      "```mermaid",
+      "${1:mindmap}",
+      "  root((${2:Topic}))",
+      "    ${3:Branch}",
+      "```",
+      "$0"
+    ],
+    "description": "Insert a fenced mermaid block in markdown"
+  },
+  "ADR Skeleton": {
+    "scope": "markdown",
+    "prefix": "adr",
+    "body": [
+      "# ${1:NNNN}. ${2:Decision Title}",
+      "",
+      "- Date: ${CURRENT_YEAR}-${CURRENT_MONTH}-${CURRENT_DATE}",
+      "- Status: Proposed",
+      "- Deciders: ${3:names}",
+      "",
+      "## Context",
+      "",
+      "${4:What problem are we solving?}",
+      "",
+      "## Decision",
+      "",
+      "${5:What did we decide?}",
+      "",
+      "## Consequences",
+      "",
+      "- ${6:Positive / Negative / Follow-up}",
+      "$0"
+    ],
+    "description": "Insert an ADR skeleton"
+  }
+}

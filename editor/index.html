@@ -1,0 +1,859 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<title>Mindmap Canvas Editor</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg:#0f1115; --panel:#161a22; --panel2:#1e2330; --border:#2a3142;
+    --text:#e6e9ef; --muted:#8a93a6; --accent:#4f8cff; --accent2:#38d39f;
+    --danger:#ff5d6c; --warn:#f3b54a;
+    --node-bg:#1e2330; --node-stroke:#4f8cff; --edge:#5b6478;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg:#f6f7fb; --panel:#fff; --panel2:#f0f2f7; --border:#dde2ea; --text:#1c2230; --muted:#5b6478;
+      --node-bg:#fff; --edge:#9aa2b3; }
+  }
+  * { box-sizing:border-box; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--text);
+    font-family:-apple-system,Segoe UI,Roboto,"PingFang TC","Noto Sans TC",sans-serif; overflow:hidden; }
+  .app { display:grid; grid-template-columns:240px 1fr; grid-template-rows:48px 1fr 26px; height:100vh; }
+  header { grid-column:1/3; display:flex; align-items:center; gap:6px; padding:0 12px; background:var(--panel); border-bottom:1px solid var(--border); flex-wrap:wrap; }
+  header h1 { font-size:14px; margin:0 8px 0 0; font-weight:600; }
+  header .spacer { flex:1; }
+  header .status { font-size:12px; color:var(--muted); margin-left:8px; }
+  button, select, input { font:inherit; color:inherit; }
+  button { background:var(--panel2); border:1px solid var(--border); border-radius:6px; padding:5px 10px; cursor:pointer; font-size:13px; }
+  button:hover { border-color:var(--accent); }
+  button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+  button.primary:hover { filter:brightness(1.1); }
+  button.danger { color:var(--danger); }
+  .sep { width:1px; height:22px; background:var(--border); margin:0 2px; }
+  select { background:var(--panel2); border:1px solid var(--border); border-radius:6px; padding:5px 8px; }
+
+  aside { background:var(--panel); border-right:1px solid var(--border); overflow:auto; padding:8px; }
+  aside .group { padding:6px 6px 4px; font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; }
+  aside .file { padding:7px 10px; border-radius:6px; cursor:pointer; font-size:13px; word-break:break-all; display:flex; justify-content:space-between; gap:6px; }
+  aside .file:hover { background:var(--panel2); }
+  aside .file.active { background:var(--accent); color:#fff; }
+  aside .file .dirty { color:var(--warn); font-weight:700; }
+  aside .new { width:100%; margin-top:8px; }
+  aside input { width:100%; background:var(--panel2); border:1px solid var(--border); border-radius:6px; padding:6px 8px; font-size:13px; }
+
+  main { position:relative; overflow:hidden;
+    background:
+      radial-gradient(circle, #8884 1px, transparent 1px) 0 0/24px 24px,
+      var(--panel2);
+  }
+  #svgroot { position:absolute; inset:0; width:100%; height:100%; cursor:grab; touch-action:none; }
+  #svgroot.panning { cursor:grabbing; }
+  #svgroot text { user-select:none; pointer-events:none; fill:var(--text); font-family:inherit; font-size:14px; }
+  #svgroot .edge { fill:none; stroke:var(--edge); stroke-width:1.6; }
+  #svgroot .node rect { fill:var(--node-bg); stroke:var(--border); stroke-width:1.5; cursor:grab; }
+  #svgroot .node.root rect { fill:var(--accent); stroke:var(--accent); }
+  #svgroot .node.root text { fill:#fff; font-weight:600; }
+  #svgroot .node.selected rect { stroke:var(--accent); stroke-width:2.5; filter: drop-shadow(0 0 6px rgba(79,140,255,.45)); }
+  #svgroot .node.drop-target rect { stroke:var(--accent2); stroke-width:3; }
+  #svgroot .node.dragging rect { opacity:.55; }
+  #svgroot .node.dragging { cursor:grabbing; }
+
+  /* Inline edit overlay */
+  .inline-edit { position:absolute; z-index:50; background:var(--panel); color:var(--text); border:2px solid var(--accent); border-radius:6px; padding:4px 8px; font-size:14px; min-width:80px; box-shadow:0 6px 20px #0006; outline:none; }
+
+  /* Context menu */
+  .ctx { position:fixed; z-index:100; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:4px; min-width:190px; box-shadow:0 10px 30px #0008; }
+  .ctx .item { padding:6px 12px; border-radius:5px; cursor:pointer; font-size:13px; display:flex; justify-content:space-between; gap:12px; }
+  .ctx .item:hover { background:var(--accent); color:#fff; }
+  .ctx .item.danger { color:var(--danger); }
+  .ctx .item.danger:hover { background:var(--danger); color:#fff; }
+  .ctx .item .kbd { font-size:11px; opacity:.6; font-family:ui-monospace,monospace; }
+  .ctx .sep2 { height:1px; background:var(--border); margin:4px 6px; }
+
+  .help { position:absolute; right:12px; bottom:36px; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:9px 12px; font-size:11.5px; color:var(--muted); max-width:280px; line-height:1.55; box-shadow:0 4px 14px #0004; pointer-events:none; }
+  .help kbd { background:var(--panel2); border:1px solid var(--border); border-bottom-width:2px; border-radius:3px; padding:0 5px; font-family:ui-monospace,monospace; font-size:11px; color:var(--text); }
+
+  footer { grid-column:1/3; background:var(--panel); border-top:1px solid var(--border); font-size:11px; color:var(--muted); display:flex; align-items:center; gap:14px; padding:0 12px; }
+  footer .spacer { flex:1; }
+
+  /* Mini buttons in zoom controls */
+  .zoomctl { position:absolute; left:12px; bottom:36px; display:flex; gap:6px; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:4px; box-shadow:0 4px 14px #0004; }
+  .zoomctl button { padding:3px 8px; font-size:12px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>🧠 Mindmap Canvas</h1>
+    <button id="btnAddChild" title="新增子節點 (Tab)">+ 子</button>
+    <button id="btnAddSibling" title="新增兄弟節點 (Enter)">+ 兄弟</button>
+    <button id="btnRename" title="改名 (F2)">改名</button>
+    <button id="btnDelete" class="danger" title="刪除 (Delete)">刪除</button>
+    <span class="sep"></span>
+    <button id="btnUndo" title="復原 (Ctrl+Z)">↶</button>
+    <button id="btnRedo" title="重做 (Ctrl+Y)">↷</button>
+    <span class="sep"></span>
+    <button id="btnAutoLayout" title="重新自動排版">⟳ 排版</button>
+    <select id="layoutDir" title="自動排版方向">
+      <option value="LR">水平 →</option>
+      <option value="RL">水平 ←</option>
+      <option value="TB">垂直 ↓</option>
+      <option value="radial">輻射</option>
+    </select>
+    <div class="spacer"></div>
+    <select id="exportFmt" title="儲存格式">
+      <option value="json">.json（含位置）</option>
+      <option value="mmd">.mmd（純結構）</option>
+      <option value="md">.md（含 mermaid）</option>
+    </select>
+    <button id="btnSave" class="primary" title="儲存 (Ctrl+S)">💾 儲存</button>
+    <button id="btnExportSvg" title="下載 SVG">SVG</button>
+    <button id="btnExportPng" title="下載 PNG">PNG</button>
+    <span class="status" id="status">ready</span>
+  </header>
+
+  <aside>
+    <div class="group">Files</div>
+    <div id="files"></div>
+    <button class="new" id="btnNew">+ 新心智圖</button>
+    <div class="group" style="margin-top:14px;">Filename</div>
+    <input id="fname" placeholder="my-map" />
+  </aside>
+
+  <main>
+    <svg id="svgroot" xmlns="http://www.w3.org/2000/svg">
+      <g id="viewport">
+        <g id="edges"></g>
+        <g id="nodes"></g>
+      </g>
+    </svg>
+    <div class="zoomctl">
+      <button id="btnZoomOut">−</button>
+      <button id="btnZoom100">100%</button>
+      <button id="btnZoomIn">+</button>
+      <button id="btnFit">適應</button>
+    </div>
+    <div class="help">
+      <b>操作</b><br/>
+      <kbd>點</kbd> 選 · <kbd>雙擊</kbd>/<kbd>F2</kbd> 改字<br/>
+      <kbd>Tab</kbd> 新增子 · <kbd>Enter</kbd> 新增兄弟<br/>
+      <kbd>↑↓←→</kbd> 移動選取 · <kbd>Del</kbd> 刪除<br/>
+      <b>拖節點</b> 自由移動位置<br/>
+      <b>Shift+拖到別的節點</b> = 換父<br/>
+      <kbd>空白拖</kbd> 平移 · <kbd>滾輪</kbd> 平移 · <kbd>Ctrl+滾輪</kbd> 縮放
+    </div>
+  </main>
+
+  <footer>
+    <span id="footerInfo">—</span>
+    <span class="spacer"></span>
+    <span id="zoomInfo">100%</span>
+  </footer>
+</div>
+
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+mermaid.initialize({ startOnLoad:false, theme: matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "default", securityLevel:"loose" });
+
+const $ = (id)=>document.getElementById(id);
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+// ---------- Model ----------
+let uid = 0;
+const newId = () => "n" + (++uid);
+function mkNode(text, opts={}) {
+  return { id:newId(), text, x: opts.x ?? null, y: opts.y ?? null, w:0, h:0, children: opts.children ?? [] };
+}
+let tree = mkNode("New Topic", { children:[ mkNode("Branch A", {children:[mkNode("Item")]}), mkNode("Branch B") ]});
+
+// ---------- State ----------
+let currentFile = null;
+let savedSnapshot = "";
+let selectedId = tree.id;
+const history = []; let histIdx = -1;
+let view = { x: 0, y: 0, k: 1 };
+
+function snapshot() { return JSON.stringify(tree); }
+function pushHistory() {
+  const s = snapshot();
+  if (history[histIdx] === s) return;
+  history.splice(histIdx+1); history.push(s);
+  if (history.length > 200) history.shift();
+  histIdx = history.length - 1;
+  updateStatus();
+}
+function undo() { if (histIdx>0){ histIdx--; tree = JSON.parse(history[histIdx]); ensureSelection(); render(); }}
+function redo() { if (histIdx<history.length-1){ histIdx++; tree = JSON.parse(history[histIdx]); ensureSelection(); render(); }}
+
+// ---------- Tree helpers ----------
+function walkTree(node, fn, parent=null, depth=0) { fn(node, parent, depth); for (const c of node.children) walkTree(c, fn, node, depth+1); }
+function findNode(id, node=tree, parent=null) {
+  if (node.id === id) return { node, parent };
+  for (const c of node.children) { const r = findNode(id, c, node); if (r) return r; }
+  return null;
+}
+function ensureSelection() { if (!findNode(selectedId)) selectedId = tree.id; }
+function isDescendant(a, b) { let stack=[...a.children]; while (stack.length){ const n=stack.pop(); if (n.id===b.id) return true; stack.push(...n.children); } return false; }
+
+// ---------- Layout (only used when positions missing or user requests) ----------
+function measure(text) {
+  // rough text measure
+  const padX = 14, padY = 8;
+  const w = Math.max(60, Math.min(260, text.length * 8 + padX*2));
+  const h = 32;
+  return { w, h };
+}
+function autoLayout(mode = $("layoutDir").value) {
+  walkTree(tree, (n) => { const m = measure(n.text); n.w = m.w; n.h = m.h; });
+  if (mode === "radial") radialLayout(); else treeLayout(mode);
+  pushHistory(); render(true);
+}
+function treeLayout(dir) {
+  const horizontal = (dir === "LR" || dir === "RL");
+  const sign = (dir === "RL" || dir === "TB" || dir === "LR") ? 1 : 1;
+  // compute subtree extents
+  const vGap = horizontal ? 14 : 24;
+  const hGap = horizontal ? 60 : 60;
+  function leafCount(n) { return n.children.length === 0 ? 1 : n.children.reduce((s,c)=>s+leafCount(c),0); }
+  // depth bands
+  const depthMax = new Map();
+  walkTree(tree, (n, _, d) => {
+    const cur = depthMax.get(d) || 0;
+    depthMax.set(d, Math.max(cur, horizontal ? n.w : n.h));
+  });
+  const bandPos = [];
+  let acc = 0;
+  for (let d = 0; d <= Math.max(...depthMax.keys()); d++) {
+    bandPos[d] = acc + (depthMax.get(d) || 60) / 2;
+    acc += (depthMax.get(d) || 60) + hGap;
+  }
+  // place along the secondary axis using leaf-spreading
+  let cursor = 0;
+  function place(n, depth) {
+    if (!n.children.length) {
+      const sec = cursor + n.h/2;
+      cursor += (horizontal ? n.h : n.w) + vGap;
+      assign(n, depth, sec);
+      return sec;
+    }
+    const secs = n.children.map(c => place(c, depth+1));
+    const sec = (secs[0] + secs[secs.length-1]) / 2;
+    assign(n, depth, sec);
+    return sec;
+  }
+  function assign(n, depth, sec) {
+    if (horizontal) {
+      n.x = (dir === "RL" ? -1 : 1) * bandPos[depth];
+      n.y = sec;
+    } else {
+      n.x = sec;
+      n.y = (dir === "BT" ? -1 : 1) * bandPos[depth];
+    }
+  }
+  place(tree, 0);
+  // center root at origin shift
+  const rx = tree.x, ry = tree.y;
+  walkTree(tree, (n) => { n.x -= rx; n.y -= ry; });
+}
+function radialLayout() {
+  const ringGap = 180;
+  function rec(n, depth, ang0, ang1) {
+    if (depth === 0) { n.x = 0; n.y = 0; }
+    else {
+      const ang = (ang0 + ang1) / 2;
+      n.x = Math.cos(ang) * depth * ringGap;
+      n.y = Math.sin(ang) * depth * ringGap;
+    }
+    if (!n.children.length) return;
+    const span = ang1 - ang0;
+    const step = span / n.children.length;
+    n.children.forEach((c, i) => rec(c, depth+1, ang0 + i*step, ang0 + (i+1)*step));
+  }
+  rec(tree, 0, 0, Math.PI*2);
+}
+function ensureLayout() {
+  // assign sizes
+  walkTree(tree, (n) => { const m = measure(n.text); n.w = m.w; n.h = m.h; });
+  // if any node missing position, do auto-layout once
+  let missing = false; walkTree(tree, (n) => { if (n.x == null || n.y == null) missing = true; });
+  if (missing) { treeLayout($("layoutDir").value); }
+}
+
+// ---------- Mutations ----------
+function addChild(parentId) {
+  const r = findNode(parentId); if (!r) return;
+  const m = measure("New");
+  const n = mkNode("New");
+  // place to right of parent (or under, depending on layout)
+  const dir = $("layoutDir").value;
+  const dx = dir === "RL" ? -160 : 160;
+  const dy = dir === "TB" ? 100 : (dir === "BT" ? -100 : 0);
+  if (dir === "TB" || dir === "BT") { n.x = (r.node.x ?? 0) + (r.node.children.length * (m.w + 20)) - 100; n.y = (r.node.y ?? 0) + dy; }
+  else { n.x = (r.node.x ?? 0) + dx; n.y = (r.node.y ?? 0) + (r.node.children.length * (m.h + 14)) - 30; }
+  n.w = m.w; n.h = m.h;
+  r.node.children.push(n);
+  selectedId = n.id;
+  pushHistory(); render();
+  setTimeout(() => beginRename(n.id), 50);
+}
+function addSibling(id) {
+  const r = findNode(id); if (!r) return;
+  if (!r.parent) return addChild(id);
+  const m = measure("New");
+  const n = mkNode("New");
+  n.x = (r.node.x ?? 0); n.y = (r.node.y ?? 0) + r.node.h + 16;
+  n.w = m.w; n.h = m.h;
+  const idx = r.parent.children.indexOf(r.node);
+  r.parent.children.splice(idx+1, 0, n);
+  selectedId = n.id;
+  pushHistory(); render();
+  setTimeout(() => beginRename(n.id), 50);
+}
+function deleteNode(id) {
+  const r = findNode(id); if (!r || !r.parent) return;
+  const idx = r.parent.children.indexOf(r.node);
+  r.parent.children.splice(idx, 1);
+  selectedId = r.parent.id;
+  pushHistory(); render();
+}
+function renameNode(id, text) {
+  const r = findNode(id); if (!r) return;
+  if (r.node.text === text) return;
+  r.node.text = text || "(empty)";
+  const m = measure(r.node.text); r.node.w = m.w; r.node.h = m.h;
+  pushHistory(); render();
+}
+function reparent(id, newParentId) {
+  if (id === newParentId) return;
+  const r = findNode(id), p = findNode(newParentId);
+  if (!r || !p || !r.parent) return;
+  if (isDescendant(r.node, p.node) || r.node.id === p.node.id) return;
+  const idx = r.parent.children.indexOf(r.node);
+  r.parent.children.splice(idx, 1);
+  p.node.children.push(r.node);
+  pushHistory(); render();
+}
+function moveSelection(dir) {
+  const r = findNode(selectedId); if (!r) return;
+  if (dir === "right" && r.node.children[0]) selectedId = r.node.children[0].id;
+  else if (dir === "left" && r.parent) selectedId = r.parent.id;
+  else if ((dir === "up" || dir === "down") && r.parent) {
+    const sibs = r.parent.children;
+    const i = sibs.indexOf(r.node);
+    const j = dir === "up" ? i-1 : i+1;
+    if (sibs[j]) selectedId = sibs[j].id;
+  }
+  updateSelectionDOM();
+}
+
+// ---------- Render ----------
+function applyView() {
+  $("viewport").setAttribute("transform", `translate(${view.x},${view.y}) scale(${view.k})`);
+  $("zoomInfo").textContent = Math.round(view.k * 100) + "%";
+}
+function el(tag, attrs={}, children=[]) {
+  const e = document.createElementNS(SVG_NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  for (const c of children) e.appendChild(c);
+  return e;
+}
+
+function render(fit = false) {
+  ensureLayout();
+  const edges = $("edges"), nodes = $("nodes");
+  edges.innerHTML = ""; nodes.innerHTML = "";
+
+  // edges (cubic Bezier from parent center to child center)
+  walkTree(tree, (n, parent) => {
+    if (!parent) return;
+    const x1 = parent.x, y1 = parent.y, x2 = n.x, y2 = n.y;
+    const mx = (x1 + x2) / 2;
+    const d = `M ${x1} ${y1} C ${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2}`;
+    edges.appendChild(el("path", { d, class:"edge" }));
+  });
+
+  // nodes
+  walkTree(tree, (n) => {
+    const isRoot = n === tree;
+    const g = el("g", { class: "node" + (isRoot?" root":"") + (n.id===selectedId?" selected":""), transform:`translate(${n.x},${n.y})`, "data-id": n.id });
+    const rx = -n.w/2, ry = -n.h/2;
+    g.appendChild(el("rect", { x:rx, y:ry, width:n.w, height:n.h, rx:8, ry:8 }));
+    const t = el("text", { x:0, y:5, "text-anchor":"middle" });
+    t.textContent = n.text;
+    g.appendChild(t);
+    bindNode(g, n);
+    nodes.appendChild(g);
+  });
+
+  applyView();
+  updateStatus();
+  if (fit) fitToView();
+}
+
+function updateSelectionDOM() {
+  $("nodes").querySelectorAll(".node").forEach(g => g.classList.toggle("selected", g.dataset.id === selectedId));
+  updateStatus();
+}
+
+// ---------- Interaction: drag node / pan / zoom ----------
+const svg = $("svgroot");
+function clientToWorld(cx, cy) {
+  const r = svg.getBoundingClientRect();
+  return { x: (cx - r.left - view.x) / view.k, y: (cy - r.top - view.y) / view.k };
+}
+
+function bindNode(g, n) {
+  g.addEventListener("click", (e) => { e.stopPropagation(); selectedId = n.id; updateSelectionDOM(); });
+  g.addEventListener("dblclick", (e) => { e.stopPropagation(); beginRename(n.id); });
+  g.addEventListener("contextmenu", (e) => { e.preventDefault(); e.stopPropagation(); selectedId = n.id; updateSelectionDOM(); openContextMenu(e.clientX, e.clientY, n); });
+  g.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0) return;
+    e.stopPropagation();
+    const start = clientToWorld(e.clientX, e.clientY);
+    const ox = n.x, oy = n.y;
+    let dragging = false, mode = null, dropTarget = null;
+    function onMove(ev) {
+      const cur = clientToWorld(ev.clientX, ev.clientY);
+      const dx = cur.x - start.x, dy = cur.y - start.y;
+      if (!dragging && (Math.abs(dx) + Math.abs(dy)) * view.k > 5) {
+        dragging = true;
+        // Shift = reparent mode, else = free move
+        mode = ev.shiftKey ? "reparent" : "move";
+        g.classList.add("dragging");
+      }
+      if (!dragging) return;
+      if (mode === "move") {
+        const ddx = cur.x - start.x, ddy = cur.y - start.y;
+        // move whole subtree together
+        moveSubtree(n, ddx, ddy);
+        start.x = cur.x; start.y = cur.y;
+        renderFast();
+      } else {
+        // reparent: show drop targets, don't move
+        const t = nodeAtClient(ev.clientX, ev.clientY, n.id);
+        if (dropTarget && dropTarget !== t) dropTarget.classList.remove("drop-target");
+        dropTarget = t;
+        if (t) t.classList.add("drop-target");
+      }
+    }
+    function onUp(ev) {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      g.classList.remove("dragging");
+      if (dragging) {
+        if (mode === "reparent" && dropTarget) {
+          dropTarget.classList.remove("drop-target");
+          reparent(n.id, dropTarget.dataset.id);
+        } else if (mode === "move") {
+          pushHistory();
+        }
+      }
+    }
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  });
+}
+
+function moveSubtree(n, dx, dy) { walkTree(n, (k) => { k.x += dx; k.y += dy; }); }
+
+function renderFast() {
+  // fast path: only update transforms + edges
+  const edges = $("edges");
+  edges.innerHTML = "";
+  walkTree(tree, (n, parent) => {
+    const g = $("nodes").querySelector(`.node[data-id="${n.id}"]`);
+    if (g) g.setAttribute("transform", `translate(${n.x},${n.y})`);
+    if (!parent) return;
+    const mx = (parent.x + n.x) / 2;
+    const d = `M ${parent.x} ${parent.y} C ${mx} ${parent.y}, ${mx} ${n.y}, ${n.x} ${n.y}`;
+    edges.appendChild(el("path", { d, class:"edge" }));
+  });
+}
+
+function nodeAtClient(cx, cy, excludeId) {
+  const els = document.elementsFromPoint(cx, cy);
+  for (const e of els) {
+    const g = e.closest?.(".node");
+    if (g && g.dataset.id !== excludeId) return g;
+  }
+  return null;
+}
+
+// Pan & zoom
+svg.addEventListener("pointerdown", (e) => {
+  if (e.target.closest(".node")) return;
+  if (e.button !== 0) return;
+  svg.classList.add("panning");
+  const sx = e.clientX - view.x, sy = e.clientY - view.y;
+  function onMove(ev) { view.x = ev.clientX - sx; view.y = ev.clientY - sy; applyView(); }
+  function onUp() { svg.classList.remove("panning"); window.removeEventListener("pointermove", onMove); window.removeEventListener("pointerup", onUp); }
+  window.addEventListener("pointermove", onMove);
+  window.addEventListener("pointerup", onUp);
+});
+svg.addEventListener("wheel", (e) => {
+  if (e.ctrlKey || e.metaKey) {
+    e.preventDefault();
+    const r = svg.getBoundingClientRect();
+    const cx = e.clientX - r.left, cy = e.clientY - r.top;
+    const scale = Math.exp(-e.deltaY * 0.0015);
+    const newK = Math.max(0.2, Math.min(3, view.k * scale));
+    view.x = cx - (cx - view.x) * (newK / view.k);
+    view.y = cy - (cy - view.y) * (newK / view.k);
+    view.k = newK; applyView();
+  } else {
+    // plain wheel = pan (shift swaps axis)
+    e.preventDefault();
+    if (e.shiftKey) { view.x -= e.deltaY; view.y -= e.deltaX; }
+    else            { view.x -= e.deltaX; view.y -= e.deltaY; }
+    applyView();
+  }
+}, { passive:false });
+svg.addEventListener("click", (e) => { if (!e.target.closest(".node")) { selectedId = null; updateSelectionDOM(); } });
+
+function fitToView() {
+  // compute bbox of all nodes
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  walkTree(tree, (n) => {
+    minX = Math.min(minX, n.x - n.w/2);
+    minY = Math.min(minY, n.y - n.h/2);
+    maxX = Math.max(maxX, n.x + n.w/2);
+    maxY = Math.max(maxY, n.y + n.h/2);
+  });
+  const r = svg.getBoundingClientRect();
+  const pad = 60;
+  const k = Math.min(1.2, (r.width - pad*2) / (maxX - minX + 1), (r.height - pad*2) / (maxY - minY + 1));
+  view.k = Math.max(0.3, k);
+  view.x = r.width/2 - (minX + maxX)/2 * view.k;
+  view.y = r.height/2 - (minY + maxY)/2 * view.k;
+  applyView();
+}
+
+// ---------- Inline edit ----------
+function beginRename(id) {
+  const r = findNode(id); if (!r) return;
+  const g = $("nodes").querySelector(`.node[data-id="${id}"]`);
+  if (!g) return;
+  const bb = g.getBoundingClientRect();
+  const main = document.querySelector("main").getBoundingClientRect();
+  const input = document.createElement("input");
+  input.className = "inline-edit";
+  input.value = r.node.text;
+  input.style.left = (bb.left - main.left) + "px";
+  input.style.top = (bb.top - main.top) + "px";
+  input.style.minWidth = bb.width + "px";
+  document.querySelector("main").appendChild(input);
+  input.focus(); input.select();
+  function commit(save) { if (save) renameNode(id, input.value.trim()); input.remove(); }
+  input.addEventListener("blur", () => commit(true));
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); commit(true); }
+    else if (e.key === "Escape") { e.preventDefault(); commit(false); }
+    e.stopPropagation();
+  });
+}
+
+// ---------- Context menu ----------
+let ctxEl = null;
+function closeContextMenu() { if (ctxEl) { ctxEl.remove(); ctxEl = null; } }
+function openContextMenu(x, y, n) {
+  closeContextMenu();
+  const isRoot = n.id === tree.id;
+  ctxEl = document.createElement("div");
+  ctxEl.className = "ctx";
+  ctxEl.innerHTML = `
+    <div class="item" data-act="child">新增子節點<span class="kbd">Tab</span></div>
+    <div class="item" data-act="sibling" ${isRoot?'style="opacity:.4;pointer-events:none"':''}>新增兄弟節點<span class="kbd">Enter</span></div>
+    <div class="item" data-act="rename">改名<span class="kbd">F2</span></div>
+    <div class="sep2"></div>
+    <div class="item" data-act="layout-here">自動排列子節點</div>
+    <div class="sep2"></div>
+    <div class="item danger" data-act="delete" ${isRoot?'style="opacity:.4;pointer-events:none"':''}>刪除節點<span class="kbd">Del</span></div>`;
+  ctxEl.style.left = Math.min(x, innerWidth - 220) + "px";
+  ctxEl.style.top  = Math.min(y, innerHeight - 220) + "px";
+  document.body.appendChild(ctxEl);
+  ctxEl.addEventListener("click", (e) => {
+    const act = e.target.closest(".item")?.dataset.act;
+    closeContextMenu();
+    if (!act) return;
+    if (act === "child") addChild(n.id);
+    else if (act === "sibling") addSibling(n.id);
+    else if (act === "rename") beginRename(n.id);
+    else if (act === "delete") deleteNode(n.id);
+    else if (act === "layout-here") {
+      // simple: re-stack children below n
+      const dir = $("layoutDir").value;
+      let cursor = (dir==="TB"||dir==="BT") ? n.x - (n.children.length-1)*100/2 : n.y - (n.children.length-1)*50/2;
+      n.children.forEach((c,i)=>{
+        if (dir==="LR"){ c.x = n.x + 160; c.y = n.y + (i - (n.children.length-1)/2)*50; }
+        else if (dir==="RL"){ c.x = n.x - 160; c.y = n.y + (i - (n.children.length-1)/2)*50; }
+        else if (dir==="TB"){ c.y = n.y + 100; c.x = n.x + (i - (n.children.length-1)/2)*180; }
+        else if (dir==="BT"){ c.y = n.y - 100; c.x = n.x + (i - (n.children.length-1)/2)*180; }
+        else { c.x = n.x + 160; c.y = n.y + (i - (n.children.length-1)/2)*50; }
+      });
+      pushHistory(); render();
+    }
+  });
+}
+document.addEventListener("click", closeContextMenu);
+
+// ---------- Keyboard ----------
+document.addEventListener("keydown", (e) => {
+  if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+  if ((e.ctrlKey||e.metaKey) && e.key.toLowerCase() === "s") { e.preventDefault(); save(); return; }
+  if ((e.ctrlKey||e.metaKey) && e.key.toLowerCase() === "z") { e.preventDefault(); e.shiftKey?redo():undo(); return; }
+  if ((e.ctrlKey||e.metaKey) && e.key.toLowerCase() === "y") { e.preventDefault(); redo(); return; }
+  if (!selectedId) return;
+  if (e.key === "Tab") { e.preventDefault(); addChild(selectedId); }
+  else if (e.key === "Enter") { e.preventDefault(); addSibling(selectedId); }
+  else if (e.key === "F2") { e.preventDefault(); beginRename(selectedId); }
+  else if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); deleteNode(selectedId); }
+  else if (e.key === "ArrowRight") { e.preventDefault(); moveSelection("right"); }
+  else if (e.key === "ArrowLeft")  { e.preventDefault(); moveSelection("left"); }
+  else if (e.key === "ArrowUp")    { e.preventDefault(); moveSelection("up"); }
+  else if (e.key === "ArrowDown")  { e.preventDefault(); moveSelection("down"); }
+});
+
+// ---------- Files (server API) ----------
+async function api(method, url, body) {
+  const res = await fetch(url, {
+    method, headers: body ? { "content-type":"application/json" } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) throw new Error((await res.json().catch(()=>({}))).error || res.statusText);
+  return res.json();
+}
+async function refreshFileList() {
+  try {
+    const { files } = await api("GET", "/api/files");
+    const el2 = $("files"); el2.innerHTML = "";
+    for (const f of files) {
+      const d = document.createElement("div");
+      d.className = "file" + (f === currentFile ? " active" : "");
+      d.innerHTML = `<span>${f}</span>${(f===currentFile && isDirty())?'<span class="dirty">●</span>':''}`;
+      d.onclick = () => openFile(f);
+      el2.appendChild(d);
+    }
+  } catch {}
+}
+function isDirty() { return snapshot() !== savedSnapshot; }
+function updateStatus() {
+  let c = 0; walkTree(tree, () => c++);
+  const cur = findNode(selectedId);
+  $("status").textContent = currentFile
+    ? (isDirty() ? `${currentFile} *` : `${currentFile} ✓`)
+    : "(unsaved)";
+  $("footerInfo").textContent = `${c} nodes${cur ? " · 選取：" + cur.node.text : ""}`;
+}
+
+async function openFile(path) {
+  if (isDirty() && !confirm("尚未儲存，要捨棄變更嗎？")) return;
+  const { content } = await api("GET", "/api/file?path=" + encodeURIComponent(path));
+  try {
+    if (path.endsWith(".json")) {
+      tree = normalize(JSON.parse(content));
+    } else {
+      tree = parseMmd(content);
+    }
+  } catch (e) { alert("解析失敗：" + e.message); return; }
+  ensureSelection(); selectedId = tree.id;
+  currentFile = path;
+  $("fname").value = path.replace(/\.(mmd|json|md)$/i, "");
+  history.length = 0; histIdx = -1;
+  pushHistory();
+  savedSnapshot = snapshot();
+  await refreshFileList();
+  render(true);
+}
+
+function normalize(node) {
+  if (!node) throw new Error("empty");
+  node.id = node.id || newId();
+  node.children = node.children || [];
+  node.x = typeof node.x === "number" ? node.x : null;
+  node.y = typeof node.y === "number" ? node.y : null;
+  node.children.forEach(normalize);
+  return node;
+}
+
+async function save() {
+  const fmt = $("exportFmt").value;
+  const ext = fmt === "json" ? ".json" : (fmt === "md" ? ".md" : ".mmd");
+  let name = $("fname").value.trim();
+  if (!name) name = "untitled-" + Date.now();
+  if (!name.endsWith(ext)) name = name.replace(/\.(mmd|json|md)$/i, "") + ext;
+  let content;
+  if (fmt === "json") content = JSON.stringify(serializeJson(tree), null, 2);
+  else if (fmt === "md") content = `# ${tree.text}\n\n\`\`\`mermaid\n${toMmd()}\n\`\`\`\n`;
+  else content = toMmd();
+  await api("POST", "/api/file", { path: name, content });
+  currentFile = name;
+  savedSnapshot = snapshot();
+  await refreshFileList();
+  updateStatus();
+}
+
+function serializeJson(n) {
+  return { id:n.id, text:n.text, x:n.x, y:n.y, children: n.children.map(serializeJson) };
+}
+
+// ---------- mmd ----------
+function escMmd(t) {
+  const s = String(t ?? "");
+  if (/[()\[\]{}":]/.test(s)) return `"${s.replace(/"/g,'\\"')}"`;
+  return s;
+}
+function toMmd() {
+  const lines = ["mindmap"];
+  function w(n, depth) {
+    const indent = "  ".repeat(depth+1);
+    if (depth === 0) lines.push(`${indent}root((${escMmd(n.text)}))`);
+    else lines.push(`${indent}${escMmd(n.text)}`);
+    for (const c of n.children) w(c, depth+1);
+  }
+  w(tree, 0);
+  return lines.join("\n");
+}
+function parseMmd(text) {
+  const lines = text.replace(/\r/g,"").split("\n");
+  let i = 0; while (i < lines.length && !/^\s*mindmap/i.test(lines[i])) i++; i++;
+  function unwrap(s) {
+    s = s.trim();
+    let m = s.match(/^["']?(?:[\w-]+)?["']?\s*\(\(\s*"?(.*?)"?\s*\)\)$/); if (m) return m[1];
+    m = s.match(/^["']?(?:[\w-]+)?["']?\s*\(\s*"?(.*?)"?\s*\)$/); if (m) return m[1];
+    m = s.match(/^["']?(?:[\w-]+)?["']?\s*\[\s*"?(.*?)"?\s*\]$/); if (m) return m[1];
+    m = s.match(/^["']?(?:[\w-]+)?["']?\s*\{\s*"?(.*?)"?\s*\}$/); if (m) return m[1];
+    m = s.match(/^"(.*)"$/); if (m) return m[1];
+    return s;
+  }
+  const stack = []; let root = null;
+  for (; i < lines.length; i++) {
+    const raw = lines[i]; if (!raw.trim()) continue;
+    if (/^\s*::icon\(/.test(raw)) continue;
+    const lead = raw.length - raw.trimStart().length;
+    const depth = Math.floor(lead / 2);
+    const n = mkNode(unwrap(raw.trimStart()));
+    if (!root) { root = n; stack.push({depth, node:n}); continue; }
+    while (stack.length && stack[stack.length-1].depth >= depth) stack.pop();
+    const parent = stack[stack.length-1]?.node || root;
+    parent.children.push(n);
+    stack.push({depth, node:n});
+  }
+  return root || mkNode("Empty");
+}
+
+// ---------- Export images ----------
+function downloadBlob(blob, name) { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
+
+// Build a standalone SVG string with inlined styles & a tight viewBox.
+function buildExportSvg({ background = "#ffffff" } = {}) {
+  // compute bbox in world coords
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  walkTree(tree, (n) => {
+    minX = Math.min(minX, n.x - n.w/2);
+    minY = Math.min(minY, n.y - n.h/2);
+    maxX = Math.max(maxX, n.x + n.w/2);
+    maxY = Math.max(maxY, n.y + n.h/2);
+  });
+  const pad = 24;
+  const w = (maxX - minX) + pad*2;
+  const h = (maxY - minY) + pad*2;
+  const tx = -minX + pad, ty = -minY + pad;
+
+  const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c]));
+
+  // edges
+  const edges = [];
+  walkTree(tree, (n, parent) => {
+    if (!parent) return;
+    const x1 = parent.x, y1 = parent.y, x2 = n.x, y2 = n.y;
+    const mx = (x1 + x2) / 2;
+    edges.push(`<path d="M ${x1} ${y1} C ${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2}" fill="none" stroke="#9aa2b3" stroke-width="1.6"/>`);
+  });
+
+  // nodes
+  const nodes = [];
+  walkTree(tree, (n) => {
+    const isRoot = n === tree;
+    const rectFill = isRoot ? "#4f8cff" : "#ffffff";
+    const rectStroke = isRoot ? "#4f8cff" : "#dde2ea";
+    const textFill = isRoot ? "#ffffff" : "#1c2230";
+    const fontW = isRoot ? "600" : "400";
+    nodes.push(
+      `<g transform="translate(${n.x},${n.y})">` +
+        `<rect x="${-n.w/2}" y="${-n.h/2}" width="${n.w}" height="${n.h}" rx="8" ry="8" ` +
+          `fill="${rectFill}" stroke="${rectStroke}" stroke-width="1.5"/>` +
+        `<text x="0" y="5" text-anchor="middle" font-family="-apple-system,Segoe UI,Roboto,'PingFang TC','Noto Sans TC',sans-serif" ` +
+          `font-size="14" font-weight="${fontW}" fill="${textFill}">${esc(n.text)}</text>` +
+      `</g>`
+    );
+  });
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+  <rect width="100%" height="100%" fill="${background}"/>
+  <g transform="translate(${tx},${ty})">
+    <g>${edges.join("")}</g>
+    <g>${nodes.join("")}</g>
+  </g>
+</svg>`;
+}
+
+$("btnExportSvg").onclick = () => {
+  const src = buildExportSvg({ background: "#ffffff" });
+  downloadBlob(new Blob([src], { type:"image/svg+xml" }), ($("fname").value || "mindmap") + ".svg");
+};
+$("btnExportPng").onclick = async () => {
+  const src = buildExportSvg({ background: "#ffffff" });
+  const url = URL.createObjectURL(new Blob([src], { type:"image/svg+xml" }));
+  const img = new Image();
+  await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = url; });
+  const scale = 2;
+  const c = document.createElement("canvas");
+  c.width = img.width * scale; c.height = img.height * scale;
+  const ctx = c.getContext("2d"); ctx.scale(scale, scale); ctx.drawImage(img, 0, 0);
+  c.toBlob((b) => downloadBlob(b, ($("fname").value || "mindmap") + ".png"), "image/png");
+  URL.revokeObjectURL(url);
+};
+
+// ---------- Toolbar wiring ----------
+$("btnAddChild").onclick = () => selectedId && addChild(selectedId);
+$("btnAddSibling").onclick = () => selectedId && addSibling(selectedId);
+$("btnRename").onclick = () => selectedId && beginRename(selectedId);
+$("btnDelete").onclick = () => selectedId && deleteNode(selectedId);
+$("btnUndo").onclick = undo;
+$("btnRedo").onclick = redo;
+$("btnAutoLayout").onclick = () => autoLayout();
+$("btnSave").onclick = save;
+$("btnZoomIn").onclick = () => { view.k = Math.min(3, view.k * 1.2); applyView(); };
+$("btnZoomOut").onclick = () => { view.k = Math.max(0.2, view.k / 1.2); applyView(); };
+$("btnZoom100").onclick = () => { view.k = 1; applyView(); };
+$("btnFit").onclick = () => fitToView();
+$("btnNew").onclick = () => {
+  if (isDirty() && !confirm("尚未儲存，要捨棄變更嗎？")) return;
+  tree = mkNode("New Topic", { children:[ mkNode("Branch") ] });
+  selectedId = tree.id; currentFile = null;
+  $("fname").value = "mindmap-" + new Date().toISOString().slice(0,10);
+  history.length = 0; histIdx = -1;
+  // give it an initial layout
+  walkTree(tree, (n) => { n.x = null; n.y = null; });
+  ensureLayout();
+  pushHistory();
+  savedSnapshot = "";
+  render(true);
+  refreshFileList();
+};
+window.addEventListener("resize", () => applyView());
+
+// ---------- Init ----------
+ensureLayout();
+pushHistory();
+(async () => {
+  await refreshFileList();
+  const first = document.querySelector("#files .file");
+  if (first) first.click();
+  else { $("fname").value = "mindmap-" + new Date().toISOString().slice(0,10); render(true); }
+})();
+</script>
+</body>
+</html>
