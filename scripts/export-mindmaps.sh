@@ -37,7 +37,11 @@ for src in "$SRC_DIR"/**/*.mmd; do
   out="$OUT_DIR/${rel%.mmd}.$FORMAT"
   mkdir -p "$(dirname "$out")"
   echo "→ $rel -> ${out#$ROOT/}"
-  $MMDC -i "$src" -o "$out" -b transparent -p "$PUPPETEER_CONFIG"
+  MMDC_ARGS=(-i "$src" -o "$out" -b transparent)
+  if [[ "${CI:-}" == "true" && -f "$PUPPETEER_CONFIG" ]]; then
+    MMDC_ARGS+=(-p "$PUPPETEER_CONFIG")
+  fi
+  $MMDC "${MMDC_ARGS[@]}"
   count=$((count+1))
 done
 
