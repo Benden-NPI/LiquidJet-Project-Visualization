@@ -1,22 +1,18 @@
-name: Build Mindmap Preview
+name: Build & Deploy Pages
 
 on:
   push:
     branches: [main]
     paths:
-      - 'mindmaps/**'
       - 'editor/**'
       - 'portal/**'
-      - 'scripts/**'
-      - 'package.json'
-      - '.github/workflows/mindmaps.yml'
+      - 'scripts/build-index.mjs'
+      - '.github/workflows/pages.yml'
   pull_request:
     paths:
-      - 'mindmaps/**'
       - 'editor/**'
       - 'portal/**'
-      - 'scripts/**'
-      - 'package.json'
+      - 'scripts/build-index.mjs'
   workflow_dispatch:
 
 permissions:
@@ -38,35 +34,13 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install mermaid-cli
-        run: npm install --no-audit --no-fund
-
-      # mmdc uses Chromium under the hood
-      - name: Install Chromium deps
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libxkbcommon0 \
-            libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libpango-1.0-0 \
-            libcairo2 libasound2t64 libpangocairo-1.0-0
-
-      - name: Export mindmaps to SVG
-        run: npm run export
-
-      - name: Copy drawio.svg (if any)
-        run: |
-          if compgen -G "mindmaps/**/*.drawio.svg" > /dev/null; then
-            mkdir -p dist/visualization
-            rsync -R mindmaps/**/*.drawio.svg dist/visualization/ || true
-          fi
-
-      - name: Build HTML index
+      - name: Build site
         run: node scripts/build-index.mjs
 
       - name: Upload preview artifact
         uses: actions/upload-artifact@v4
         with:
-          name: mindmap-preview
+          name: site-preview
           path: dist
           if-no-files-found: warn
 

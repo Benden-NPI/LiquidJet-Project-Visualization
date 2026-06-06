@@ -27,11 +27,4 @@ YYYYMMDD-<topic>-<owner>.<ext>
 - `.mmd`：右上角 Mermaid Editor 預覽按鈕。
 - `.md` 內 mermaid：Markdown Preview（`Ctrl+Shift+V`）。
 - `.drawio`：直接雙擊由 Draw.io Integration 開啟。
-
-## 匯出
-
-```bash
-npm run export        # 全部 .mmd → SVG 到 dist/
-npm run export:png    # 全部 .mmd → PNG 到 dist/
-npm run preview       # 產生 dist/index.html 集中瀏覽
-```
+- 互動編輯：`npm run edit` 開本機編輯器，或上 [線上版](https://benden-npi.github.io/LiquidJet-Project-Visualization/editor/)。

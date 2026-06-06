@@ -4,7 +4,6 @@
 // GET  /api/files     -> list of .mmd files
 // GET  /api/file?path -> raw file content
 // POST /api/file      -> { path, content }  saves file
-// POST /api/render    -> { content }        returns SVG via mmdc (optional)
 //
 // Usage: npm run edit  (then open http://localhost:5173)
 import { createServer } from "node:http";
