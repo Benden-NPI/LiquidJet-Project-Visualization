@@ -81,9 +81,37 @@ npm run preview     # 產生 dist/index.html，瀏覽器打開即可
 `push` 到 `main` 或開 PR 時，[.github/workflows/mindmaps.yml](.github/workflows/mindmaps.yml) 會：
 
 1. 用 `mmdc` 把所有 `.mmd` 轉成 SVG
-2. 產生 `dist/index.html`
+2. 產生 `dist/index.html`，並把 `editor/` 一起複製到 `dist/editor/`
 3. PR：上傳成 **Artifact**（`mindmap-preview`）可下載
 4. `main`：部署到 **GitHub Pages**（需先在 repo Settings → Pages → Source 改為 *GitHub Actions*）
+
+---
+
+## ☁️ 線上編輯器（GitHub Pages 版）
+
+部署後的網址（範例）：
+`https://benden-npi.github.io/LiquidJet-Project-Visualization/editor/`
+
+它跟本機編輯器是同一支程式，差別只在「存檔到哪」：
+
+| 環境 | 偵測方式 | 存檔到 |
+|------|----------|--------|
+| 本機 `npm run edit` | `/api/files` 有回應 | `mindmaps/` 直接寫檔 |
+| GitHub Pages | 無本機 API | 透過 GitHub Contents API commit 回 repo |
+
+### 第一次使用（線上版）
+
+1. 開 `https://<owner>.github.io/<repo>/editor/`
+2. 右上 ⚙ → 貼上 fine-grained PAT
+3. 產 PAT：GitHub → *Settings → Developer settings → Personal access tokens → Fine-grained tokens*
+   - **Repository access**：只勾選此 repo
+   - **Repository permissions** → **Contents**：`Read and write`
+4. 按「測試連線」確認後儲存
+
+Token 只存在你瀏覽器的 `localStorage`，**不會傳到任何伺服器**。  
+其他人沒 token = 只能看 Pages，按 ⚙ 後也無法寫入。
+
+每次儲存 = 一個 commit → 觸發 CI → Pages 預覽自動更新。
 
 ---
 

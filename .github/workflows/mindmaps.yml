@@ -5,12 +5,14 @@ on:
     branches: [main]
     paths:
       - 'mindmaps/**'
+      - 'editor/**'
       - 'scripts/**'
       - 'package.json'
       - '.github/workflows/mindmaps.yml'
   pull_request:
     paths:
       - 'mindmaps/**'
+      - 'editor/**'
       - 'scripts/**'
       - 'package.json'
   workflow_dispatch:

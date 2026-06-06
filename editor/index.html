@@ -74,6 +74,20 @@
   .help { position:absolute; right:12px; bottom:36px; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:9px 12px; font-size:11.5px; color:var(--muted); max-width:280px; line-height:1.55; box-shadow:0 4px 14px #0004; pointer-events:none; }
   .help kbd { background:var(--panel2); border:1px solid var(--border); border-bottom-width:2px; border-radius:3px; padding:0 5px; font-family:ui-monospace,monospace; font-size:11px; color:var(--text); }
 
+  /* Modal */
+  .modal-mask { position:fixed; inset:0; background:#0008; backdrop-filter: blur(2px); display:none; align-items:center; justify-content:center; z-index:200; }
+  .modal-mask.open { display:flex; }
+  .modal { background:var(--panel); border:1px solid var(--border); border-radius:12px; min-width:480px; max-width:580px; padding:20px 22px; box-shadow:0 20px 60px #000a; }
+  .modal h2 { margin:0 0 14px; font-size:16px; }
+  .modal .row { display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
+  .modal label { font-size:12px; color:var(--muted); }
+  .modal input, .modal select { background:var(--panel2); border:1px solid var(--border); border-radius:6px; padding:7px 10px; font-size:13px; width:100%; }
+  .modal .hint { font-size:11.5px; color:var(--muted); line-height:1.55; }
+  .modal .actions { display:flex; gap:8px; justify-content:flex-end; margin-top:14px; }
+  .modal .pill { display:inline-block; font-size:11px; padding:2px 8px; border-radius:99px; background:var(--panel2); border:1px solid var(--border); color:var(--muted); margin-left:6px; }
+  .modal .pill.ok { color:var(--accent2); border-color:var(--accent2); }
+  .modal .pill.bad { color:var(--danger); border-color:var(--danger); }
+
   footer { grid-column:1/3; background:var(--panel); border-top:1px solid var(--border); font-size:11px; color:var(--muted); display:flex; align-items:center; gap:14px; padding:0 12px; }
   footer .spacer { flex:1; }
 
@@ -110,6 +124,7 @@
     <button id="btnSave" class="primary" title="儲存 (Ctrl+S)">💾 儲存</button>
     <button id="btnExportSvg" title="下載 SVG">SVG</button>
     <button id="btnExportPng" title="下載 PNG">PNG</button>
+    <button id="btnSettings" title="設定（儲存位置 / GitHub Token）">⚙</button>
     <span class="status" id="status">ready</span>
   </header>
 
@@ -150,6 +165,45 @@
     <span class="spacer"></span>
     <span id="zoomInfo">100%</span>
   </footer>
+</div>
+
+<div class="modal-mask" id="settingsMask">
+  <div class="modal">
+    <h2>儲存設定 <span id="modeBadge" class="pill">…</span></h2>
+    <div class="row">
+      <label>儲存後端</label>
+      <select id="storageMode">
+        <option value="auto">自動偵測（推薦）</option>
+        <option value="local">本機伺服器（npm run edit）</option>
+        <option value="github">GitHub Repo（Pages 用）</option>
+      </select>
+      <div class="hint">「自動」會優先試本機 API，失敗則切到 GitHub。</div>
+    </div>
+
+    <div class="row" id="ghRows">
+      <label>GitHub Repo（owner/name）</label>
+      <input id="ghRepo" placeholder="Benden-NPI/LiquidJet-Project-Visualization" />
+      <label style="margin-top:6px;">分支</label>
+      <input id="ghBranch" placeholder="main" />
+      <label style="margin-top:6px;">資料夾路徑</label>
+      <input id="ghDir" placeholder="mindmaps" />
+      <label style="margin-top:6px;">GitHub Token（fine-grained PAT）</label>
+      <input id="ghToken" type="password" placeholder="github_pat_..." autocomplete="off" />
+      <div class="hint">
+        產生：GitHub → Settings → Developer settings → Personal access tokens →
+        <b>Fine-grained tokens</b> → 只勾選此 repo →
+        <b>Repository permissions</b> 把 <b>Contents</b> 設為 <b>Read &amp; Write</b>。
+        Token 只存在你瀏覽器的 localStorage，不會上傳。
+      </div>
+    </div>
+
+    <div class="actions">
+      <button id="btnTestGh">測試連線</button>
+      <span class="spacer" style="flex:1;"></span>
+      <button id="btnSettingsCancel">取消</button>
+      <button id="btnSettingsSave" class="primary">儲存</button>
+    </div>
+  </div>
 </div>
 
 <script type="module">
@@ -614,47 +668,182 @@ document.addEventListener("keydown", (e) => {
   else if (e.key === "ArrowDown")  { e.preventDefault(); moveSelection("down"); }
 });
 
-// ---------- Files (server API) ----------
-async function api(method, url, body) {
+// ---------- Storage adapters ----------
+// Two backends: LocalServer (Node API at /api/...) and GitHubRepo (Contents API).
+// Settings live in localStorage. `mode = "auto"` picks Local first, falls back to GitHub.
+const LS_KEY = "mindmap.settings.v1";
+const defaultSettings = {
+  mode: "auto",                // auto | local | github
+  ghRepo: detectDefaultRepo(), // "owner/name"
+  ghBranch: "main",
+  ghDir: "mindmaps",
+  ghToken: "",
+};
+function detectDefaultRepo() {
+  // On Pages it's like https://<owner>.github.io/<repo>/
+  const host = location.hostname.match(/^([^.]+)\.github\.io$/i);
+  const repoFromPath = location.pathname.split("/").filter(Boolean)[0];
+  if (host && repoFromPath) return `${host[1]}/${repoFromPath}`;
+  return "Benden-NPI/LiquidJet-Project-Visualization";
+}
+function loadSettings() {
+  try { return { ...defaultSettings, ...JSON.parse(localStorage.getItem(LS_KEY) || "{}") }; }
+  catch { return { ...defaultSettings }; }
+}
+function saveSettings(s) { localStorage.setItem(LS_KEY, JSON.stringify(s)); }
+let settings = loadSettings();
+
+// --- Local server adapter (works when you run `npm run edit`) ---
+const LocalAdapter = {
+  name: "local",
+  async list() {
+    const r = await fetch("/api/files");
+    if (!r.ok) throw new Error("local API unavailable");
+    const { files } = await r.json();
+    return files;
+  },
+  async read(path) {
+    const r = await fetch("/api/file?path=" + encodeURIComponent(path));
+    if (!r.ok) throw new Error("read failed");
+    return (await r.json()).content;
+  },
+  async write(path, content) {
+    const r = await fetch("/api/file", {
+      method:"POST",
+      headers:{ "content-type":"application/json" },
+      body: JSON.stringify({ path, content }),
+    });
+    if (!r.ok) throw new Error("write failed");
+    return r.json();
+  },
+};
+
+// --- GitHub Contents API adapter ---
+function gh() {
+  const { ghRepo, ghToken, ghBranch, ghDir } = settings;
+  if (!ghRepo || !ghToken) throw new Error("尚未設定 GitHub Repo / Token，請點右上 ⚙ 設定。");
+  return { repo: ghRepo, token: ghToken, branch: ghBranch || "main", dir: (ghDir || "mindmaps").replace(/^\/+|\/+$/g, "") };
+}
+async function ghFetch(url, init = {}) {
+  const { token } = gh();
   const res = await fetch(url, {
-    method, headers: body ? { "content-type":"application/json" } : undefined,
-    body: body ? JSON.stringify(body) : undefined,
+    ...init,
+    headers: {
+      "accept": "application/vnd.github+json",
+      "authorization": "Bearer " + token,
+      "x-github-api-version": "2022-11-28",
+      ...(init.body ? { "content-type": "application/json" } : {}),
+      ...(init.headers || {}),
+    },
   });
-  if (!res.ok) throw new Error((await res.json().catch(()=>({}))).error || res.statusText);
-  return res.json();
+  if (!res.ok) {
+    let msg = res.status + " " + res.statusText;
+    try { const j = await res.json(); if (j.message) msg += " — " + j.message; } catch {}
+    throw new Error("GitHub: " + msg);
+  }
+  return res.status === 204 ? null : res.json();
 }
-async function refreshFileList() {
+const GitHubAdapter = {
+  name: "github",
+  async list() {
+    const { repo, branch, dir } = gh();
+    const list = await ghFetch(`https://api.github.com/repos/${repo}/contents/${encodeURIComponent(dir)}?ref=${encodeURIComponent(branch)}`);
+    if (!Array.isArray(list)) return [];
+    return list
+      .filter(f => f.type === "file" && /\.(mmd|json|md)$/i.test(f.name))
+      .map(f => f.name)
+      .sort();
+  },
+  async read(path) {
+    const { repo, branch, dir } = gh();
+    const full = `${dir}/${path}`;
+    const data = await ghFetch(`https://api.github.com/repos/${repo}/contents/${encodeURIComponent(full).replace(/%2F/g,"/")}?ref=${encodeURIComponent(branch)}`);
+    if (Array.isArray(data)) throw new Error("not a file: " + path);
+    // GitHub returns base64
+    return decodeURIComponent(escape(atob(data.content.replace(/\n/g, ""))));
+  },
+  async write(path, content) {
+    const { repo, branch, dir } = gh();
+    const full = `${dir}/${path}`;
+    // Need SHA if file exists
+    let sha = null;
+    try {
+      const cur = await ghFetch(`https://api.github.com/repos/${repo}/contents/${encodeURIComponent(full).replace(/%2F/g,"/")}?ref=${encodeURIComponent(branch)}`);
+      if (cur && cur.sha) sha = cur.sha;
+    } catch {}
+    const b64 = btoa(unescape(encodeURIComponent(content)));
+    const body = {
+      message: `editor: update ${path}`,
+      content: b64,
+      branch,
+      ...(sha ? { sha } : {}),
+    };
+    const out = await ghFetch(`https://api.github.com/repos/${repo}/contents/${encodeURIComponent(full).replace(/%2F/g,"/")}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    });
+    return { ok: true, path, sha: out.content?.sha };
+  },
+  async test() {
+    const { repo, branch } = gh();
+    await ghFetch(`https://api.github.com/repos/${repo}/branches/${encodeURIComponent(branch)}`);
+    return true;
+  },
+};
+
+// --- Picker ---
+let storage = null;
+let storageBadge = "—";
+async function pickStorage() {
+  if (settings.mode === "local") { storage = LocalAdapter; storageBadge = "Local server"; return; }
+  if (settings.mode === "github") { storage = GitHubAdapter; storageBadge = "GitHub Repo"; return; }
+  // auto
   try {
-    const { files } = await api("GET", "/api/files");
-    const el2 = $("files"); el2.innerHTML = "";
-    for (const f of files) {
-      const d = document.createElement("div");
-      d.className = "file" + (f === currentFile ? " active" : "");
-      d.innerHTML = `<span>${f}</span>${(f===currentFile && isDirty())?'<span class="dirty">●</span>':''}`;
-      d.onclick = () => openFile(f);
-      el2.appendChild(d);
-    }
+    const r = await fetch("/api/files", { method: "GET" });
+    if (r.ok) { storage = LocalAdapter; storageBadge = "Local server (auto)"; return; }
   } catch {}
+  storage = GitHubAdapter; storageBadge = "GitHub Repo (auto)";
 }
+
+async function refreshFileList() {
+  const el2 = $("files"); el2.innerHTML = "";
+  let files = [];
+  try {
+    files = await storage.list();
+  } catch (e) {
+    const d = document.createElement("div");
+    d.style.padding = "8px 10px"; d.style.fontSize = "12px"; d.style.color = "var(--danger)";
+    d.textContent = e.message;
+    el2.appendChild(d);
+    return;
+  }
+  for (const f of files) {
+    const d = document.createElement("div");
+    d.className = "file" + (f === currentFile ? " active" : "");
+    d.innerHTML = `<span>${f}</span>${(f===currentFile && isDirty())?'<span class="dirty">●</span>':''}`;
+    d.onclick = () => openFile(f);
+    el2.appendChild(d);
+  }
+}
+
 function isDirty() { return snapshot() !== savedSnapshot; }
 function updateStatus() {
   let c = 0; walkTree(tree, () => c++);
   const cur = findNode(selectedId);
-  $("status").textContent = currentFile
+  $("status").textContent = (currentFile
     ? (isDirty() ? `${currentFile} *` : `${currentFile} ✓`)
-    : "(unsaved)";
+    : "(unsaved)") + " · " + storageBadge;
   $("footerInfo").textContent = `${c} nodes${cur ? " · 選取：" + cur.node.text : ""}`;
 }
 
 async function openFile(path) {
   if (isDirty() && !confirm("尚未儲存，要捨棄變更嗎？")) return;
-  const { content } = await api("GET", "/api/file?path=" + encodeURIComponent(path));
+  let content;
+  try { content = await storage.read(path); }
+  catch (e) { alert("讀取失敗：" + e.message); return; }
   try {
-    if (path.endsWith(".json")) {
-      tree = normalize(JSON.parse(content));
-    } else {
-      tree = parseMmd(content);
-    }
+    if (path.endsWith(".json")) tree = normalize(JSON.parse(content));
+    else tree = parseMmd(content);
   } catch (e) { alert("解析失敗：" + e.message); return; }
   ensureSelection(); selectedId = tree.id;
   currentFile = path;
@@ -686,7 +875,8 @@ async function save() {
   if (fmt === "json") content = JSON.stringify(serializeJson(tree), null, 2);
   else if (fmt === "md") content = `# ${tree.text}\n\n\`\`\`mermaid\n${toMmd()}\n\`\`\`\n`;
   else content = toMmd();
-  await api("POST", "/api/file", { path: name, content });
+  try { await storage.write(name, content); }
+  catch (e) { alert("儲存失敗：" + e.message); return; }
   currentFile = name;
   savedSnapshot = snapshot();
   await refreshFileList();
@@ -845,14 +1035,72 @@ $("btnNew").onclick = () => {
 };
 window.addEventListener("resize", () => applyView());
 
+// ---------- Settings modal ----------
+function openSettings() {
+  $("storageMode").value = settings.mode;
+  $("ghRepo").value = settings.ghRepo;
+  $("ghBranch").value = settings.ghBranch;
+  $("ghDir").value = settings.ghDir;
+  $("ghToken").value = settings.ghToken;
+  $("modeBadge").textContent = "目前：" + storageBadge;
+  $("modeBadge").className = "pill " + (storage === GitHubAdapter ? "ok" : "");
+  $("settingsMask").classList.add("open");
+}
+function closeSettings() { $("settingsMask").classList.remove("open"); }
+$("btnSettings").onclick = openSettings;
+$("btnSettingsCancel").onclick = closeSettings;
+$("settingsMask").addEventListener("click", (e) => { if (e.target.id === "settingsMask") closeSettings(); });
+$("btnSettingsSave").onclick = async () => {
+  settings = {
+    ...settings,
+    mode: $("storageMode").value,
+    ghRepo: $("ghRepo").value.trim(),
+    ghBranch: $("ghBranch").value.trim() || "main",
+    ghDir: $("ghDir").value.trim() || "mindmaps",
+    ghToken: $("ghToken").value.trim(),
+  };
+  saveSettings(settings);
+  await pickStorage();
+  await refreshFileList();
+  updateStatus();
+  closeSettings();
+};
+$("btnTestGh").onclick = async () => {
+  const prev = settings;
+  settings = {
+    ...settings,
+    ghRepo: $("ghRepo").value.trim(),
+    ghBranch: $("ghBranch").value.trim() || "main",
+    ghToken: $("ghToken").value.trim(),
+  };
+  try {
+    await GitHubAdapter.test();
+    alert("✓ 連線成功：" + settings.ghRepo + "@" + settings.ghBranch);
+  } catch (e) {
+    alert("✗ 連線失敗：" + e.message);
+  } finally {
+    // don't auto-persist on test
+    settings = prev;
+    settings.ghRepo = $("ghRepo").value.trim();
+    settings.ghBranch = $("ghBranch").value.trim() || "main";
+    settings.ghToken = $("ghToken").value.trim();
+  }
+};
+
 // ---------- Init ----------
 ensureLayout();
 pushHistory();
 (async () => {
+  await pickStorage();
   await refreshFileList();
   const first = document.querySelector("#files .file");
   if (first) first.click();
   else { $("fname").value = "mindmap-" + new Date().toISOString().slice(0,10); render(true); }
+  updateStatus();
+  // First-run hint: if on Pages with no token, open Settings
+  if (storage === GitHubAdapter && !settings.ghToken) {
+    setTimeout(openSettings, 300);
+  }
 })();
 </script>
 </body>
