@@ -849,6 +849,9 @@ async function openFile(path) {
   currentFile = path;
   $("fname").value = path.replace(/\.(mmd|json|md)$/i, "");
   history.length = 0; histIdx = -1;
+  // Apply layout before snapshotting so render-time layout writes
+  // (x/y/w/h on freshly-parsed nodes) don't make the file look dirty.
+  ensureLayout();
   pushHistory();
   savedSnapshot = snapshot();
   await refreshFileList();
@@ -1029,7 +1032,7 @@ $("btnNew").onclick = () => {
   walkTree(tree, (n) => { n.x = null; n.y = null; });
   ensureLayout();
   pushHistory();
-  savedSnapshot = "";
+  savedSnapshot = snapshot();
   render(true);
   refreshFileList();
 };
@@ -1090,6 +1093,7 @@ $("btnTestGh").onclick = async () => {
 // ---------- Init ----------
 ensureLayout();
 pushHistory();
+savedSnapshot = snapshot();
 (async () => {
   await pickStorage();
   await refreshFileList();
