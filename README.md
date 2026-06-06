@@ -69,6 +69,8 @@ npm run export:png  # 同上但輸出 PNG
 npm run preview     # 產生 dist/index.html，瀏覽器打開即可
 ```
 
+`scripts/puppeteer-config.json` 內含 `--no-sandbox` 啟動參數，目的是讓 `mmdc` 在受限的 CI / container 環境也能啟動 Chromium。
+
 底線開頭的 `_template.mmd` 會被略過。
 
 ### 4. 沉澱：scope + decisions
