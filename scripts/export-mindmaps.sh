@@ -10,6 +10,12 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SRC_DIR="$ROOT/mindmaps"
 OUT_DIR="$ROOT/dist"
 PUPPETEER_CONFIG="$ROOT/scripts/puppeteer-config.json"
+MMDC_ARGS=()
+
+# GitHub-hosted runners can block Chromium sandboxing; use dedicated config there.
+if [[ -n "${CI:-}" && -f "$PUPPETEER_CONFIG" ]]; then
+  MMDC_ARGS+=(-p "$PUPPETEER_CONFIG")
+fi
 
 if [[ ! -d "$SRC_DIR" ]]; then
   echo "No mindmaps/ directory at $SRC_DIR" >&2
@@ -37,7 +43,7 @@ for src in "$SRC_DIR"/**/*.mmd; do
   out="$OUT_DIR/${rel%.mmd}.$FORMAT"
   mkdir -p "$(dirname "$out")"
   echo "→ $rel -> ${out#$ROOT/}"
-  $MMDC -p "$PUPPETEER_CONFIG" -i "$src" -o "$out" -b transparent
+  $MMDC "${MMDC_ARGS[@]}" -i "$src" -o "$out" -b transparent
   count=$((count+1))
 done
 
