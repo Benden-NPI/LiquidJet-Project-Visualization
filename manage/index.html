@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<title>LiquidJet · Manage 點燈</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="description" content="LiquidJet Control Plan Readiness 點燈儀表板：以 First Principles v2 框架為基底,逐 milestone / 逐項追蹤狀態。" />
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg:#0f1115; --panel:#161a22; --panel2:#1e2330; --border:#2a3142;
+    --text:#e6e9ef; --muted:#8a93a6;
+    --accent:#4f8cff; --accent2:#38d39f; --accent3:#f3b54a;
+    --red:#e5484d; --amber:#f3b54a; --green:#38d39f; --gray:#5b6478;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg:#f6f7fb; --panel:#fff; --panel2:#f0f2f7; --border:#dde2ea; --text:#1c2230; --muted:#5b6478; --gray:#8a93a6; }
+  }
+  * { box-sizing:border-box; }
+  html, body { margin:0; min-height:100%; background:var(--bg); color:var(--text);
+    font-family:-apple-system,Segoe UI,Roboto,"PingFang TC","Noto Sans TC",sans-serif; line-height:1.5; }
+  body {
+    background:
+      radial-gradient(1200px 500px at 20% -10%, rgba(79,140,255,.18), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(56,211,159,.12), transparent 60%),
+      var(--bg);
+  }
+  .wrap { max-width:1180px; margin:0 auto; padding:32px 20px 64px; }
+  header.hero { display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:8px; }
+  .logo {
+    width:44px; height:44px; border-radius:12px;
+    background:linear-gradient(135deg, var(--accent), var(--accent2));
+    display:grid; place-items:center; color:#fff; font-weight:700; font-size:18px;
+    box-shadow:0 8px 24px rgba(79,140,255,.35);
+  }
+  h1 { margin:0; font-size:22px; }
+  .sub { color:var(--muted); font-size:13px; margin-top:2px; }
+  .topbar { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:14px; }
+  .btn {
+    display:inline-flex; align-items:center; gap:6px;
+    font-size:13px; padding:7px 12px; border-radius:8px; text-decoration:none;
+    border:1px solid var(--border); background:var(--panel2); color:var(--text); cursor:pointer;
+  }
+  .btn:hover { border-color:var(--accent); }
+  .btn.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .btn.danger:hover { border-color:var(--red); color:var(--red); }
+  input.station-input, select.station-select {
+    font-size:13px; padding:7px 10px; border-radius:8px;
+    border:1px solid var(--border); background:var(--panel2); color:var(--text);
+  }
+  input.station-input { min-width:200px; }
+
+  .summary { display:flex; gap:14px; flex-wrap:wrap; margin:18px 0 22px; }
+  .kpi {
+    flex:1 1 160px; background:var(--panel); border:1px solid var(--border);
+    border-radius:12px; padding:12px 14px; display:flex; align-items:center; gap:12px;
+  }
+  .kpi .dot { width:14px; height:14px; border-radius:50%; flex-shrink:0;
+    box-shadow:0 0 0 3px rgba(255,255,255,.04); }
+  .kpi .dot.red    { background:var(--red);    box-shadow:0 0 12px var(--red); }
+  .kpi .dot.amber  { background:var(--amber);  box-shadow:0 0 12px var(--amber); }
+  .kpi .dot.green  { background:var(--green);  box-shadow:0 0 12px var(--green); }
+  .kpi .dot.gray   { background:var(--gray); }
+  .kpi .num { font-size:20px; font-weight:700; line-height:1; }
+  .kpi .lbl { color:var(--muted); font-size:12px; }
+
+  .progress { height:8px; border-radius:99px; background:var(--panel2); overflow:hidden;
+    border:1px solid var(--border); margin-top:6px; }
+  .progress > span { display:block; height:100%; background:linear-gradient(90deg,var(--accent2),var(--accent)); }
+
+  section.milestone {
+    background:var(--panel); border:1px solid var(--border); border-radius:14px;
+    padding:14px 16px; margin-bottom:14px;
+  }
+  section.milestone > header {
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap; cursor:pointer;
+  }
+  section.milestone > header h2 { margin:0; font-size:16px; flex:1; }
+  section.milestone > header .pct { color:var(--muted); font-size:12px; }
+  section.milestone > header .pill {
+    font-size:11px; padding:2px 8px; border-radius:99px; border:1px solid var(--border);
+    background:var(--panel2); color:var(--muted);
+  }
+  section.milestone .group { margin-top:10px; }
+  section.milestone .group h3 {
+    margin:10px 0 6px; font-size:12px; color:var(--muted);
+    text-transform:uppercase; letter-spacing:.5px; font-weight:600;
+  }
+  ul.items { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:6px; }
+  ul.items li {
+    display:flex; align-items:center; gap:10px;
+    padding:8px 10px; background:var(--panel2); border:1px solid var(--border);
+    border-radius:10px; font-size:14px;
+  }
+  ul.items li .label { flex:1; }
+  ul.items li .note {
+    color:var(--muted); font-size:12px; margin-left:8px; max-width:280px;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .light {
+    width:18px; height:18px; border-radius:50%; flex-shrink:0;
+    border:2px solid var(--border); cursor:pointer;
+    background:transparent; transition:all .15s ease;
+  }
+  .light[data-st="0"] { background:transparent; border-color:var(--gray); }
+  .light[data-st="1"] { background:var(--red);   border-color:var(--red);   box-shadow:0 0 10px var(--red); }
+  .light[data-st="2"] { background:var(--amber); border-color:var(--amber); box-shadow:0 0 10px var(--amber); }
+  .light[data-st="3"] { background:var(--green); border-color:var(--green); box-shadow:0 0 10px var(--green); }
+  .light:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  .note-btn {
+    font-size:11px; padding:3px 7px; border-radius:6px;
+    border:1px solid var(--border); background:transparent; color:var(--muted); cursor:pointer;
+  }
+  .note-btn:hover { color:var(--text); border-color:var(--accent); }
+
+  details.help { margin-top:18px; background:var(--panel); border:1px solid var(--border);
+    border-radius:12px; padding:10px 14px; font-size:13px; color:var(--muted); }
+  details.help summary { cursor:pointer; color:var(--text); font-size:13px; }
+  details.help ul { margin:8px 0 0 18px; }
+
+  footer { margin-top:24px; color:var(--muted); font-size:12px;
+    display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+  footer a { color:inherit; }
+  .hidden { display:none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <div class="logo">LJ</div>
+    <div>
+      <h1>Control Plan Readiness · 點燈</h1>
+      <div class="sub">First Principles v2 · Move-in → Setup → Tuning → Qualify</div>
+    </div>
+    <div style="flex:1"></div>
+    <a class="btn" href="../" title="回到 LiquidJet 入口">← 回 Portal</a>
+  </header>
+
+  <div class="topbar">
+    <label class="sub" for="stationSel">Station：</label>
+    <select id="stationSel" class="station-select" aria-label="選擇 station"></select>
+    <input id="newStation" class="station-input" placeholder="新增 station 名稱（例：ColdPlate 4）" />
+    <button class="btn" id="addStation">+ 新增</button>
+    <button class="btn danger" id="delStation" title="刪除目前 station">🗑 刪除</button>
+    <div style="flex:1"></div>
+    <button class="btn" id="exportBtn">⬇ 匯出 JSON</button>
+    <button class="btn" id="importBtn">⬆ 匯入 JSON</button>
+    <input type="file" id="importFile" accept="application/json" class="hidden" />
+    <button class="btn danger" id="resetBtn" title="清除目前 station 全部狀態">↺ 重設</button>
+  </div>
+
+  <div class="summary" id="summary"></div>
+
+  <div id="board"></div>
+
+  <details class="help">
+    <summary>使用說明</summary>
+    <ul>
+      <li>每一項目左側圓燈點一下會循環切換：⚪ 未開始 → 🔴 紅燈（卡關 / 漏控）→ 🟡 黃燈（進行中 / 部分達成）→ 🟢 綠燈（達成）→ 回到未開始。</li>
+      <li>「備註」可放實際數值、ADR 連結、量測檔路徑等。</li>
+      <li>所有狀態保存在瀏覽器 localStorage,使用同一台電腦同一瀏覽器即可保留。</li>
+      <li>跨機器同步：用「匯出 JSON」存檔丟進 repo 或 chat,另一台用「匯入 JSON」載入。</li>
+      <li>本頁僅做狀態追蹤,框架/條目定義仍以 <a href="../mindmaps/control-plan-readiness-matrix.mmd" target="_blank" rel="noopener">mindmap</a> 與 <code>scope/control-plan.md</code> 為準。</li>
+    </ul>
+  </details>
+
+  <footer>
+    <span>© Benden NPI · LiquidJet · Manage</span>
+    <span id="buildInfo">—</span>
+  </footer>
+</div>
+
+<script>
+/* ============================================================
+ * Schema — 取自 mindmaps/control-plan-readiness-matrix.mmd
+ *   (此頁僅做點燈追蹤,定義異動請改 mmd 後同步此處)
+ * ============================================================ */
+const SCHEMA = [
+  {
+    key: "movein", name: "🟦 Move-in", desc: "設備物理就位,能跑空車",
+    groups: [
+      { key: "deliverables", name: "必生元件", items: [
+        { id: "mi-d1", text: "製程步驟 IPO 草稿" },
+        { id: "mi-d2", text: "已知 CTQ 清單" },
+        { id: "mi-d3", text: "預估 X 因子 (6M 掃過)" },
+      ]},
+      { key: "exit", name: "Exit Criteria", items: [
+        { id: "mi-e1", text: "設備上電 OK" },
+        { id: "mi-e2", text: "安全 / 環安 sign-off" },
+        { id: "mi-e3", text: "IPO 含狀態變化句" },
+      ]},
+    ],
+  },
+  {
+    key: "setup", name: "🟨 Setup", desc: "參數收斂到能做出像樣的東西",
+    groups: [
+      { key: "deliverables", name: "必生元件", items: [
+        { id: "su-d1", text: "每個 X 初版操作窗" },
+        { id: "su-d2", text: "量測方法選定" },
+        { id: "su-d3", text: "量具到位" },
+        { id: "su-d4", text: "PFMEA 初稿 (high-severity)" },
+      ]},
+      { key: "exit", name: "Exit Criteria", items: [
+        { id: "su-e1", text: "連續 N 片落在初版 spec" },
+        { id: "su-e2", text: "量具校驗單歸檔" },
+        { id: "su-e3", text: "PFMEA 初稿 review" },
+      ]},
+    ],
+  },
+  {
+    key: "tuning", name: "🟧 Tuning", desc: "找出真正的 USL/LSL,確認 X→Y 因果",
+    groups: [
+      { key: "deliverables", name: "必生元件", items: [
+        { id: "tu-d1", text: "DOE / Cpk preliminary" },
+        { id: "tu-d2", text: "MSA (Gage R&R) 完成" },
+        { id: "tu-d3", text: "Control method 選定 (SPC / 100% / Poka-Yoke)" },
+        { id: "tu-d4", text: "Reaction plan 初稿" },
+      ]},
+      { key: "exit", name: "Exit Criteria", items: [
+        { id: "tu-e1", text: "Cpk ≥ 約定值 (preliminary ≥ 1.33)" },
+        { id: "tu-e2", text: "GR&R < 約定值 (≤ 10%)" },
+        { id: "tu-e3", text: "每條 control 對到 PFMEA cause" },
+      ]},
+    ],
+  },
+  {
+    key: "qualify", name: "🟩 Qualify", desc: "製程穩定 / 可放量 / 可交接",
+    groups: [
+      { key: "deliverables", name: "必生元件", items: [
+        { id: "qu-d1", text: "Control Plan 正式版 (8 欄)" },
+        { id: "qu-d2", text: "PFMEA 凍結版" },
+        { id: "qu-d3", text: "訓練矩陣" },
+        { id: "qu-d4", text: "SOP 發行" },
+        { id: "qu-d5", text: "Traceability 上線" },
+        { id: "qu-d6", text: "4M Change Control 上線" },
+      ]},
+      { key: "exit", name: "Exit Criteria", items: [
+        { id: "qu-e1", text: "Cpk 達標 (≥ 1.67)" },
+        { id: "qu-e2", text: "Qualification run 跑滿 (≥ 30 連續良品)" },
+        { id: "qu-e3", text: "Reaction plan 演練過" },
+        { id: "qu-e4", text: "CAPA 閉環跑通" },
+      ]},
+      { key: "holistic", name: "四個整體層", items: [
+        { id: "qu-h1", text: "Traceability" },
+        { id: "qu-h2", text: "4M Change Control" },
+        { id: "qu-h3", text: "Excursion / Recovery" },
+        { id: "qu-h4", text: "Data Loop" },
+      ]},
+    ],
+  },
+];
+
+const STATUSES = [
+  { v: 0, label: "未開始", cls: "gray"  },
+  { v: 1, label: "紅燈",   cls: "red"   },
+  { v: 2, label: "黃燈",   cls: "amber" },
+  { v: 3, label: "綠燈",   cls: "green" },
+];
+
+const STORE_KEY = "liquidjet.manage.v1";
+
+/* ---------- Storage ---------- */
+function loadStore() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return { current: null, stations: {} };
+    const obj = JSON.parse(raw);
+    return obj && typeof obj === "object" ? obj : { current: null, stations: {} };
+  } catch { return { current: null, stations: {} }; }
+}
+function saveStore() { localStorage.setItem(STORE_KEY, JSON.stringify(store)); }
+
+let store = loadStore();
+if (!store.current || !store.stations[store.current]) {
+  // bootstrap with a sample station so the page is not empty on first visit
+  const name = "ColdPlate 4";
+  if (!store.stations[name]) store.stations[name] = {};
+  store.current = name;
+  saveStore();
+}
+
+function curStation() { return store.stations[store.current] || {}; }
+function setItem(id, patch) {
+  const st = store.stations[store.current] || (store.stations[store.current] = {});
+  st[id] = Object.assign({ status: 0, note: "" }, st[id] || {}, patch);
+  saveStore();
+}
+
+/* ---------- Rendering ---------- */
+const $ = (id) => document.getElementById(id);
+
+function renderStationSelect() {
+  const sel = $("stationSel");
+  sel.innerHTML = "";
+  const names = Object.keys(store.stations).sort();
+  for (const n of names) {
+    const opt = document.createElement("option");
+    opt.value = n; opt.textContent = n;
+    if (n === store.current) opt.selected = true;
+    sel.appendChild(opt);
+  }
+}
+
+function renderSummary() {
+  const counts = { 0:0, 1:0, 2:0, 3:0 };
+  let total = 0;
+  for (const m of SCHEMA) for (const g of m.groups) for (const it of g.items) {
+    total++;
+    const s = (curStation()[it.id] && curStation()[it.id].status) || 0;
+    counts[s]++;
+  }
+  const done = counts[3];
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  const wrap = $("summary");
+  wrap.innerHTML = `
+    <div class="kpi"><div class="dot green"></div>
+      <div><div class="num">${counts[3]}</div><div class="lbl">綠燈 / 達成</div></div></div>
+    <div class="kpi"><div class="dot amber"></div>
+      <div><div class="num">${counts[2]}</div><div class="lbl">黃燈 / 進行中</div></div></div>
+    <div class="kpi"><div class="dot red"></div>
+      <div><div class="num">${counts[1]}</div><div class="lbl">紅燈 / 卡關</div></div></div>
+    <div class="kpi"><div class="dot gray"></div>
+      <div><div class="num">${counts[0]}</div><div class="lbl">未開始</div></div></div>
+    <div class="kpi" style="flex-basis:100%">
+      <div style="flex:1">
+        <div class="lbl">整體達成率 (綠燈 / 總項目)</div>
+        <div class="progress"><span style="width:${pct}%"></span></div>
+      </div>
+      <div class="num">${pct}%</div>
+    </div>`;
+}
+
+function milestoneStats(m) {
+  let total = 0, done = 0, red = 0;
+  for (const g of m.groups) for (const it of g.items) {
+    total++;
+    const s = (curStation()[it.id] && curStation()[it.id].status) || 0;
+    if (s === 3) done++;
+    if (s === 1) red++;
+  }
+  return { total, done, red, pct: total ? Math.round((done/total)*100) : 0 };
+}
+
+function renderBoard() {
+  const board = $("board");
+  board.innerHTML = "";
+  for (const m of SCHEMA) {
+    const stats = milestoneStats(m);
+    const sec = document.createElement("section");
+    sec.className = "milestone";
+    const pill = stats.red > 0
+      ? `<span class="pill" style="color:var(--red);border-color:var(--red)">${stats.red} 紅燈</span>`
+      : (stats.done === stats.total
+          ? `<span class="pill" style="color:var(--green);border-color:var(--green)">全綠</span>`
+          : `<span class="pill">${stats.done}/${stats.total}</span>`);
+    sec.innerHTML = `
+      <header>
+        <h2>${m.name}</h2>
+        ${pill}
+        <span class="pct">${stats.pct}%</span>
+      </header>
+      <div class="sub" style="margin-top:2px">${m.desc}</div>
+      <div class="groups"></div>`;
+    const groupsEl = sec.querySelector(".groups");
+    for (const g of m.groups) {
+      const gEl = document.createElement("div");
+      gEl.className = "group";
+      gEl.innerHTML = `<h3>${g.name}</h3><ul class="items"></ul>`;
+      const ul = gEl.querySelector("ul");
+      for (const it of g.items) {
+        const cur = curStation()[it.id] || { status: 0, note: "" };
+        const li = document.createElement("li");
+        li.innerHTML = `
+          <button class="light" data-st="${cur.status}" data-id="${it.id}"
+                  title="${STATUSES[cur.status].label}（點擊切換）" aria-label="切換狀態：${it.text}"></button>
+          <span class="label">${it.text}</span>
+          <span class="note" data-note-for="${it.id}">${cur.note ? cur.note : ""}</span>
+          <button class="note-btn" data-note-id="${it.id}">備註</button>`;
+        ul.appendChild(li);
+      }
+      groupsEl.appendChild(gEl);
+    }
+    board.appendChild(sec);
+  }
+  bindBoardEvents();
+}
+
+function bindBoardEvents() {
+  document.querySelectorAll(".light").forEach(b => {
+    b.addEventListener("click", () => {
+      const id = b.dataset.id;
+      const cur = (curStation()[id] && curStation()[id].status) || 0;
+      const next = (cur + 1) % 4;
+      setItem(id, { status: next });
+      b.dataset.st = String(next);
+      b.title = STATUSES[next].label + "（點擊切換）";
+      renderSummary();
+      // refresh milestone header counts
+      renderBoardHeadersOnly();
+    });
+  });
+  document.querySelectorAll(".note-btn").forEach(b => {
+    b.addEventListener("click", () => {
+      const id = b.dataset.noteId;
+      const cur = curStation()[id] || { status: 0, note: "" };
+      const v = prompt("備註 / 數值 / 連結：", cur.note || "");
+      if (v === null) return;
+      setItem(id, { note: v });
+      const span = document.querySelector(`[data-note-for="${id}"]`);
+      if (span) span.textContent = v;
+    });
+  });
+}
+function renderBoardHeadersOnly() {
+  // lightweight refresh of section pill/pct without rebuilding lists
+  const sections = document.querySelectorAll("section.milestone");
+  SCHEMA.forEach((m, idx) => {
+    const sec = sections[idx]; if (!sec) return;
+    const stats = milestoneStats(m);
+    const header = sec.querySelector("header");
+    const pillHtml = stats.red > 0
+      ? `<span class="pill" style="color:var(--red);border-color:var(--red)">${stats.red} 紅燈</span>`
+      : (stats.done === stats.total
+          ? `<span class="pill" style="color:var(--green);border-color:var(--green)">全綠</span>`
+          : `<span class="pill">${stats.done}/${stats.total}</span>`);
+    header.innerHTML = `<h2>${m.name}</h2>${pillHtml}<span class="pct">${stats.pct}%</span>`;
+  });
+}
+
+function renderAll() {
+  renderStationSelect();
+  renderSummary();
+  renderBoard();
+}
+
+/* ---------- Topbar actions ---------- */
+$("stationSel").addEventListener("change", (e) => {
+  store.current = e.target.value; saveStore(); renderAll();
+});
+$("addStation").addEventListener("click", () => {
+  const name = $("newStation").value.trim();
+  if (!name) return;
+  if (!store.stations[name]) store.stations[name] = {};
+  store.current = name; $("newStation").value = ""; saveStore(); renderAll();
+});
+$("delStation").addEventListener("click", () => {
+  const name = store.current;
+  if (!name) return;
+  if (!confirm(`刪除 station「${name}」的所有點燈狀態？`)) return;
+  delete store.stations[name];
+  const remain = Object.keys(store.stations);
+  store.current = remain[0] || null;
+  if (!store.current) {
+    store.stations["ColdPlate 4"] = {}; store.current = "ColdPlate 4";
+  }
+  saveStore(); renderAll();
+});
+$("resetBtn").addEventListener("click", () => {
+  if (!confirm(`清除 station「${store.current}」全部狀態？`)) return;
+  store.stations[store.current] = {}; saveStore(); renderAll();
+});
+$("exportBtn").addEventListener("click", () => {
+  const blob = new Blob([JSON.stringify(store, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const ts = new Date().toISOString().replace(/[:.]/g,"-");
+  a.href = url; a.download = `liquidjet-manage-${ts}.json`;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 0);
+});
+$("importBtn").addEventListener("click", () => $("importFile").click());
+$("importFile").addEventListener("change", (e) => {
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const obj = JSON.parse(r.result);
+      if (!obj || typeof obj !== "object" || !obj.stations) throw new Error("格式不符");
+      store = { current: obj.current || Object.keys(obj.stations)[0] || null, stations: obj.stations };
+      if (!store.current) { store.stations["ColdPlate 4"] = {}; store.current = "ColdPlate 4"; }
+      saveStore(); renderAll();
+      alert("匯入完成。");
+    } catch (err) { alert("匯入失敗：" + err.message); }
+    finally { e.target.value = ""; }
+  };
+  r.readAsText(f);
+});
+
+/* ---------- Boot ---------- */
+renderAll();
+
+const ts = "__BUILD_TS__";
+const el = document.getElementById("buildInfo");
+if (el && !ts.startsWith("__")) el.textContent = "Built " + ts;
+</script>
+</body>
+</html>
