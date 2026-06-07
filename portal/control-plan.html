@@ -2,30 +2,44 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8" />
-<title>LiquidJet · Control Plan</title>
+<title>LiquidJet · Control Plan 點燈</title>
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<meta name="description" content="LiquidJet Control Plan — First Principles v2 框架視覺化頁面。" />
+<meta name="description" content="LiquidJet Control Plan 點燈框架 — Stations × Milestones (First Principles v2)。" />
 <style>
   :root {
     color-scheme: light dark;
     --bg:#0f1115; --panel:#161a22; --panel2:#1e2330; --border:#2a3142;
     --text:#e6e9ef; --muted:#8a93a6;
     --accent:#4f8cff; --accent2:#38d39f; --accent3:#f3b54a;
+
+    /* Milestone colors — 對齊 Benden-NPI/Yield constants.ts */
+    --ms-movein:#1F2937;
+    --ms-setup:#FFC000;
+    --ms-tuning:#F59E0B;
+    --ms-qualify:#10B981;
+
+    /* Status colors */
+    --st-todo:#6b7280;
+    --st-draft:#FFC000;
+    --st-ready:#10B981;
+    --st-excursion:#ef4444;
   }
   @media (prefers-color-scheme: light) {
     :root { --bg:#f6f7fb; --panel:#fff; --panel2:#f0f2f7; --border:#dde2ea; --text:#1c2230; --muted:#5b6478; }
   }
   * { box-sizing:border-box; }
   html, body { margin:0; min-height:100%; background:var(--bg); color:var(--text);
-    font-family:-apple-system,Segoe UI,Roboto,"PingFang TC","Noto Sans TC",sans-serif; line-height:1.6; }
+    font-family:-apple-system,Segoe UI,Roboto,"PingFang TC","Noto Sans TC",sans-serif; line-height:1.55; }
   body {
     background:
       radial-gradient(1200px 500px at 20% -10%, rgba(243,181,74,.14), transparent 60%),
       radial-gradient(900px 500px at 100% 0%, rgba(79,140,255,.12), transparent 60%),
       var(--bg);
   }
-  .wrap { max-width:1080px; margin:0 auto; padding:32px 24px 64px; }
-  .topbar { display:flex; align-items:center; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+  .wrap { max-width:1240px; margin:0 auto; padding:28px 24px 64px; }
+
+  /* Top bar */
+  .topbar { display:flex; align-items:center; gap:12px; margin-bottom:18px; flex-wrap:wrap; }
   .topbar a.back { color:var(--muted); text-decoration:none; font-size:13px;
     padding:6px 10px; border:1px solid var(--border); border-radius:8px; background:var(--panel2); }
   .topbar a.back:hover { border-color:var(--accent); color:var(--text); }
@@ -36,38 +50,95 @@
     background:var(--panel2); border:1px solid var(--border); color:var(--muted); }
   .badge.live { color:var(--accent3); border-color:var(--accent3); }
 
-  article.doc {
+  h1 { margin:0 0 6px; font-size:24px; letter-spacing:.3px; }
+  .sub { color:var(--muted); font-size:13.5px; margin:0 0 22px; }
+
+  /* Section card */
+  section.card {
     background:var(--panel); border:1px solid var(--border); border-radius:14px;
-    padding:28px 32px; overflow-x:auto;
+    padding:20px 22px; margin-bottom:18px;
   }
-  article.doc h1 { margin:0 0 12px; font-size:26px; letter-spacing:.3px; }
-  article.doc h2 { margin:28px 0 10px; font-size:18px; padding-bottom:6px; border-bottom:1px solid var(--border); }
-  article.doc h3 { margin:22px 0 8px; font-size:15px; color:var(--muted); letter-spacing:.4px; text-transform:uppercase; font-weight:600; }
-  article.doc p, article.doc li { font-size:14.5px; }
-  article.doc code { background:var(--panel2); padding:1px 6px; border-radius:5px; font-size:13px;
-    border:1px solid var(--border); }
-  article.doc pre { background:var(--panel2); padding:14px 16px; border-radius:10px; overflow:auto;
-    border:1px solid var(--border); }
-  article.doc pre code { background:transparent; border:0; padding:0; }
-  article.doc a { color:var(--accent); }
-  article.doc blockquote { margin:14px 0; padding:10px 14px; border-left:3px solid var(--accent3);
-    background:var(--panel2); border-radius:0 8px 8px 0; color:var(--text); }
-  article.doc hr { border:0; border-top:1px solid var(--border); margin:24px 0; }
-  article.doc ul, article.doc ol { padding-left:22px; }
-  article.doc li { margin:4px 0; }
-  article.doc input[type=checkbox] { margin-right:6px; accent-color:var(--accent2); }
+  section.card > h2 {
+    margin:0 0 12px; font-size:15px; color:var(--muted);
+    letter-spacing:.4px; text-transform:uppercase; font-weight:600;
+    display:flex; align-items:center; gap:10px;
+  }
+  section.card > h2 .count { font-size:11.5px; color:var(--muted);
+    padding:2px 8px; border:1px solid var(--border); border-radius:99px;
+    background:var(--panel2); text-transform:none; letter-spacing:0; }
 
-  /* Tables — control plan has wide tables; allow horizontal scroll */
-  article.doc table { border-collapse:collapse; width:100%; margin:14px 0; font-size:13px;
-    display:block; overflow-x:auto; }
-  article.doc thead { background:var(--panel2); }
-  article.doc th, article.doc td { border:1px solid var(--border); padding:8px 10px; text-align:left;
-    vertical-align:top; min-width:90px; }
-  article.doc th { color:var(--muted); font-weight:600; letter-spacing:.3px; }
+  /* Notice */
+  .notice {
+    display:flex; gap:10px; align-items:flex-start;
+    padding:10px 14px; border-radius:10px; margin-bottom:18px;
+    background:rgba(243,181,74,.10); border:1px solid rgba(243,181,74,.45);
+    color:var(--text); font-size:13px;
+  }
+  .notice b { color:var(--accent3); }
 
-  footer { margin-top:32px; color:var(--muted); font-size:12px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
-  #fallback { display:none; padding:14px; border-radius:10px; background:var(--panel2);
-    border:1px solid var(--border); margin-bottom:16px; font-size:13px; color:var(--muted); }
+  /* Legend */
+  .legend { display:flex; flex-wrap:wrap; gap:14px; }
+  .legend .item { display:inline-flex; align-items:center; gap:6px; font-size:12.5px; color:var(--muted); }
+  .dot { width:11px; height:11px; border-radius:50%; display:inline-block; }
+  .dot.todo      { background:var(--st-todo); }
+  .dot.draft     { background:var(--st-draft); }
+  .dot.ready     { background:var(--st-ready); }
+  .dot.excursion { background:var(--st-excursion); }
+  .ms-chip { display:inline-block; padding:2px 8px; border-radius:6px; font-size:11.5px; font-weight:600;
+    color:#fff; letter-spacing:.3px; }
+  .ms-chip.setup    { background:var(--ms-setup); color:#3a2900; }
+  .ms-chip.tuning   { background:var(--ms-tuning); }
+  .ms-chip.qualify  { background:var(--ms-qualify); }
+
+  /* Matrix */
+  .matrix-scroll { overflow-x:auto; }
+  table.matrix { border-collapse:separate; border-spacing:0; width:100%; font-size:13px; }
+  table.matrix th, table.matrix td {
+    border-bottom:1px solid var(--border); padding:10px 12px; text-align:left; vertical-align:middle;
+  }
+  table.matrix thead th { color:var(--muted); font-weight:600; font-size:11.5px;
+    text-transform:uppercase; letter-spacing:.4px; background:var(--panel2);
+    position:sticky; top:0; }
+  table.matrix tbody tr:hover { background:var(--panel2); }
+  table.matrix td.station { font-weight:600; white-space:nowrap; }
+  table.matrix td.type-tag { color:var(--muted); font-size:11.5px; }
+  table.matrix .ms-cell { text-align:center; min-width:120px; }
+  .light {
+    display:inline-flex; align-items:center; justify-content:center; gap:6px;
+    padding:5px 10px; border-radius:99px; font-size:12px; color:var(--text);
+    background:var(--panel2); border:1px solid var(--border); min-width:96px;
+    cursor:default; user-select:none;
+  }
+  .light .dot { box-shadow:0 0 0 3px rgba(255,255,255,.04); }
+  .light.todo      { border-color:rgba(107,114,128,.45); color:var(--muted); }
+  .light.draft     { border-color:rgba(255,192,0,.6); color:var(--accent3); }
+  .light.ready     { border-color:rgba(16,185,129,.55); color:var(--accent2); }
+  .light.excursion { border-color:rgba(239,68,68,.55); color:#ff8b8b; }
+  .light .n { opacity:.7; font-variant-numeric:tabular-nums; }
+
+  /* Group divider row */
+  tr.group td { background:var(--panel2); color:var(--muted); font-size:11.5px;
+    text-transform:uppercase; letter-spacing:.6px; font-weight:600; padding:6px 12px; }
+
+  /* Holistic + audit */
+  ul.checklist { list-style:none; padding:0; margin:0; display:grid; gap:8px; }
+  ul.checklist li { display:flex; gap:10px; align-items:flex-start;
+    padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:var(--panel2);
+    font-size:13.5px; }
+  ul.checklist input[type=checkbox] { margin-top:3px; accent-color:var(--accent2); }
+  ul.checklist .lbl { flex:1; }
+  ul.checklist .lbl .hint { display:block; color:var(--muted); font-size:12px; margin-top:2px; }
+
+  ol.audit { padding-left:22px; margin:0; display:grid; gap:6px; font-size:13.5px; }
+  ol.audit li { padding:4px 0; }
+  ol.audit li code { background:var(--panel2); padding:1px 6px; border-radius:5px; font-size:12px;
+    border:1px solid var(--border); }
+
+  /* Footer */
+  footer { margin-top:24px; color:var(--muted); font-size:12px;
+    display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+  footer a { color:var(--muted); }
+  footer a:hover { color:var(--accent); }
 </style>
 </head>
 <body>
@@ -75,61 +146,197 @@
 
   <div class="topbar">
     <a class="back" href="./../index.html">← Portal</a>
-    <span class="badge live">● Control Plan</span>
+    <span class="badge live">● Control Plan 點燈</span>
     <div class="spacer"></div>
-    <a class="src" href="https://github.com/Benden-NPI/LiquidJet-Project-Visualization/blob/main/scope/control-plan.md" target="_blank" rel="noopener">View source on GitHub ↗</a>
+    <a class="src" href="https://github.com/Benden-NPI/LiquidJet-Project-Visualization/blob/main/scope/control-plan.md" target="_blank" rel="noopener">View spec ↗</a>
   </div>
 
-  <div id="fallback">
-    無法載入 Markdown 渲染器（marked.js）。請改至
-    <a href="https://github.com/Benden-NPI/LiquidJet-Project-Visualization/blob/main/scope/control-plan.md" target="_blank" rel="noopener">GitHub 原始檔</a>
-    閱讀。
+  <h1>Control Plan 點燈框架 <span style="color:var(--muted); font-weight:400; font-size:15px;">v1 — first sketch</span></h1>
+  <p class="sub">
+    Stations × Milestones 對齊矩陣。每一格 = 該 station 在該 milestone 之前該長出的 control 是否就緒。
+    站點順序對齊 <a href="https://benden-npi.github.io/Yield/" target="_blank" rel="noopener" style="color:var(--accent)">Yield Process Readiness</a> 看板。
+  </p>
+
+  <div class="notice">
+    <span>⚠️</span>
+    <div>
+      <b>第一版說明</b>：站點清單與每格狀態目前為 placeholder。
+      正式對齊時請編輯本檔頂端的 <code>STATIONS</code> 與 <code>STATUS</code> 兩個 JS 物件
+      （Yield 站點是 SharePoint xlsx 動態載入，無法 build-time 同步）。
+    </div>
   </div>
 
-  <article class="doc" id="doc">Loading…</article>
+  <!-- Legend -->
+  <section class="card">
+    <h2>圖例 <span class="count">Legend</span></h2>
+    <div style="display:grid; gap:10px;">
+      <div class="legend">
+        <span class="item"><span class="dot todo"></span>未設定 <span style="opacity:.6;">no control yet</span></span>
+        <span class="item"><span class="dot draft"></span>草擬中 <span style="opacity:.6;">drafted / MSA pending</span></span>
+        <span class="item"><span class="dot ready"></span>已就緒 <span style="opacity:.6;">control live + gate passed</span></span>
+        <span class="item"><span class="dot excursion"></span>異常 <span style="opacity:.6;">excursion / blocker</span></span>
+      </div>
+      <div class="legend">
+        <span class="item">Milestone：</span>
+        <span class="item"><span class="ms-chip setup">Setup</span>站點接線、首件可跑</span>
+        <span class="item"><span class="ms-chip tuning">Tuning</span>tuningCriteria 過關</span>
+        <span class="item"><span class="ms-chip qualify">Qualify</span>qualifyCriteria + holistic 全綠</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Matrix -->
+  <section class="card">
+    <h2>Station × Milestone 矩陣 <span class="count" id="matrixCount">—</span></h2>
+    <div class="matrix-scroll">
+      <table class="matrix" id="matrix">
+        <thead>
+          <tr>
+            <th style="width:24%;">Station</th>
+            <th style="width:14%;">Type</th>
+            <th class="ms-cell"><span class="ms-chip setup">Setup</span></th>
+            <th class="ms-cell"><span class="ms-chip tuning">Tuning</span></th>
+            <th class="ms-cell"><span class="ms-chip qualify">Qualify</span></th>
+          </tr>
+        </thead>
+        <tbody><!-- rendered by JS --></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Holistic Layer -->
+  <section class="card">
+    <h2>Holistic Layer <span class="count">Qualify 強制 Exit Criteria</span></h2>
+    <ul class="checklist">
+      <li><input type="checkbox" disabled><span class="lbl"><b>Traceability</b><span class="hint">每顆成品可回查批號 / 機台 / 作業者 / 量測值 / 時間戳。</span></span></li>
+      <li><input type="checkbox" disabled><span class="lbl"><b>4M Change Control</b><span class="hint">4M 變更觸發 FAI / 重新驗證流程文件已發行。</span></span></li>
+      <li><input type="checkbox" disabled><span class="lbl"><b>Excursion / Recovery</b><span class="hint">停線、重工、返修流程已寫且演練過。</span></span></li>
+      <li><input type="checkbox" disabled><span class="lbl"><b>Data Loop</b><span class="hint">量測 → SPC → CAPA → 設計回饋已閉環，至少跑過一次真實案例。</span></span></li>
+    </ul>
+  </section>
+
+  <!-- Self-audit -->
+  <section class="card">
+    <h2>Self-audit <span class="count">每週 5 分鐘，逐 station</span></h2>
+    <ol class="audit">
+      <li>目前 milestone = ？下一個 milestone exit criteria 全部列得出來嗎？</li>
+      <li>Move-in/Setup/Tuning/Qualify 該長出的元件，有沒有「不確定」？</li>
+      <li>該 station PFMEA 高 RPN cause，是否都對到 control plan 一行？</li>
+      <li>每行 control 是否都對到 FMEA cause 且標明 milestone 歸屬？</li>
+      <li><code>tuningCriteria</code> / <code>qualifyCriteria</code> 字串背後完整定義，是否在 <code>scope/tuning-qualify-criteria.md</code> 找得到？</li>
+      <li>三 owner（SurveyTool / EE / NPI）上週是否各看過一次？任何一位空白？</li>
+      <li>上週的 NG / 異常是否都進到 CAPA 或 SPC 看板？</li>
+    </ol>
+  </section>
 
   <footer>
     <span>© Benden NPI · LiquidJet</span>
+    <span>
+      <a href="https://github.com/Benden-NPI/LiquidJet-Project-Visualization/blob/main/scope/control-plan.md" target="_blank" rel="noopener">spec</a>
+      ·
+      <a href="https://github.com/Benden-NPI/LiquidJet-Project-Visualization/blob/main/decisions/0002-control-plan-framework.md" target="_blank" rel="noopener">ADR-0002</a>
+      ·
+      <a href="https://benden-npi.github.io/Yield/" target="_blank" rel="noopener">Yield</a>
+    </span>
     <span id="buildInfo">—</span>
   </footer>
 </div>
 
-<!-- Markdown source injected at build time as a JSON string literal -->
-<script>window.__CONTROL_PLAN_MD__ = __CONTROL_PLAN_MD_JSON__;</script>
-
-<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"
-        crossorigin="anonymous"
-        onerror="document.getElementById('fallback').style.display='block';"></script>
 <script>
-  (function () {
-    var src = window.__CONTROL_PLAN_MD__ || "";
-    var target = document.getElementById("doc");
-    if (typeof marked === "undefined") {
-      document.getElementById("fallback").style.display = "block";
-      target.innerHTML = "<pre>" + src.replace(/[&<>]/g, function (c) {
-        return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c];
-      }) + "</pre>";
-      return;
-    }
-    marked.setOptions({ gfm: true, breaks: false });
-    target.innerHTML = marked.parse(src);
-    // Render GFM task-list checkboxes as actual disabled checkboxes
-    target.querySelectorAll("li").forEach(function (li) {
-      var t = li.firstChild;
-      if (!t || t.nodeType !== 3) return;
-      var m = t.textContent.match(/^\s*\[( |x|X)\]\s+/);
-      if (!m) return;
-      var checked = m[1].toLowerCase() === "x";
-      t.textContent = t.textContent.slice(m[0].length);
-      var cb = document.createElement("input");
-      cb.type = "checkbox"; cb.disabled = true; cb.checked = checked;
-      li.insertBefore(cb, t);
-    });
-  })();
+  // -------------------------------------------------------------------------
+  // STATIONS — 對齊 Yield Process Readiness 看板的順序與命名
+  // 格式：{ name, type }，type ∈ "coldplate" | "loop"
+  // 這是 placeholder；正式請由 NPI 對齊真實 Yield 表格後更新。
+  // -------------------------------------------------------------------------
+  const STATIONS = [
+    { name: "ColdPlate 1", type: "coldplate" },
+    { name: "ColdPlate 2", type: "coldplate" },
+    { name: "ColdPlate 3", type: "coldplate" },
+    { name: "ColdPlate 4", type: "coldplate" },
+    { name: "ColdPlate 5", type: "coldplate" },
+    { name: "ColdPlate 6", type: "coldplate" },
+    { name: "Assembly 1",  type: "loop" },
+    { name: "Assembly 2",  type: "loop" },
+    { name: "Assembly 3",  type: "loop" },
+  ];
 
-  var ts = "__BUILD_TS__";
-  var el = document.getElementById("buildInfo");
-  if (el && !ts.startsWith("__")) el.textContent = "Built " + ts;
+  // -------------------------------------------------------------------------
+  // STATUS — 每個 station × milestone 的狀態與 control 行數
+  // status: "todo" | "draft" | "ready" | "excursion"
+  // n:      該格目前已掛上的 control 行數（用於右側小數字）
+  // 預設全 todo / n=0；之後可由人工或從 control-plan.md 解析填入。
+  // -------------------------------------------------------------------------
+  const STATUS = {
+    // 範例：對齊 control-plan.md 中 ColdPlate 4 的三條範例 control
+    "ColdPlate 4": {
+      setup:   { status: "ready", n: 1 },   // torque poka-yoke (Setup)
+      tuning:  { status: "draft", n: 1 },   // flow interlock (Tuning)
+      qualify: { status: "todo",  n: 1 },   // flatness CMM (Qualify)
+    },
+  };
+
+  const MILESTONES = [
+    { key: "setup",   label: "Setup" },
+    { key: "tuning",  label: "Tuning" },
+    { key: "qualify", label: "Qualify" },
+  ];
+
+  const STATUS_DEFS = {
+    todo:      { label: "未設定", cls: "todo" },
+    draft:     { label: "草擬中", cls: "draft" },
+    ready:     { label: "已就緒", cls: "ready" },
+    excursion: { label: "異常",   cls: "excursion" },
+  };
+
+  function getCell(station, msKey) {
+    const row = STATUS[station] || {};
+    const cell = row[msKey] || { status: "todo", n: 0 };
+    return cell;
+  }
+
+  function renderMatrix() {
+    const tbody = document.querySelector("#matrix tbody");
+    const groups = [
+      { key: "coldplate", label: "ColdPlate stations" },
+      { key: "loop",      label: "Loop / Assembly stations" },
+    ];
+    let html = "";
+    for (const g of groups) {
+      const rows = STATIONS.filter(s => s.type === g.key);
+      if (!rows.length) continue;
+      html += `<tr class="group"><td colspan="5">${g.label} · ${rows.length}</td></tr>`;
+      for (const s of rows) {
+        html += `<tr><td class="station">${s.name}</td><td class="type-tag">${s.type}</td>`;
+        for (const m of MILESTONES) {
+          const c = getCell(s.name, m.key);
+          const def = STATUS_DEFS[c.status] || STATUS_DEFS.todo;
+          html += `<td class="ms-cell"><span class="light ${def.cls}" title="${s.name} · ${m.label}: ${def.label}">`
+               + `<span class="dot ${def.cls}"></span>${def.label}`
+               + (c.n ? `<span class="n">· ${c.n}</span>` : "")
+               + `</span></td>`;
+        }
+        html += `</tr>`;
+      }
+    }
+    tbody.innerHTML = html;
+
+    // count summary
+    let total = STATIONS.length * MILESTONES.length;
+    let ready = 0;
+    for (const s of STATIONS) for (const m of MILESTONES)
+      if (getCell(s.name, m.key).status === "ready") ready++;
+    document.getElementById("matrixCount").textContent =
+      `${STATIONS.length} stations · ${ready}/${total} ready`;
+  }
+
+  renderMatrix();
+
+  // build timestamp (replaced at build time)
+  (function () {
+    var ts = "__BUILD_TS__";
+    var el = document.getElementById("buildInfo");
+    if (el && !ts.startsWith("__")) el.textContent = "Built " + ts;
+  })();
 </script>
 </body>
 </html>
