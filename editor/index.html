@@ -704,7 +704,7 @@ const LocalAdapter = {
     const r = await fetch("/api/files");
     if (!r.ok) throw new Error("local API unavailable");
     const { files } = await r.json();
-    return files;
+    return files.map((name) => ({ name }));
   },
   async read(path) {
     const r = await fetch("/api/file?path=" + encodeURIComponent(path));
@@ -720,7 +720,7 @@ const LocalAdapter = {
     if (!r.ok) throw new Error("write failed");
     return r.json();
   },
-  async remove(path) {
+  async remove(path /* sha unused on local */) {
     const r = await fetch("/api/file?path=" + encodeURIComponent(path), { method: "DELETE" });
     if (!r.ok) throw new Error("delete failed");
     return r.json();
@@ -760,8 +760,8 @@ const GitHubAdapter = {
     if (!Array.isArray(list)) return [];
     return list
       .filter(f => f.type === "file" && /\.(mmd|json|md)$/i.test(f.name))
-      .map(f => f.name)
-      .sort();
+      .map(f => ({ name: f.name, sha: f.sha }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   },
   async read(path) {
     const { repo, branch, dir } = gh();
@@ -793,14 +793,25 @@ const GitHubAdapter = {
     });
     return { ok: true, path, sha: out.content?.sha };
   },
-  async remove(path) {
+  async remove(path, sha) {
     const { repo, branch, dir } = gh();
     const full = `${dir}/${path}`;
-    const cur = await ghFetch(`https://api.github.com/repos/${repo}/contents/${encodeURIComponent(full).replace(/%2F/g,"/")}?ref=${encodeURIComponent(branch)}`);
-    if (Array.isArray(cur) || !cur?.sha) throw new Error("not a file: " + path);
+    // Resolve sha if caller didn't supply one. Use the directory listing
+    // rather than a per-file GET because GitHub's per-file content cache
+    // can briefly 404 right after a write.
+    if (!sha) {
+      try {
+        const list = await ghFetch(`https://api.github.com/repos/${repo}/contents/${encodeURIComponent(dir)}?ref=${encodeURIComponent(branch)}`);
+        if (Array.isArray(list)) {
+          const hit = list.find(f => f.type === "file" && f.name === path);
+          if (hit) sha = hit.sha;
+        }
+      } catch {}
+    }
+    if (!sha) throw new Error("找不到檔案 sha，請重整後再試。");
     await ghFetch(`https://api.github.com/repos/${repo}/contents/${encodeURIComponent(full).replace(/%2F/g,"/")}`, {
       method: "DELETE",
-      body: JSON.stringify({ message: `editor: delete ${path}`, branch, sha: cur.sha }),
+      body: JSON.stringify({ message: `editor: delete ${path}`, branch, sha }),
     });
     return { ok: true, path };
   },
@@ -837,7 +848,8 @@ async function refreshFileList() {
     el2.appendChild(d);
     return;
   }
-  for (const f of files) {
+  for (const entry of files) {
+    const f = entry.name;
     const d = document.createElement("div");
     d.className = "file" + (f === currentFile ? " active" : "");
     const dirtyMark = (f === currentFile && isDirty()) ? '<span class="dirty">●</span>' : '';
@@ -848,17 +860,17 @@ async function refreshFileList() {
     };
     d.querySelector(".del").onclick = (e) => {
       e.stopPropagation();
-      deleteFile(f);
+      deleteFile(f, entry.sha);
     };
     el2.appendChild(d);
   }
 }
 
-async function deleteFile(path) {
+async function deleteFile(path, sha) {
   if (!storage.remove) { alert("此儲存後端不支援刪除。"); return; }
   if (!confirm(`確定要刪除「${path}」？此動作無法復原。`)) return;
   try {
-    await storage.remove(path);
+    await storage.remove(path, sha);
   } catch (e) {
     alert("刪除失敗：" + e.message);
     return;
