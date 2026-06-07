@@ -35,10 +35,14 @@
 
   aside { background:var(--panel); border-right:1px solid var(--border); overflow:auto; padding:8px; }
   aside .group { padding:6px 6px 4px; font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; }
-  aside .file { padding:7px 10px; border-radius:6px; cursor:pointer; font-size:13px; word-break:break-all; display:flex; justify-content:space-between; gap:6px; }
+  aside .file { padding:7px 10px; border-radius:6px; cursor:pointer; font-size:13px; word-break:break-all; display:flex; justify-content:space-between; align-items:center; gap:6px; }
   aside .file:hover { background:var(--panel2); }
   aside .file.active { background:var(--accent); color:#fff; }
   aside .file .dirty { color:var(--warn); font-weight:700; }
+  aside .file .name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+  aside .file .del { opacity:0; border:none; background:transparent; color:inherit; cursor:pointer; padding:0 4px; font-size:14px; line-height:1; border-radius:4px; }
+  aside .file:hover .del { opacity:.55; }
+  aside .file .del:hover { opacity:1; background:var(--danger); color:#fff; }
   aside .new { width:100%; margin-top:8px; }
   aside input { width:100%; background:var(--panel2); border:1px solid var(--border); border-radius:6px; padding:6px 8px; font-size:13px; }
 
@@ -716,6 +720,11 @@ const LocalAdapter = {
     if (!r.ok) throw new Error("write failed");
     return r.json();
   },
+  async remove(path) {
+    const r = await fetch("/api/file?path=" + encodeURIComponent(path), { method: "DELETE" });
+    if (!r.ok) throw new Error("delete failed");
+    return r.json();
+  },
 };
 
 // --- GitHub Contents API adapter ---
@@ -784,6 +793,17 @@ const GitHubAdapter = {
     });
     return { ok: true, path, sha: out.content?.sha };
   },
+  async remove(path) {
+    const { repo, branch, dir } = gh();
+    const full = `${dir}/${path}`;
+    const cur = await ghFetch(`https://api.github.com/repos/${repo}/contents/${encodeURIComponent(full).replace(/%2F/g,"/")}?ref=${encodeURIComponent(branch)}`);
+    if (Array.isArray(cur) || !cur?.sha) throw new Error("not a file: " + path);
+    await ghFetch(`https://api.github.com/repos/${repo}/contents/${encodeURIComponent(full).replace(/%2F/g,"/")}`, {
+      method: "DELETE",
+      body: JSON.stringify({ message: `editor: delete ${path}`, branch, sha: cur.sha }),
+    });
+    return { ok: true, path };
+  },
   async test() {
     const { repo, branch } = gh();
     await ghFetch(`https://api.github.com/repos/${repo}/branches/${encodeURIComponent(branch)}`);
@@ -820,10 +840,36 @@ async function refreshFileList() {
   for (const f of files) {
     const d = document.createElement("div");
     d.className = "file" + (f === currentFile ? " active" : "");
-    d.innerHTML = `<span>${f}</span>${(f===currentFile && isDirty())?'<span class="dirty">●</span>':''}`;
-    d.onclick = () => openFile(f);
+    const dirtyMark = (f === currentFile && isDirty()) ? '<span class="dirty">●</span>' : '';
+    d.innerHTML = `<span class="name">${f}</span>${dirtyMark}<button class="del" title="刪除檔案">✕</button>`;
+    d.onclick = (e) => {
+      if (e.target.closest(".del")) return;
+      openFile(f);
+    };
+    d.querySelector(".del").onclick = (e) => {
+      e.stopPropagation();
+      deleteFile(f);
+    };
     el2.appendChild(d);
   }
+}
+
+async function deleteFile(path) {
+  if (!storage.remove) { alert("此儲存後端不支援刪除。"); return; }
+  if (!confirm(`確定要刪除「${path}」？此動作無法復原。`)) return;
+  try {
+    await storage.remove(path);
+  } catch (e) {
+    alert("刪除失敗：" + e.message);
+    return;
+  }
+  if (currentFile === path) {
+    currentFile = null;
+    savedSnapshot = snapshot();
+    $("fname").value = path.replace(/\.(mmd|json|md)$/i, "");
+  }
+  await refreshFileList();
+  updateStatus();
 }
 
 function isDirty() { return snapshot() !== savedSnapshot; }

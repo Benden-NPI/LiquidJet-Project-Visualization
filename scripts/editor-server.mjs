@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 // Tiny local editor server for mindmaps/*.mmd
-// GET  /              -> editor SPA (editor/index.html)
-// GET  /api/files     -> list of .mmd files
-// GET  /api/file?path -> raw file content
-// POST /api/file      -> { path, content }  saves file
+// GET    /              -> editor SPA (editor/index.html)
+// GET    /api/files     -> list of .mmd files
+// GET    /api/file?path -> raw file content
+// POST   /api/file      -> { path, content }  saves file
+// DELETE /api/file?path -> deletes file
 //
 // Usage: npm run edit  (then open http://localhost:5173)
 import { createServer } from "node:http";
-import { readFile, writeFile, readdir, stat, mkdir } from "node:fs/promises";
+import { readFile, writeFile, readdir, stat, mkdir, unlink } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join, resolve, relative, extname, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -83,6 +84,15 @@ const server = createServer(async (req, res) => {
       await mkdir(dirname(abs), { recursive: true });
       await writeFile(abs, content, "utf-8");
       return json(res, 200, { ok: true, path: rel, bytes: Buffer.byteLength(content) });
+    }
+
+    if (path === "/api/file" && req.method === "DELETE") {
+      const rel = url.searchParams.get("path") ?? "";
+      if (!rel) return json(res, 400, { error: "path required" });
+      const abs = safePath(rel);
+      if (!existsSync(abs)) return json(res, 404, { error: "not found", path: rel });
+      await unlink(abs);
+      return json(res, 200, { ok: true, path: rel });
     }
 
     // --- Static (editor SPA) ---
