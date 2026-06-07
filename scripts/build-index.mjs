@@ -50,7 +50,27 @@ const buildTs = new Date().toISOString();
 const portalHtml = readFileSync(portalSrc, "utf8").replaceAll("__BUILD_TS__", buildTs);
 writeFileSync(join(distDir, "index.html"), portalHtml);
 
+// 3) Render scope/control-plan.md into dist/scope/control-plan.html
+//    The portal template renders the embedded markdown client-side via marked.js.
+const cpTemplate = join(root, "portal", "control-plan.html");
+const cpMarkdown = join(root, "scope", "control-plan.md");
+let controlPlanCount = 0;
+if (existsSync(cpTemplate) && existsSync(cpMarkdown)) {
+  const tpl = readFileSync(cpTemplate, "utf8");
+  // Escape any `</` to `<\/` so a stray `</script>` inside the markdown
+  // cannot terminate the embedding <script id="md-source"> tag.
+  const mdRaw = readFileSync(cpMarkdown, "utf8").replaceAll("</", "<\\/");
+  const html = tpl
+    .replaceAll("__CONTROL_PLAN_MD__", mdRaw)
+    .replaceAll("__BUILD_TS__", buildTs);
+  const outPath = join(distDir, "scope", "control-plan.html");
+  mkdirSync(dirname(outPath), { recursive: true });
+  writeFileSync(outPath, html);
+  controlPlanCount = 1;
+}
+
 console.log(
   `Wrote ${relative(root, join(distDir, "index.html"))} (portal), ` +
-  `${editorCount} editor file(s).`,
+  `${editorCount} editor file(s), ` +
+  `${controlPlanCount} control-plan page(s).`,
 );
