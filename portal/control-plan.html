@@ -685,7 +685,7 @@
       .map(s => ({
         _isPlaceholder: true,
         station: s.name,
-        milestone: ms || "",
+        milestone: ms || "Setup",
         status: "todo",
         id: "", characteristic: "", spec: "", method: "", msa: "",
         sampling: "", control: "", reaction: "", owner: "", pfmea: "",
@@ -701,7 +701,7 @@
     const proc  = sm?.processStep || "";
     const msHtml = c.milestone
       ? `<span class="chip ms-${c.milestone}">${c.milestone}</span>`
-      : `<span style="color:var(--muted)">—</span>`;
+      : `<span class="chip ms-Setup">Setup</span>`;
     return [
       `<td class="id">${order}</td>`,
       `<td class="id">${esc(type)}</td>`,
