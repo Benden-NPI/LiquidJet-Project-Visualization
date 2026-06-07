@@ -157,6 +157,90 @@
     display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
   footer a { color:var(--muted); }
   footer a:hover { color:var(--accent); }
+
+  /* Settings button */
+  .topbar button.icon-btn {
+    background:var(--panel2); border:1px solid var(--border); color:var(--muted);
+    padding:6px 10px; border-radius:8px; font-size:13px; cursor:pointer;
+    font-family:inherit;
+  }
+  .topbar button.icon-btn:hover { border-color:var(--accent); color:var(--text); }
+
+  /* Source pill (override indicator) */
+  .ssot .source-pill {
+    background:var(--panel2); border:1px solid var(--border); padding:2px 8px;
+    border-radius:99px; color:var(--muted); font-size:11.5px;
+    display:inline-flex; align-items:center; gap:5px;
+  }
+  .ssot .source-pill.live { color:var(--accent2); border-color:rgba(16,185,129,.55); }
+  .ssot .source-pill.live::before { content:""; width:6px; height:6px; border-radius:50%; background:var(--accent2); }
+  .ssot .source-pill.local::before { content:""; width:6px; height:6px; border-radius:50%; background:var(--muted); }
+
+  /* Orphan warning */
+  .orphan-warn {
+    padding:8px 12px; border-radius:8px; margin-bottom:10px;
+    background:rgba(239,68,68,.10); border:1px solid rgba(239,68,68,.45);
+    color:#ff8b8b; font-size:12.5px;
+  }
+  .orphan-warn b { color:#ff8b8b; }
+
+  /* Settings drawer */
+  .drawer-backdrop {
+    position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:90;
+    opacity:0; pointer-events:none; transition:opacity .15s ease;
+  }
+  .drawer-backdrop.open { opacity:1; pointer-events:auto; }
+  .drawer {
+    position:fixed; top:0; right:0; height:100vh; width:min(460px, 92vw);
+    background:var(--panel); border-left:1px solid var(--border);
+    z-index:91; transform:translateX(110%); transition:transform .2s ease;
+    display:flex; flex-direction:column;
+    box-shadow:-20px 0 40px rgba(0,0,0,.5);
+  }
+  .drawer.open { transform:translateX(0); }
+  .drawer header { padding:18px 20px; border-bottom:1px solid var(--border);
+    display:flex; align-items:center; gap:12px; }
+  .drawer header h2 { margin:0; font-size:16px; flex:1; }
+  .drawer header .close { background:transparent; border:0; color:var(--muted);
+    cursor:pointer; font-size:22px; line-height:1; padding:0 4px; font-family:inherit; }
+  .drawer header .close:hover { color:var(--text); }
+  .drawer .body { padding:18px 20px; overflow-y:auto; flex:1; font-size:13px; }
+  .drawer .body section { margin-bottom:22px; }
+  .drawer .body section h3 { margin:0 0 6px; font-size:12px; color:var(--muted);
+    text-transform:uppercase; letter-spacing:.5px; font-weight:600; }
+  .drawer .body section p.desc { color:var(--muted); font-size:12px; margin:0 0 10px; }
+  .drawer .body input[type=password],
+  .drawer .body input[type=text] {
+    width:100%; background:var(--panel2); border:1px solid var(--border);
+    color:var(--text); padding:8px 10px; border-radius:6px; font-size:12.5px;
+    font-family:ui-monospace,Menlo,Consolas,monospace;
+  }
+  .drawer .body .row-btns { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
+  .drawer .body button {
+    background:var(--panel2); border:1px solid var(--border); color:var(--text);
+    padding:7px 12px; border-radius:6px; font-size:12.5px; cursor:pointer;
+    font-family:inherit;
+  }
+  .drawer .body button:hover { border-color:var(--accent); }
+  .drawer .body button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .drawer .body button.primary:hover { background:#3a78f0; }
+  .drawer .body button.danger  { color:#ff8b8b; border-color:rgba(239,68,68,.45); }
+  .drawer .body button:disabled { opacity:.5; cursor:not-allowed; }
+  .drawer .status-line { font-size:12px; margin-top:8px; color:var(--muted); }
+  .drawer .status-line.ok  { color:var(--accent2); }
+  .drawer .status-line.err { color:#ff8b8b; white-space:pre-wrap; }
+  .drawer .source-now {
+    padding:8px 10px; border-radius:6px; background:var(--panel2); border:1px solid var(--border);
+    margin-bottom:14px; font-size:12px; display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap;
+  }
+  .drawer .source-now b { color:var(--text); }
+  .drawer .help {
+    background:rgba(79,140,255,.08); border:1px solid rgba(79,140,255,.35);
+    padding:10px 12px; border-radius:8px; font-size:12px; color:var(--text);
+    margin-bottom:10px;
+  }
+  .drawer .help code { background:var(--panel2); border:1px solid var(--border);
+    padding:0 5px; border-radius:4px; font-size:11.5px; }
 </style>
 </head>
 <body>
@@ -168,6 +252,7 @@
     <div class="spacer"></div>
     <a class="src" href="https://github.com/Benden-NPI/LiquidJet-Project-Visualization/blob/main/scope/stations.json" target="_blank" rel="noopener">stations.json ↗</a>
     <a class="src" href="https://github.com/Benden-NPI/LiquidJet-Project-Visualization/blob/main/scope/control-plan.json" target="_blank" rel="noopener">control-plan.json ↗</a>
+    <button class="icon-btn" id="openSettings" title="同步設定">⚙️ Settings</button>
   </div>
 
   <h1>Control Plan 總表 <span style="color:var(--muted); font-weight:400; font-size:14px;">v2 — single-table view</span></h1>
@@ -176,13 +261,17 @@
   <!-- SSOT banner -->
   <div class="ssot" id="ssot">
     <span class="dot"></span>
-    <span><b>SSOT：</b><code>scope/stations.json</code> 為 station 唯一鍵</span>
+    <span><b>SSOT：</b><span id="ssotLabel">scope/stations.json</span></span>
     <span class="pill">stations <span id="stationCount">0</span></span>
     <span class="pill">controls <span id="controlCount">0</span></span>
-    <span class="pill">last synced with Yield: <span id="lastSynced">—</span></span>
+    <span class="pill">last synced: <span id="lastSynced">—</span></span>
+    <span class="source-pill local" id="sourcePill">內建 SSOT</span>
     <span class="spacer" style="flex:1;"></span>
     <a href="https://benden-npi.github.io/Yield/" target="_blank" rel="noopener">Open Yield Process Readiness ↗</a>
   </div>
+
+  <!-- Runtime FK warnings -->
+  <div class="orphan-warn" id="orphanWarn" style="display:none;"></div>
 
   <!-- KPIs -->
   <div class="kpis" id="kpis"></div>
@@ -267,36 +356,153 @@
   </footer>
 </div>
 
+<!-- Settings drawer -->
+<div class="drawer-backdrop" id="drawerBackdrop"></div>
+<aside class="drawer" id="drawer" aria-hidden="true">
+  <header>
+    <h2>⚙️ Stations 資料來源</h2>
+    <button class="close" id="closeSettings" aria-label="關閉">×</button>
+  </header>
+  <div class="body">
+
+    <div class="source-now" id="sourceNow">
+      <span>目前資料源：<b id="sourceNowLabel">內建 SSOT JSON</b></span>
+      <span id="sourceNowDetail"></span>
+    </div>
+
+    <section>
+      <h3>從 Yield 同步 46 站 (Power Automate)</h3>
+      <p class="desc">使用與 Yield · Tool Gantt 相同的 Power Automate HTTP GET webhook，讀取 Control Plan Excel 的 Process Flow sheet，把 station 清單覆寫到本機。</p>
+      <div class="help">
+        URL 與 Yield 共用 <code>localStorage</code> key（<code>tool_gantt_sharepoint_webhook_url</code>）— 若你已在 Yield Settings 設過，此處會自動帶入。URL 含 <code>sig=</code> token，<b>只存本機瀏覽器，不會 commit</b>。
+      </div>
+      <input id="webhookUrl" type="password" placeholder="https://prod-XX.westus.logic.azure.com/.../triggers/manual/paths/invoke?...&sig=..." autocomplete="off" spellcheck="false" />
+      <div class="row-btns">
+        <button id="saveUrl">儲存 URL</button>
+        <button id="syncNow" class="primary">從 Yield 同步</button>
+        <button id="toggleVisibility" title="顯示 / 隱藏">👁</button>
+      </div>
+      <div class="status-line" id="syncStatus"></div>
+    </section>
+
+    <section>
+      <h3>回到內建 SSOT</h3>
+      <p class="desc">清除本機 override，改用 build-time 嵌入的 <code>scope/stations.json</code>。同步過的資料會被丟棄（你隨時可再同步一次）。</p>
+      <div class="row-btns">
+        <button id="resetOverride" class="danger">清除 override</button>
+      </div>
+    </section>
+
+    <section>
+      <h3>除錯</h3>
+      <p class="desc">同步過程的詳細 log 可在瀏覽器 DevTools Console 查看（<code>[CP-Sync]</code> 前綴）。</p>
+    </section>
+
+  </div>
+</aside>
+
 <!-- Inlined SSOT data -->
 <script id="data-stations" type="application/json">__STATIONS_JSON__</script>
 <script id="data-controlplan" type="application/json">__CONTROL_PLAN_JSON__</script>
 
 <script>
 (function () {
-  // ---------- Load SSOT ----------
+  // ===========================================================================
+  // Load build-time SSOT (inline JSON)
+  // ===========================================================================
   const STATIONS_DOC = JSON.parse(document.getElementById("data-stations").textContent);
   const CP_DOC       = JSON.parse(document.getElementById("data-controlplan").textContent);
-  const STATIONS = STATIONS_DOC.stations || [];
+  const BASELINE_STATIONS = STATIONS_DOC.stations || [];
   const CONTROLS = CP_DOC.controls || [];
   const HOLISTIC = CP_DOC.holistic || [];
 
-  // Station lookup: name -> { type, stationNo, order }
-  const STATION_MAP = {};
-  STATIONS.forEach((s, i) => { STATION_MAP[s.name] = Object.assign({ _order: i }, s); });
+  // ===========================================================================
+  // localStorage override (shared key with Yield Tool Gantt)
+  // ===========================================================================
+  const SP_URL_KEY     = "tool_gantt_sharepoint_webhook_url";  // 與 Yield 共用
+  const OVERRIDE_KEY   = "liquidjet_cp_stations_override_v1";
 
-  // ---------- SSOT banner ----------
-  document.getElementById("stationCount").textContent = STATIONS.length;
-  document.getElementById("controlCount").textContent = CONTROLS.length;
-  document.getElementById("lastSynced").textContent   = STATIONS_DOC.lastSyncedAt || "—";
+  function getStoredUrl()  { try { return localStorage.getItem(SP_URL_KEY) || ""; } catch { return ""; } }
+  function setStoredUrl(u) { try { u ? localStorage.setItem(SP_URL_KEY, u) : localStorage.removeItem(SP_URL_KEY); } catch {} }
+  function getOverride() {
+    try {
+      const raw = localStorage.getItem(OVERRIDE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      return parsed && Array.isArray(parsed.stations) ? parsed : null;
+    } catch { return null; }
+  }
+  function setOverride(stations) {
+    try {
+      localStorage.setItem(OVERRIDE_KEY, JSON.stringify({
+        source: "yield-toolgantt-webhook",
+        syncedAt: new Date().toISOString(),
+        stations,
+      }));
+    } catch {}
+  }
+  function clearOverride() { try { localStorage.removeItem(OVERRIDE_KEY); } catch {} }
 
-  // ---------- KPIs ----------
+  // Active stations: override wins
+  let STATIONS = BASELINE_STATIONS;
+  let STATION_SOURCE = { kind: "ssot", label: "內建 SSOT JSON", syncedAt: STATIONS_DOC.lastSyncedAt || null };
+  (function applyOverrideIfAny() {
+    const ov = getOverride();
+    if (ov) {
+      STATIONS = ov.stations;
+      STATION_SOURCE = { kind: "override", label: "Yield · Tool Gantt webhook", syncedAt: ov.syncedAt };
+    }
+  })();
+
+  // Station lookup: name -> { type, stationNo, _order }
+  let STATION_MAP = {};
+  function rebuildStationMap() {
+    STATION_MAP = {};
+    STATIONS.forEach((s, i) => { STATION_MAP[s.name] = Object.assign({ _order: i }, s); });
+  }
+  rebuildStationMap();
+
+  // ===========================================================================
+  // Banner + source pill
+  // ===========================================================================
+  function fmtDate(iso) {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    const pad = n => String(n).padStart(2,"0");
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+  function updateBanner() {
+    document.getElementById("stationCount").textContent = STATIONS.length;
+    document.getElementById("controlCount").textContent = CONTROLS.length;
+    document.getElementById("lastSynced").textContent   = fmtDate(STATION_SOURCE.syncedAt);
+    document.getElementById("ssotLabel").innerHTML = STATION_SOURCE.kind === "override"
+      ? `<code>localStorage</code> override（Yield 同步）`
+      : `<code>scope/stations.json</code>`;
+    const pill = document.getElementById("sourcePill");
+    pill.className = "source-pill " + (STATION_SOURCE.kind === "override" ? "live" : "local");
+    pill.textContent = STATION_SOURCE.kind === "override" ? "Yield 同步中" : "內建 SSOT";
+  }
+  function updateOrphanWarn() {
+    const orphans = CONTROLS.filter(c => !STATION_MAP[c.station]);
+    const el = document.getElementById("orphanWarn");
+    if (!orphans.length) { el.style.display = "none"; return; }
+    el.style.display = "block";
+    const names = Array.from(new Set(orphans.map(c => c.station))).slice(0,8);
+    el.innerHTML = `<b>⚠ ${orphans.length} 個 control 對應不到目前 stations</b>：${names.map(n=>`<code>${esc(n)}</code>`).join(" ")}${orphans.length>names.length?" …":""}　`
+      + `建議：(a) 在 Yield 同步最新 Process Flow，或 (b) 修正 <code>scope/control-plan.json</code> 的 <code>station</code> 欄。`;
+  }
+
+  // ===========================================================================
+  // KPIs
+  // ===========================================================================
   function renderKPIs(rows) {
     const total = rows.length;
     const by = { ready:0, draft:0, todo:0, excursion:0 };
     rows.forEach(r => { by[r.status] = (by[r.status]||0) + 1; });
     const pct = n => total ? Math.round(n/total*100) : 0;
     const seg = (cls,n) => `<span class="${cls}" style="width:${pct(n)}%"></span>`;
-    const html = `
+    document.getElementById("kpis").innerHTML = `
       <div class="kpi"><div class="lbl">Controls</div><div class="val">${total}</div>
         <div class="bar">${seg("b-ready",by.ready)}${seg("b-draft",by.draft)}${seg("b-excursion",by.excursion)}${seg("b-todo",by.todo)}</div>
         <p class="sub">ready ${by.ready} · draft ${by.draft} · excursion ${by.excursion} · todo ${by.todo}</p>
@@ -304,12 +510,12 @@
       <div class="kpi ready"><div class="lbl">Ready</div><div class="val">${by.ready}</div><p class="sub">${pct(by.ready)}% 已就緒</p></div>
       <div class="kpi draft"><div class="lbl">Draft</div><div class="val">${by.draft}</div><p class="sub">${pct(by.draft)}% 草擬中</p></div>
       <div class="kpi todo"><div class="lbl">Todo</div><div class="val">${by.todo}</div><p class="sub">${pct(by.todo)}% 未設定</p></div>
-      <div class="kpi excursion"><div class="lbl">Excursion</div><div class="val">${by.excursion}</div><p class="sub">需立即處理</p></div>
-    `;
-    document.getElementById("kpis").innerHTML = html;
+      <div class="kpi excursion"><div class="lbl">Excursion</div><div class="val">${by.excursion}</div><p class="sub">需立即處理</p></div>`;
   }
 
-  // ---------- Filters ----------
+  // ===========================================================================
+  // Filters
+  // ===========================================================================
   const fMilestone = document.getElementById("fMilestone");
   const fStatus    = document.getElementById("fStatus");
   const fStation   = document.getElementById("fStation");
@@ -318,25 +524,35 @@
   const fSearch    = document.getElementById("fSearch");
   const fReset     = document.getElementById("fReset");
 
-  // Populate station filter from SSOT order
-  STATIONS.forEach(s => {
-    const o = document.createElement("option");
-    o.value = s.name; o.textContent = s.name; fStation.appendChild(o);
-  });
-  // Populate owner from controls
-  const owners = Array.from(new Set(CONTROLS.map(c => c.owner).filter(Boolean))).sort();
-  owners.forEach(n => {
-    const o = document.createElement("option"); o.value = n; o.textContent = n; fOwner.appendChild(o);
-  });
+  function rebuildFilters() {
+    // Station dropdown follows current STATIONS order
+    fStation.innerHTML = '<option value="">All</option>';
+    STATIONS.forEach(s => {
+      const o = document.createElement("option");
+      o.value = s.name; o.textContent = s.name; fStation.appendChild(o);
+    });
+    // Owner dropdown follows CONTROLS
+    const cur = fOwner.value;
+    fOwner.innerHTML = '<option value="">All</option>';
+    Array.from(new Set(CONTROLS.map(c => c.owner).filter(Boolean))).sort().forEach(n => {
+      const o = document.createElement("option"); o.value = n; o.textContent = n; fOwner.appendChild(o);
+    });
+    if (cur) fOwner.value = cur;
+  }
 
-  // ---------- Sorting ----------
+  // ===========================================================================
+  // Table
+  // ===========================================================================
+  const STATUS_LABEL = { todo:"未設定", draft:"草擬中", ready:"已就緒", excursion:"異常" };
+  const MS_ORDER     = { Setup:0, Tuning:1, Qualify:2 };
+
   const COLUMNS = [
-    { key:"_stationOrder", label:"#",        cellKey:"_stationOrder", render:(c)=>`<td class="id">${(STATION_MAP[c.station]?._order ?? "-")+1}</td>` },
-    { key:"station",       label:"Station",  render:(c)=>`<td class="station">${c.station}</td>` },
-    { key:"_type",         label:"Type",     render:(c)=>`<td class="id">${STATION_MAP[c.station]?.type ?? "-"}</td>` },
+    { key:"_stationOrder", label:"#",        render:(c)=>`<td class="id">${(STATION_MAP[c.station]?._order ?? -1)+1 || "?"}</td>` },
+    { key:"station",       label:"Station",  render:(c)=>`<td class="station">${esc(c.station)}${STATION_MAP[c.station]?"":" <span style='color:#ff8b8b' title='not in stations'>⚠</span>"}</td>` },
+    { key:"_type",         label:"Type",     render:(c)=>`<td class="id">${STATION_MAP[c.station]?.type ?? "?"}</td>` },
     { key:"milestone",     label:"Milestone",render:(c)=>`<td><span class="chip ms-${c.milestone}">${c.milestone}</span></td>` },
     { key:"status",        label:"Status",   render:(c)=>`<td><span class="chip st-${c.status}">${STATUS_LABEL[c.status]||c.status}</span></td>` },
-    { key:"id",            label:"ID",       render:(c)=>`<td class="id">${c.id||""}</td>` },
+    { key:"id",            label:"ID",       render:(c)=>`<td class="id">${esc(c.id||"")}</td>` },
     { key:"characteristic",label:"Characteristic (CTQ / X)", render:(c)=>`<td class="char">${esc(c.characteristic)}</td>` },
     { key:"spec",          label:"Spec",     render:(c)=>`<td class="spec">${esc(c.spec)}</td>` },
     { key:"method",        label:"Method",   render:(c)=>`<td class="method">${esc(c.method)}</td>` },
@@ -344,28 +560,24 @@
     { key:"sampling",      label:"Sampling", render:(c)=>`<td class="sample">${esc(c.sampling)}</td>` },
     { key:"control",       label:"Control",  render:(c)=>`<td class="control">${esc(c.control)}</td>` },
     { key:"reaction",      label:"Reaction Plan", render:(c)=>`<td class="reaction">${esc(c.reaction)}</td>` },
-    { key:"owner",         label:"Owner",    render:(c)=>`<td><span class="chip owner">${c.owner||"-"}</span></td>` },
-    { key:"pfmea",         label:"PFMEA",    render:(c)=>`<td class="pfmea">${c.pfmea||""}</td>` },
+    { key:"owner",         label:"Owner",    render:(c)=>`<td><span class="chip owner">${esc(c.owner||"-")}</span></td>` },
+    { key:"pfmea",         label:"PFMEA",    render:(c)=>`<td class="pfmea">${esc(c.pfmea||"")}</td>` },
   ];
-  const STATUS_LABEL = { todo:"未設定", draft:"草擬中", ready:"已就緒", excursion:"異常" };
-  const MS_ORDER = { Setup:0, Tuning:1, Qualify:2 };
 
   let sortKey = "_stationOrder";
-  let sortDir = 1; // 1 asc, -1 desc
+  let sortDir = 1;
 
   function esc(s) {
     if (s == null) return "";
     return String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;" }[c]));
   }
-
   function sortVal(c, key) {
-    if (key === "_stationOrder") return STATION_MAP[c.station]?._order ?? 999;
+    if (key === "_stationOrder") return STATION_MAP[c.station]?._order ?? 9999;
     if (key === "_type")         return STATION_MAP[c.station]?.type ?? "";
     if (key === "milestone")     return MS_ORDER[c.milestone] ?? 99;
     if (key === "status")        return ["excursion","todo","draft","ready"].indexOf(c.status);
     return (c[key] ?? "").toString().toLowerCase();
   }
-
   function renderHead() {
     const tr = document.getElementById("theadRow");
     tr.innerHTML = COLUMNS.map(col => {
@@ -381,8 +593,6 @@
       });
     });
   }
-
-  // ---------- Render rows ----------
   function getFiltered() {
     const ms = fMilestone.value, st = fStatus.value, sn = fStation.value,
           ow = fOwner.value, tp = fType.value, q = fSearch.value.trim().toLowerCase();
@@ -400,7 +610,6 @@
       return true;
     });
   }
-
   function render() {
     const rows = getFiltered().slice().sort((a,b) => {
       const va = sortVal(a, sortKey), vb = sortVal(b, sortKey);
@@ -427,17 +636,183 @@
     render();
   });
 
-  // ---------- Holistic ----------
-  const hList = document.getElementById("holistic");
-  hList.innerHTML = HOLISTIC.map(h =>
+  // ===========================================================================
+  // Holistic
+  // ===========================================================================
+  document.getElementById("holistic").innerHTML = HOLISTIC.map(h =>
     `<li><input type="checkbox" disabled ${h.done?"checked":""}>
       <span><b>${esc(h.label)}</b><span class="hint">${esc(h.hint)}</span></span></li>`
   ).join("");
 
-  // ---------- Initial render ----------
+  // ===========================================================================
+  // Yield · Tool Gantt sync (vanilla JS port of useToolGanttSync.ts)
+  // ===========================================================================
+  function normKey(k) { return String(k).toLowerCase().replace(/[^a-z0-9]/g, ""); }
+  function pickKey(row, candidates) {
+    const wanted = candidates.map(normKey);
+    for (const k of Object.keys(row)) if (wanted.includes(normKey(k))) return row[k];
+    return undefined;
+  }
+  function parseStationInfo(station) {
+    let m = /ColdPlate\s*(\d+)/i.exec(station);
+    if (m) return { type: "coldplate", stationNo: parseInt(m[1],10) };
+    m = /Assembly\s*(\d+)/i.exec(station);
+    if (m) return { type: "loop", stationNo: parseInt(m[1],10) };
+    return null;
+  }
+  function mapStationRows(rows) {
+    const out = [];
+    for (const row of rows) {
+      const stationVal = pickKey(row, ["Station for 300x300","Station","Station Name","StationFor300x300"]);
+      if (!stationVal || !String(stationVal).trim()) continue;
+      const name = String(stationVal).trim();
+      const info = parseStationInfo(name);
+      if (!info) continue;  // Skip Source / IQC / REL Lab / offline
+      out.push({ name, type: info.type, stationNo: info.stationNo });
+    }
+    out.sort((a,b) => a.type !== b.type ? (a.type === "coldplate" ? -1 : 1) : a.stationNo - b.stationNo);
+    return out;
+  }
+  function parsePowerAutomateError(body, status) {
+    const lower = (body||"").toLowerCase();
+    if (lower.includes("resourcelocked") || lower.includes("locked for editing") ||
+        lower.includes("checked out") || lower.includes("lockedbyuser") ||
+        lower.includes("file is locked") || lower.includes("editmode") ||
+        (lower.includes("lock") && lower.includes("excel"))) {
+      return "Excel 檔案被占用（OneDrive 同步或有人開啟編輯）。\n請確認 Control_Plan.xlsx 已關閉後再試。";
+    }
+    if (lower.includes("throttl") || lower.includes("too many requests") || status === 429)
+      return "SharePoint / Power Automate 請求頻率過高（Throttling），請稍候再試。";
+    if (lower.includes("workflowtriggerisnotenabled") || lower.includes("trigger is not enabled") || lower.includes("flow is disabled"))
+      return "Power Automate Flow 未啟用，請到 Power Automate 確認狀態為「開啟」。";
+    try {
+      const obj = JSON.parse(body);
+      const inner = (obj.error && obj.error.message) || obj.message || "";
+      if (inner) return `HTTP ${status}：${inner}`;
+    } catch {}
+    return `HTTP ${status} | ${String(body).slice(0,250)}`;
+  }
+  async function syncFromYield(url) {
+    if (!url) throw new Error("尚未設定 Tool Gantt Webhook URL");
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 90000);
+    try {
+      const res  = await fetch(url, { method: "GET", signal: ctrl.signal });
+      const text = await res.text();
+      console.info("[CP-Sync] HTTP", res.status, "| preview:", text.slice(0,300));
+      if (!res.ok) throw new Error(parsePowerAutomateError(text, res.status));
+      let raw;
+      try { raw = JSON.parse(text); }
+      catch { throw new Error(`Response is not valid JSON. Raw: ${text.slice(0,300)}`); }
+      let rows;
+      if (Array.isArray(raw)) rows = raw;
+      else if (raw && Array.isArray(raw.value)) rows = raw.value;
+      else throw new Error(`Response is not a JSON array. Got: ${text.slice(0,300)}`);
+      if (rows.length) {
+        console.info("[CP-Sync] first row keys:", Object.keys(rows[0]));
+      } else {
+        console.warn("[CP-Sync] Power Automate returned 0 rows");
+      }
+      return mapStationRows(rows);
+    } catch (err) {
+      const isAbort = err && err.name === "AbortError";
+      throw new Error(isAbort
+        ? "同步逾時（90s）。常見原因：\n① Control_Plan.xlsx 被 OneDrive 同步\n② Flow 冷啟動（再試一次）\n③ Flow 未啟用"
+        : (err && err.message) || String(err));
+    } finally { clearTimeout(t); }
+  }
+
+  // ===========================================================================
+  // Settings drawer
+  // ===========================================================================
+  const drawer    = document.getElementById("drawer");
+  const backdrop  = document.getElementById("drawerBackdrop");
+  const urlInput  = document.getElementById("webhookUrl");
+  const statusEl  = document.getElementById("syncStatus");
+  const srcNowLab = document.getElementById("sourceNowLabel");
+  const srcNowDet = document.getElementById("sourceNowDetail");
+
+  function openDrawer() {
+    drawer.classList.add("open"); backdrop.classList.add("open");
+    drawer.setAttribute("aria-hidden","false");
+    urlInput.value = getStoredUrl();
+    refreshSourceNow(); statusEl.textContent = ""; statusEl.className = "status-line";
+  }
+  function closeDrawer() {
+    drawer.classList.remove("open"); backdrop.classList.remove("open");
+    drawer.setAttribute("aria-hidden","true");
+  }
+  function refreshSourceNow() {
+    if (STATION_SOURCE.kind === "override") {
+      srcNowLab.textContent = "Yield · Tool Gantt webhook (本機 override)";
+      srcNowDet.innerHTML = `${STATIONS.length} stations · synced ${fmtDate(STATION_SOURCE.syncedAt)}`;
+    } else {
+      srcNowLab.textContent = "內建 SSOT JSON";
+      srcNowDet.innerHTML = `${STATIONS.length} stations · stations.json@${STATION_SOURCE.syncedAt || "—"}`;
+    }
+  }
+
+  document.getElementById("openSettings").addEventListener("click", openDrawer);
+  document.getElementById("closeSettings").addEventListener("click", closeDrawer);
+  backdrop.addEventListener("click", closeDrawer);
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && drawer.classList.contains("open")) closeDrawer(); });
+
+  document.getElementById("toggleVisibility").addEventListener("click", () => {
+    urlInput.type = urlInput.type === "password" ? "text" : "password";
+  });
+  document.getElementById("saveUrl").addEventListener("click", () => {
+    setStoredUrl(urlInput.value.trim());
+    statusEl.className = "status-line ok"; statusEl.textContent = "URL 已儲存於本機 localStorage。";
+  });
+  const syncBtn = document.getElementById("syncNow");
+  syncBtn.addEventListener("click", async () => {
+    const url = urlInput.value.trim();
+    if (!url) { statusEl.className = "status-line err"; statusEl.textContent = "請先填入 Webhook URL。"; return; }
+    setStoredUrl(url);
+    syncBtn.disabled = true; statusEl.className = "status-line"; statusEl.textContent = "同步中…";
+    try {
+      const stations = await syncFromYield(url);
+      if (!stations.length) {
+        statusEl.className = "status-line err";
+        statusEl.textContent = "Yield 回應 0 個有效 station（已過濾 Source/IQC/REL/offline）。請確認 Excel 內容。";
+        return;
+      }
+      setOverride(stations);
+      STATIONS = stations;
+      STATION_SOURCE = { kind:"override", label:"Yield · Tool Gantt webhook", syncedAt: new Date().toISOString() };
+      rebuildStationMap();
+      rebuildFilters();
+      updateBanner(); updateOrphanWarn(); refreshSourceNow();
+      render();
+      statusEl.className = "status-line ok";
+      statusEl.textContent = `已同步 ${stations.length} 個 stations，覆寫至本機。`;
+    } catch (err) {
+      statusEl.className = "status-line err";
+      statusEl.textContent = "同步失敗：" + ((err && err.message) || err);
+    } finally { syncBtn.disabled = false; }
+  });
+  document.getElementById("resetOverride").addEventListener("click", () => {
+    clearOverride();
+    STATIONS = BASELINE_STATIONS;
+    STATION_SOURCE = { kind:"ssot", label:"內建 SSOT JSON", syncedAt: STATIONS_DOC.lastSyncedAt || null };
+    rebuildStationMap();
+    rebuildFilters();
+    updateBanner(); updateOrphanWarn(); refreshSourceNow();
+    render();
+    statusEl.className = "status-line ok"; statusEl.textContent = "已清除 override，改用內建 SSOT。";
+  });
+
+  // ===========================================================================
+  // Initial render
+  // ===========================================================================
+  rebuildFilters();
+  updateBanner();
+  updateOrphanWarn();
   render();
 
-  // ---------- Build stamp ----------
+  // ===========================================================================
+  // Build stamp
+  // ===========================================================================
   var ts = "__BUILD_TS__";
   var el = document.getElementById("buildInfo");
   if (el && !ts.startsWith("__")) el.textContent = "Built " + ts;
