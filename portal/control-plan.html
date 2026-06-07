@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<title>LiquidJet · Control Plan</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="description" content="LiquidJet Control Plan — First Principles v2 框架視覺化頁面。" />
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg:#0f1115; --panel:#161a22; --panel2:#1e2330; --border:#2a3142;
+    --text:#e6e9ef; --muted:#8a93a6;
+    --accent:#4f8cff; --accent2:#38d39f; --accent3:#f3b54a;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg:#f6f7fb; --panel:#fff; --panel2:#f0f2f7; --border:#dde2ea; --text:#1c2230; --muted:#5b6478; }
+  }
+  * { box-sizing:border-box; }
+  html, body { margin:0; min-height:100%; background:var(--bg); color:var(--text);
+    font-family:-apple-system,Segoe UI,Roboto,"PingFang TC","Noto Sans TC",sans-serif; line-height:1.6; }
+  body {
+    background:
+      radial-gradient(1200px 500px at 20% -10%, rgba(243,181,74,.14), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(79,140,255,.12), transparent 60%),
+      var(--bg);
+  }
+  .wrap { max-width:1080px; margin:0 auto; padding:32px 24px 64px; }
+  .topbar { display:flex; align-items:center; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+  .topbar a.back { color:var(--muted); text-decoration:none; font-size:13px;
+    padding:6px 10px; border:1px solid var(--border); border-radius:8px; background:var(--panel2); }
+  .topbar a.back:hover { border-color:var(--accent); color:var(--text); }
+  .topbar .spacer { flex:1; }
+  .topbar a.src { color:var(--muted); text-decoration:none; font-size:12px; }
+  .topbar a.src:hover { color:var(--accent); }
+  .badge { font-size:11.5px; padding:3px 9px; border-radius:99px;
+    background:var(--panel2); border:1px solid var(--border); color:var(--muted); }
+  .badge.live { color:var(--accent3); border-color:var(--accent3); }
+
+  article.doc {
+    background:var(--panel); border:1px solid var(--border); border-radius:14px;
+    padding:28px 32px; overflow-x:auto;
+  }
+  article.doc h1 { margin:0 0 12px; font-size:26px; letter-spacing:.3px; }
+  article.doc h2 { margin:28px 0 10px; font-size:18px; padding-bottom:6px; border-bottom:1px solid var(--border); }
+  article.doc h3 { margin:22px 0 8px; font-size:15px; color:var(--muted); letter-spacing:.4px; text-transform:uppercase; font-weight:600; }
+  article.doc p, article.doc li { font-size:14.5px; }
+  article.doc code { background:var(--panel2); padding:1px 6px; border-radius:5px; font-size:13px;
+    border:1px solid var(--border); }
+  article.doc pre { background:var(--panel2); padding:14px 16px; border-radius:10px; overflow:auto;
+    border:1px solid var(--border); }
+  article.doc pre code { background:transparent; border:0; padding:0; }
+  article.doc a { color:var(--accent); }
+  article.doc blockquote { margin:14px 0; padding:10px 14px; border-left:3px solid var(--accent3);
+    background:var(--panel2); border-radius:0 8px 8px 0; color:var(--text); }
+  article.doc hr { border:0; border-top:1px solid var(--border); margin:24px 0; }
+  article.doc ul, article.doc ol { padding-left:22px; }
+  article.doc li { margin:4px 0; }
+  article.doc input[type=checkbox] { margin-right:6px; accent-color:var(--accent2); }
+
+  /* Tables — control plan has wide tables; allow horizontal scroll */
+  article.doc table { border-collapse:collapse; width:100%; margin:14px 0; font-size:13px;
+    display:block; overflow-x:auto; }
+  article.doc thead { background:var(--panel2); }
+  article.doc th, article.doc td { border:1px solid var(--border); padding:8px 10px; text-align:left;
+    vertical-align:top; min-width:90px; }
+  article.doc th { color:var(--muted); font-weight:600; letter-spacing:.3px; }
+
+  footer { margin-top:32px; color:var(--muted); font-size:12px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+  #fallback { display:none; padding:14px; border-radius:10px; background:var(--panel2);
+    border:1px solid var(--border); margin-bottom:16px; font-size:13px; color:var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <a class="back" href="./../index.html">← Portal</a>
+    <span class="badge live">● Control Plan</span>
+    <div class="spacer"></div>
+    <a class="src" href="https://github.com/Benden-NPI/LiquidJet-Project-Visualization/blob/main/scope/control-plan.md" target="_blank" rel="noopener">View source on GitHub ↗</a>
+  </div>
+
+  <div id="fallback">
+    無法載入 Markdown 渲染器（marked.js）。請改至
+    <a href="https://github.com/Benden-NPI/LiquidJet-Project-Visualization/blob/main/scope/control-plan.md" target="_blank" rel="noopener">GitHub 原始檔</a>
+    閱讀。
+  </div>
+
+  <article class="doc" id="doc">Loading…</article>
+
+  <footer>
+    <span>© Benden NPI · LiquidJet</span>
+    <span id="buildInfo">—</span>
+  </footer>
+</div>
+
+<!-- Markdown source injected at build time as a JSON string literal -->
+<script>window.__CONTROL_PLAN_MD__ = __CONTROL_PLAN_MD_JSON__;</script>
+
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"
+        crossorigin="anonymous"
+        onerror="document.getElementById('fallback').style.display='block';"></script>
+<script>
+  (function () {
+    var src = window.__CONTROL_PLAN_MD__ || "";
+    var target = document.getElementById("doc");
+    if (typeof marked === "undefined") {
+      document.getElementById("fallback").style.display = "block";
+      target.innerHTML = "<pre>" + src.replace(/[&<>]/g, function (c) {
+        return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c];
+      }) + "</pre>";
+      return;
+    }
+    marked.setOptions({ gfm: true, breaks: false });
+    target.innerHTML = marked.parse(src);
+    // Render GFM task-list checkboxes as actual disabled checkboxes
+    target.querySelectorAll("li").forEach(function (li) {
+      var t = li.firstChild;
+      if (!t || t.nodeType !== 3) return;
+      var m = t.textContent.match(/^\s*\[( |x|X)\]\s+/);
+      if (!m) return;
+      var checked = m[1].toLowerCase() === "x";
+      t.textContent = t.textContent.slice(m[0].length);
+      var cb = document.createElement("input");
+      cb.type = "checkbox"; cb.disabled = true; cb.checked = checked;
+      li.insertBefore(cb, t);
+    });
+  })();
+
+  var ts = "__BUILD_TS__";
+  var el = document.getElementById("buildInfo");
+  if (el && !ts.startsWith("__")) el.textContent = "Built " + ts;
+</script>
+</body>
+</html>
