@@ -157,6 +157,19 @@
   ol.audit { padding-left:20px; margin:0; display:grid; gap:4px; font-size:12.5px; color:var(--text); }
   ol.audit li { padding:2px 0; }
   ol.audit code { background:var(--panel2); border:1px solid var(--border); padding:0 5px; border-radius:4px; font-size:11.5px; }
+  .reminder { margin-top:14px; }
+  .reminder .lead { margin:0 0 12px; color:var(--muted); font-size:12.5px; }
+  .reminder-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:10px; }
+  .reminder-block {
+    background:var(--panel2); border:1px solid var(--border); border-radius:8px; padding:10px 12px;
+  }
+  .reminder-block h3 {
+    margin:0 0 8px; font-size:11.5px; color:var(--muted);
+    text-transform:uppercase; letter-spacing:.4px; font-weight:600;
+  }
+  .reminder-block ul, .reminder-block ol { margin:0; padding-left:18px; display:grid; gap:6px; font-size:12.5px; }
+  .reminder-block li { color:var(--text); }
+  .reminder-block li span { color:var(--muted); }
 
   footer { margin-top:20px; color:var(--muted); font-size:11.5px;
     display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
@@ -372,6 +385,39 @@
       </ol>
     </section>
   </div>
+
+  <section class="card reminder">
+    <h2>First Principles Reminder</h2>
+    <p class="lead">這張表不是單純列控制項，而是用來提醒每個 station 在當前 milestone 應該長出哪些控制，並確認原因、風險與反應都已經接上。</p>
+    <p class="lead">實際填表時可用這句話快速判斷：每一列都要回答「要控什麼、怎麼量、誰處理、最晚哪個 milestone 前生效」；只要有一格答不出來，就先標成待補並回到對應 owner 補齊。</p>
+    <div class="reminder-grid">
+      <section class="reminder-block">
+        <h3>核心公理</h3>
+        <ul>
+          <li>每步製程都在改變某個狀態變數。</li>
+          <li><code>Y = f(X, noise)</code>：先找關鍵 X，再看噪音如何影響結果。</li>
+          <li>沒有 <code>reaction plan</code>，就不算真正的控制。</li>
+        </ul>
+      </section>
+      <section class="reminder-block">
+        <h3>Milestone 提醒</h3>
+        <ol>
+          <li><b>Move-in</b><span>：設備就位、能空跑，IPO / CTQ / 預估 X 要先有草稿。</span></li>
+          <li><b>Setup</b><span>：先收斂到能做出像樣產品，量測方法、量具、PFMEA 初稿要到位。</span></li>
+          <li><b>Tuning</b><span>：確認 X→Y 因果，完成 MSA，選定 control method 與 reaction plan 初稿。</span></li>
+          <li><b>Qualify</b><span>：控制策略定版，可放量、可交接，Traceability / 4M / CAPA 要閉環。</span></li>
+        </ol>
+      </section>
+      <section class="reminder-block">
+        <h3>拾漏邏輯</h3>
+        <ul>
+          <li><b>FMEA Cause → Control 行</b><span>：沒對到 = 漏控。</span></li>
+          <li><b>Control 行 → FMEA Cause</b><span>：沒對到 = 過控。</span></li>
+          <li><b>Control 行 → Milestone</b><span>：沒對到 = 進度漏。</span></li>
+        </ul>
+      </section>
+    </div>
+  </section>
 
   <footer>
     <span>© Benden NPI · LiquidJet</span>
