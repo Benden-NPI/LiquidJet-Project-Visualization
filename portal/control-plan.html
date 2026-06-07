@@ -552,8 +552,9 @@
 
   const COLUMNS = [
     { key:"_stationOrder", label:"#",        render:(c)=>`<td class="id">${(STATION_MAP[c.station]?._order ?? -1)+1 || "?"}</td>` },
-    { key:"station",       label:"Station",  render:(c)=>`<td class="station">${esc(c.station)}${STATION_MAP[c.station]?"":" <span style='color:#ff8b8b' title='not in stations'>⚠</span>"}</td>` },
     { key:"_type",         label:"Type",     render:(c)=>`<td class="id">${STATION_MAP[c.station]?.type ?? "?"}</td>` },
+    { key:"station",       label:"Station",  render:(c)=>`<td class="station">${esc(c.station)}${STATION_MAP[c.station]?"":" <span style='color:#ff8b8b' title='not in stations'>⚠</span>"}</td>` },
+    { key:"_process",      label:"Process",  render:(c)=>`<td class="char">${esc(STATION_MAP[c.station]?.processStep || "")}</td>` },
     { key:"milestone",     label:"Milestone",render:(c)=>`<td><span class="chip ms-${c.milestone}">${c.milestone}</span></td>` },
     { key:"status",        label:"Status",   render:(c)=>`<td><span class="chip st-${c.status}">${STATUS_LABEL[c.status]||c.status}</span></td>` },
     { key:"id",            label:"ID",       render:(c)=>`<td class="id">${esc(c.id||"")}</td>` },
@@ -578,6 +579,7 @@
   function sortVal(c, key) {
     if (key === "_stationOrder") return STATION_MAP[c.station]?._order ?? 9999;
     if (key === "_type")         return STATION_MAP[c.station]?.type ?? "";
+    if (key === "_process")      return (STATION_MAP[c.station]?.processStep || "").toLowerCase();
     if (key === "milestone")     return MS_ORDER[c.milestone] ?? 99;
     if (key === "status")        return ["excursion","todo","draft","ready"].indexOf(c.status);
     return (c[key] ?? "").toString().toLowerCase();
@@ -737,7 +739,9 @@
       const name = String(stationVal).trim();
       const info = parseStationInfo(name);
       if (!info) continue;  // Skip Source / IQC / REL Lab / offline
-      out.push({ name, type: info.type, stationNo: info.stationNo });
+      const stepVal = pickKey(row, ["Process Step","ProcessStep","Step","Process"]);
+      const processStep = stepVal != null ? String(stepVal).trim().replace(/\n/g, " ") : "";
+      out.push({ name, type: info.type, stationNo: info.stationNo, processStep });
     }
     out.sort((a,b) => a.type !== b.type ? (a.type === "coldplate" ? -1 : 1) : a.stationNo - b.stationNo);
     return out;
@@ -878,6 +882,37 @@
   updateBanner();
   updateOrphanWarn();
   render();
+
+  // ===========================================================================
+  // Auto-sync on page load (if webhook URL stored)
+  //   - Fire-and-forget; never blocks initial paint.
+  //   - Skipped if user just cleared override < 60s ago (prevents loop).
+  // ===========================================================================
+  (function autoSyncOnLoad() {
+    const url = getStoredUrl();
+    if (!url) {
+      console.info("[CP-Sync] auto-sync skipped: no webhook URL");
+      return;
+    }
+    console.info("[CP-Sync] auto-sync starting…");
+    syncFromYield(url).then(stations => {
+      if (!stations.length) {
+        console.warn("[CP-Sync] auto-sync got 0 stations, keeping current source");
+        return;
+      }
+      setOverride(stations);
+      STATIONS = stations;
+      STATION_SOURCE = { kind:"override", label:"Yield · Tool Gantt webhook (auto)", syncedAt: new Date().toISOString() };
+      rebuildStationMap();
+      rebuildFilters();
+      updateBanner(); updateOrphanWarn();
+      if (typeof refreshSourceNow === "function") refreshSourceNow();
+      render();
+      console.info(`[CP-Sync] auto-sync done: ${stations.length} stations`);
+    }).catch(err => {
+      console.warn("[CP-Sync] auto-sync failed (keeping current source):", (err && err.message) || err);
+    });
+  })();
 
   // ===========================================================================
   // Build stamp
