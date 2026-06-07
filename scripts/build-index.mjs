@@ -83,6 +83,12 @@ if (existsSync(cpTemplate) && existsSync(stationsSource) && existsSync(cpSource)
   const outPath = join(distDir, "scope", "control-plan.html");
   mkdirSync(dirname(outPath), { recursive: true });
   writeFileSync(outPath, tpl);
+  // Also publish the raw SSOT JSON next to the HTML so the page can poll
+  // for "has my just-committed change reached this Pages deploy yet?" by
+  // fetching ./control-plan.json. Keep the on-disk format byte-identical
+  // to source so external consumers see a stable file.
+  const cpRaw = readFileSync(cpSource, "utf8");
+  writeFileSync(join(distDir, "scope", "control-plan.json"), cpRaw);
   controlPlanCount = 1;
 }
 
