@@ -961,24 +961,52 @@
       return p && Array.isArray(p.controls) ? p : null;
     } catch { return null; }
   }
-  function setDraft() {
+  function setDraft(extra) {
     try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({
-        controls: CONTROLS, savedAt: new Date().toISOString(),
-      }));
+      // A plain edit (no extra) always reverts to "unsaved" state: any
+      // previous pendingCommitSha no longer reflects the current controls,
+      // so we drop it. Only the explicit commit success path sets a sha.
+      const payload = {
+        controls: CONTROLS,
+        savedAt: new Date().toISOString(),
+        ...(extra || {}),
+      };
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(payload));
     } catch (e) { console.warn("[CP-Edit] draft save failed:", e); }
   }
   function clearDraft() { try { localStorage.removeItem(DRAFT_KEY); } catch {} }
+
+  // Deep-equal-ish comparison limited to control rows. Stable key ordering
+  // lets us compare "was my commit reflected in inline SSOT yet?" cheaply.
+  // Returns true iff the two arrays describe the same set of controls.
+  function controlsEqual(a, b) {
+    if (!Array.isArray(a) || !Array.isArray(b)) return false;
+    if (a.length !== b.length) return false;
+    const norm = (c) => JSON.stringify(Object.keys(c).sort().reduce((o,k)=>{o[k]=c[k];return o;},{}));
+    const sa = a.map(norm).sort();
+    const sb = b.map(norm).sort();
+    for (let i = 0; i < sa.length; i++) if (sa[i] !== sb[i]) return false;
+    return true;
+  }
   function getPat()  { try { return localStorage.getItem(PAT_KEY) || ""; } catch { return ""; } }
   function setPat(t) { try { t ? localStorage.setItem(PAT_KEY, t) : localStorage.removeItem(PAT_KEY); } catch {} }
 
-  // Apply draft on load (mutate CONTROLS in place — before initial render)
+  // Apply draft on load (mutate CONTROLS in place — before initial render).
+  // If the draft has a pendingCommitSha and the inline SSOT already matches
+  // the draft's controls, the GitHub Pages rebuild has caught up — drop the
+  // draft so we render straight from SSOT.
   (function applyDraftOnLoad() {
     const d = getDraft();
     if (!d) return;
+    if (d.pendingCommitSha && controlsEqual(CP_DOC.controls || [], d.controls)) {
+      clearDraft();
+      console.info(`[CP-Edit] pending commit ${d.pendingCommitSha.slice(0,7)} reflected in SSOT — draft cleared.`);
+      return;
+    }
     CONTROLS.length = 0;
     d.controls.forEach(c => CONTROLS.push(c));
-    console.info(`[CP-Edit] loaded draft: ${d.controls.length} controls (savedAt ${d.savedAt})`);
+    const tag = d.pendingCommitSha ? ` (pending commit ${d.pendingCommitSha.slice(0,7)})` : "";
+    console.info(`[CP-Edit] loaded draft: ${d.controls.length} controls (savedAt ${d.savedAt})${tag}`);
   })();
 
   function nextIdFor(stationName) {
@@ -1000,11 +1028,29 @@
   function updateDirtyBadge() {
     const d = getDraft();
     const badge = document.getElementById("dirtyBadge");
-    const count = d ? d.controls.length : 0;
-    // "dirty" simply means we have a draft saved; count = total controls
-    if (!d) { badge.classList.remove("show"); return; }
+    if (!d) { badge.classList.remove("show"); badge.classList.remove("pending"); return; }
     badge.classList.add("show");
+    const count = d.controls.length;
     document.getElementById("dirtyCount").textContent = count;
+    const label = badge.querySelector(".label") || (() => {
+      // Wrap the trailing " unsaved" text node in a span so we can flip its text.
+      const span = document.createElement("span");
+      span.className = "label";
+      span.textContent = " unsaved";
+      // Remove old trailing text node(s)
+      Array.from(badge.childNodes).forEach(n => { if (n.nodeType === 3) badge.removeChild(n); });
+      badge.appendChild(span);
+      return span;
+    })();
+    if (d.pendingCommitSha) {
+      badge.classList.add("pending");
+      label.textContent = ` pending Pages rebuild (${d.pendingCommitSha.slice(0,7)})`;
+      badge.title = "已 commit 但 GitHub Pages 還沒更新 inline SSOT，畫面暫時以本機 draft 顯示。點擊查看狀態。";
+    } else {
+      badge.classList.remove("pending");
+      label.textContent = " unsaved";
+      badge.title = "點擊開啟 Settings 提交";
+    }
   }
 
   function markEditableCells() {
@@ -1156,10 +1202,16 @@
     commitStatus.className = "status-line"; commitStatus.textContent = "提交中…";
     try {
       const commit = await commitToGitHub(pat, msg);
-      clearDraft();
+      // Keep the draft in place but tag it with the commit SHA so a refresh
+      // during the Pages rebuild window still renders the latest edits
+      // (instead of falling back to the stale inline SSOT). Once the Pages
+      // rebuild lands and inline SSOT matches the draft, applyDraftOnLoad()
+      // (or the poller below) clears the draft automatically.
+      setDraft({ pendingCommitSha: commit.sha, pendingCommitAt: new Date().toISOString() });
       updateDirtyBadge();
+      startPendingCommitPoller();
       commitStatus.className = "status-line ok";
-      commitStatus.innerHTML = `已提交：<a href="${commit.html_url}" target="_blank" rel="noopener" style="color:var(--accent2)">${commit.sha.slice(0,7)}</a>。GitHub Pages 重新部署中（~30-60s），完成後刷新即可。`;
+      commitStatus.innerHTML = `已提交：<a href="${commit.html_url}" target="_blank" rel="noopener" style="color:var(--accent2)">${commit.sha.slice(0,7)}</a>。GitHub Pages 重新部署中（~30-60s）。在那之前畫面仍以本機 draft 顯示；部署完成後會自動切回 SSOT 並清除 draft。`;
     } catch (err) {
       commitStatus.className = "status-line err";
       commitStatus.textContent = "提交失敗：" + ((err && err.message) || err);
@@ -1201,6 +1253,43 @@
     const result = await putRes.json();
     return result.commit;
   }
+
+  // Poll the Pages-served control-plan.json to detect when the deploy lands.
+  // We compare against the current draft.controls; when they match we drop
+  // the draft and reload so the UI renders straight from the new inline SSOT.
+  let _pendingPollTimer = null;
+  function startPendingCommitPoller() {
+    if (_pendingPollTimer) return;
+    const tick = async () => {
+      const d = getDraft();
+      if (!d || !d.pendingCommitSha) { stopPendingCommitPoller(); return; }
+      try {
+        // Same-origin fetch of the deployed JSON; cache-bust per attempt.
+        // control-plan.html lives at .../scope/control-plan.html, so the json
+        // sibling is just "./control-plan.json" relative to this page.
+        const res = await fetch(`./control-plan.json?_=${Date.now()}`, { cache: "no-store" });
+        if (res.ok) {
+          const live = await res.json();
+          if (controlsEqual(live.controls || [], d.controls)) {
+            clearDraft();
+            updateDirtyBadge();
+            commitStatus.className = "status-line ok";
+            commitStatus.textContent = "GitHub Pages 已更新 SSOT，本機 draft 已清除。即將重新整理…";
+            stopPendingCommitPoller();
+            setTimeout(() => location.reload(), 800);
+          }
+        }
+      } catch { /* network blip — try again next tick */ }
+    };
+    _pendingPollTimer = setInterval(tick, 20000);
+    // Fire a first probe quickly (10s) so short rebuilds catch up fast.
+    setTimeout(tick, 10000);
+  }
+  function stopPendingCommitPoller() {
+    if (_pendingPollTimer) { clearInterval(_pendingPollTimer); _pendingPollTimer = null; }
+  }
+  // Resume polling on page load if a previous session left a pending commit.
+  if ((getDraft() || {}).pendingCommitSha) startPendingCommitPoller();
 
   // Auto-fill PAT field whenever drawer opens (extend existing openDrawer)
   const _origOpenDrawer = openDrawer;
