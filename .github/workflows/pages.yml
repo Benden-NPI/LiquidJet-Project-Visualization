@@ -6,12 +6,14 @@ on:
     paths:
       - 'editor/**'
       - 'portal/**'
+      - 'manage/**'
       - 'scripts/build-index.mjs'
       - '.github/workflows/pages.yml'
   pull_request:
     paths:
       - 'editor/**'
       - 'portal/**'
+      - 'manage/**'
       - 'scripts/build-index.mjs'
   workflow_dispatch:
 
