@@ -641,17 +641,21 @@
       }));
   }
   // Renders the fixed-column cells for a placeholder row (station exists but no controls).
+  // MUST stay in the same order/length as COLUMNS:
+  // #, Type, Station, Process, Milestone, Status, ID, Characteristic, Spec, Method, MSA, Sampling, Control, Reaction, Owner, PFMEA
   function renderPlaceholderCells(c) {
     const sm    = STATION_MAP[c.station];
     const order = sm?._order !== undefined ? sm._order + 1 : "?";
     const type  = sm?.type ?? "?";
+    const proc  = sm?.processStep || "";
     const msHtml = c.milestone
       ? `<span class="chip ms-${c.milestone}">${c.milestone}</span>`
       : `<span style="color:var(--muted)">—</span>`;
     return [
       `<td class="id">${order}</td>`,
-      `<td class="station">${esc(c.station)}</td>`,
       `<td class="id">${esc(type)}</td>`,
+      `<td class="station">${esc(c.station)}</td>`,
+      `<td class="char">${esc(proc)}</td>`,
       `<td>${msHtml}</td>`,
       `<td><span class="chip st-todo">未設定</span></td>`,
       `<td class="id"></td>`,
