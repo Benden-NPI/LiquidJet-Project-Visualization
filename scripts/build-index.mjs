@@ -52,16 +52,20 @@ writeFileSync(join(distDir, "index.html"), portalHtml);
 
 // 3) Render scope/control-plan.md into dist/scope/control-plan.html
 //    The portal template renders the embedded markdown client-side via marked.js.
+//    Markdown is embedded as a JSON string literal (JSON.stringify) so it
+//    cannot break out of the <script> tag regardless of content.
 const cpTemplate = join(root, "portal", "control-plan.html");
 const cpMarkdown = join(root, "scope", "control-plan.md");
 let controlPlanCount = 0;
 if (existsSync(cpTemplate) && existsSync(cpMarkdown)) {
   const tpl = readFileSync(cpTemplate, "utf8");
-  // Escape any `</` to `<\/` so a stray `</script>` inside the markdown
-  // cannot terminate the embedding <script id="md-source"> tag.
-  const mdRaw = readFileSync(cpMarkdown, "utf8").replaceAll("</", "<\\/");
+  const mdRaw = readFileSync(cpMarkdown, "utf8");
+  // JSON.stringify handles all special characters; additionally escape `</`
+  // to `<\/` so that a literal "</script>" in the markdown cannot terminate
+  // the surrounding <script> tag when the JSON literal is inlined into HTML.
+  const mdJson = JSON.stringify(mdRaw).replace(/<\//g, "<\\/");
   const html = tpl
-    .replaceAll("__CONTROL_PLAN_MD__", mdRaw)
+    .replaceAll("__CONTROL_PLAN_MD_JSON__", mdJson)
     .replaceAll("__BUILD_TS__", buildTs);
   const outPath = join(distDir, "scope", "control-plan.html");
   mkdirSync(dirname(outPath), { recursive: true });
