@@ -1,0 +1,21 @@
+{
+  "$schema_comment": "LiquidJet stations — SSOT for station identity (name + type + order). 此檔為 Yield Process Readiness 看板的鏡像。Yield 端真實資料源為 SharePoint xlsx（無 public JSON endpoint），故此檔由 NPI 手動同步維護。任何 control plan、mindmap 或其他面板若需引用 station，請以本檔的 name 字串為唯一鍵。",
+  "yieldSource": {
+    "url": "https://benden-npi.github.io/Yield/",
+    "tab": "Process Readiness",
+    "note": "Yield 端站點順序由 SharePoint 上的 PO/Tool xlsx 載入；本檔為人工鏡像，每次 Yield 異動請同步更新 lastSyncedAt。"
+  },
+  "lastSyncedAt": "2026-06-07",
+  "lastSyncedBy": "TBD (NPI)",
+  "stations": [
+    { "name": "ColdPlate 1", "type": "coldplate", "stationNo": 1 },
+    { "name": "ColdPlate 2", "type": "coldplate", "stationNo": 2 },
+    { "name": "ColdPlate 3", "type": "coldplate", "stationNo": 3 },
+    { "name": "ColdPlate 4", "type": "coldplate", "stationNo": 4 },
+    { "name": "ColdPlate 5", "type": "coldplate", "stationNo": 5 },
+    { "name": "ColdPlate 6", "type": "coldplate", "stationNo": 6 },
+    { "name": "Assembly 1",  "type": "loop",      "stationNo": 1 },
+    { "name": "Assembly 2",  "type": "loop",      "stationNo": 2 },
+    { "name": "Assembly 3",  "type": "loop",      "stationNo": 3 }
+  ]
+}

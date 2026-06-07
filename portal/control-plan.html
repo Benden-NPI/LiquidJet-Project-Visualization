@@ -2,9 +2,9 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8" />
-<title>LiquidJet · Control Plan 點燈</title>
+<title>LiquidJet · Control Plan 總表</title>
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<meta name="description" content="LiquidJet Control Plan 點燈框架 — Stations × Milestones (First Principles v2)。" />
+<meta name="description" content="LiquidJet Control Plan — 全 station 全 milestone 一張總表。" />
 <style>
   :root {
     color-scheme: light dark;
@@ -13,7 +13,6 @@
     --accent:#4f8cff; --accent2:#38d39f; --accent3:#f3b54a;
 
     /* Milestone colors — 對齊 Benden-NPI/Yield constants.ts */
-    --ms-movein:#1F2937;
     --ms-setup:#FFC000;
     --ms-tuning:#F59E0B;
     --ms-qualify:#10B981;
@@ -29,17 +28,17 @@
   }
   * { box-sizing:border-box; }
   html, body { margin:0; min-height:100%; background:var(--bg); color:var(--text);
-    font-family:-apple-system,Segoe UI,Roboto,"PingFang TC","Noto Sans TC",sans-serif; line-height:1.55; }
+    font-family:-apple-system,Segoe UI,Roboto,"PingFang TC","Noto Sans TC",sans-serif; line-height:1.5; }
   body {
     background:
       radial-gradient(1200px 500px at 20% -10%, rgba(243,181,74,.14), transparent 60%),
       radial-gradient(900px 500px at 100% 0%, rgba(79,140,255,.12), transparent 60%),
       var(--bg);
   }
-  .wrap { max-width:1240px; margin:0 auto; padding:28px 24px 64px; }
+  .wrap { max-width:1480px; margin:0 auto; padding:24px 20px 60px; }
 
   /* Top bar */
-  .topbar { display:flex; align-items:center; gap:12px; margin-bottom:18px; flex-wrap:wrap; }
+  .topbar { display:flex; align-items:center; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
   .topbar a.back { color:var(--muted); text-decoration:none; font-size:13px;
     padding:6px 10px; border:1px solid var(--border); border-radius:8px; background:var(--panel2); }
   .topbar a.back:hover { border-color:var(--accent); color:var(--text); }
@@ -50,92 +49,111 @@
     background:var(--panel2); border:1px solid var(--border); color:var(--muted); }
   .badge.live { color:var(--accent3); border-color:var(--accent3); }
 
-  h1 { margin:0 0 6px; font-size:24px; letter-spacing:.3px; }
-  .sub { color:var(--muted); font-size:13.5px; margin:0 0 22px; }
+  h1 { margin:0 0 4px; font-size:22px; letter-spacing:.3px; }
+  .sub { color:var(--muted); font-size:13px; margin:0 0 14px; }
 
-  /* Section card */
-  section.card {
-    background:var(--panel); border:1px solid var(--border); border-radius:14px;
-    padding:20px 22px; margin-bottom:18px;
+  /* SSOT banner */
+  .ssot {
+    display:flex; gap:12px; align-items:center; flex-wrap:wrap;
+    padding:10px 14px; border-radius:10px; margin-bottom:16px;
+    background:rgba(79,140,255,.08); border:1px solid rgba(79,140,255,.35);
+    font-size:12.5px;
   }
-  section.card > h2 {
-    margin:0 0 12px; font-size:15px; color:var(--muted);
-    letter-spacing:.4px; text-transform:uppercase; font-weight:600;
-    display:flex; align-items:center; gap:10px;
+  .ssot b { color:var(--accent); }
+  .ssot .dot { width:8px; height:8px; border-radius:50%; background:var(--accent2); display:inline-block; }
+  .ssot a { color:var(--accent); text-decoration:none; }
+  .ssot a:hover { text-decoration:underline; }
+  .ssot .pill { background:var(--panel2); border:1px solid var(--border); padding:2px 8px; border-radius:99px; color:var(--muted); }
+
+  /* KPI strip */
+  .kpis { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px,1fr)); gap:10px; margin-bottom:14px; }
+  .kpi { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:10px 14px; }
+  .kpi .lbl { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
+  .kpi .val { font-size:22px; font-weight:700; margin-top:2px; font-variant-numeric:tabular-nums; }
+  .kpi .sub { font-size:11px; color:var(--muted); margin:0; }
+  .kpi.ready    .val { color:var(--st-ready); }
+  .kpi.draft    .val { color:var(--st-draft); }
+  .kpi.todo     .val { color:var(--st-todo); }
+  .kpi.excursion .val { color:var(--st-excursion); }
+  .kpi .bar { height:6px; background:var(--panel2); border-radius:99px; overflow:hidden; margin-top:8px; display:flex; }
+  .kpi .bar > span { display:block; height:100%; }
+  .kpi .bar .b-ready     { background:var(--st-ready); }
+  .kpi .bar .b-draft     { background:var(--st-draft); }
+  .kpi .bar .b-excursion { background:var(--st-excursion); }
+  .kpi .bar .b-todo      { background:var(--st-todo); }
+
+  /* Filter bar */
+  .filters { background:var(--panel); border:1px solid var(--border); border-radius:10px;
+    padding:10px 12px; margin-bottom:12px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .filters label { font-size:12px; color:var(--muted); display:inline-flex; align-items:center; gap:6px; }
+  .filters select, .filters input[type=search] {
+    background:var(--panel2); border:1px solid var(--border); color:var(--text);
+    padding:5px 8px; border-radius:6px; font-size:12.5px; font-family:inherit;
   }
-  section.card > h2 .count { font-size:11.5px; color:var(--muted);
-    padding:2px 8px; border:1px solid var(--border); border-radius:99px;
-    background:var(--panel2); text-transform:none; letter-spacing:0; }
-
-  /* Notice */
-  .notice {
-    display:flex; gap:10px; align-items:flex-start;
-    padding:10px 14px; border-radius:10px; margin-bottom:18px;
-    background:rgba(243,181,74,.10); border:1px solid rgba(243,181,74,.45);
-    color:var(--text); font-size:13px;
+  .filters input[type=search] { min-width:200px; }
+  .filters .spacer { flex:1; }
+  .filters .reset {
+    background:transparent; border:1px solid var(--border); color:var(--muted);
+    padding:5px 10px; border-radius:6px; font-size:12px; cursor:pointer;
   }
-  .notice b { color:var(--accent3); }
+  .filters .reset:hover { color:var(--text); border-color:var(--accent); }
 
-  /* Legend */
-  .legend { display:flex; flex-wrap:wrap; gap:14px; }
-  .legend .item { display:inline-flex; align-items:center; gap:6px; font-size:12.5px; color:var(--muted); }
-  .dot { width:11px; height:11px; border-radius:50%; display:inline-block; }
-  .dot.todo      { background:var(--st-todo); }
-  .dot.draft     { background:var(--st-draft); }
-  .dot.ready     { background:var(--st-ready); }
-  .dot.excursion { background:var(--st-excursion); }
-  .ms-chip { display:inline-block; padding:2px 8px; border-radius:6px; font-size:11.5px; font-weight:600;
-    color:#fff; letter-spacing:.3px; }
-  .ms-chip.setup    { background:var(--ms-setup); color:#3a2900; }
-  .ms-chip.tuning   { background:var(--ms-tuning); }
-  .ms-chip.qualify  { background:var(--ms-qualify); }
-
-  /* Matrix */
-  .matrix-scroll { overflow-x:auto; }
-  table.matrix { border-collapse:separate; border-spacing:0; width:100%; font-size:13px; }
-  table.matrix th, table.matrix td {
-    border-bottom:1px solid var(--border); padding:10px 12px; text-align:left; vertical-align:middle;
+  /* Main table */
+  .table-wrap { background:var(--panel); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+  .table-scroll { overflow:auto; max-height:72vh; }
+  table.main { border-collapse:separate; border-spacing:0; width:100%; font-size:12.5px; }
+  table.main thead th {
+    background:var(--panel2); color:var(--muted); font-size:11px; font-weight:600;
+    text-transform:uppercase; letter-spacing:.4px; text-align:left;
+    padding:8px 10px; border-bottom:1px solid var(--border);
+    position:sticky; top:0; z-index:2; white-space:nowrap;
+    cursor:pointer; user-select:none;
   }
-  table.matrix thead th { color:var(--muted); font-weight:600; font-size:11.5px;
-    text-transform:uppercase; letter-spacing:.4px; background:var(--panel2);
-    position:sticky; top:0; }
-  table.matrix tbody tr:hover { background:var(--panel2); }
-  table.matrix td.station { font-weight:600; white-space:nowrap; }
-  table.matrix td.type-tag { color:var(--muted); font-size:11.5px; }
-  table.matrix .ms-cell { text-align:center; min-width:120px; }
-  .light {
-    display:inline-flex; align-items:center; justify-content:center; gap:6px;
-    padding:5px 10px; border-radius:99px; font-size:12px; color:var(--text);
-    background:var(--panel2); border:1px solid var(--border); min-width:96px;
-    cursor:default; user-select:none;
+  table.main thead th .sort { color:var(--muted); opacity:.5; margin-left:4px; font-size:10px; }
+  table.main thead th.sorted .sort { opacity:1; color:var(--accent); }
+  table.main tbody td { padding:9px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
+  table.main tbody tr:hover { background:var(--panel2); }
+  table.main td.station { font-weight:600; white-space:nowrap; }
+  table.main td.id { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:11.5px; color:var(--muted); white-space:nowrap; }
+  table.main td.char { min-width:200px; }
+  table.main td.spec, table.main td.method, table.main td.msa, table.main td.sample, table.main td.control, table.main td.reaction { min-width:140px; }
+  table.main td.reaction { color:var(--muted); }
+  table.main td.pfmea { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:11.5px; white-space:nowrap; }
+
+  /* Chips */
+  .chip {
+    display:inline-block; padding:2px 8px; border-radius:99px; font-size:11px; font-weight:600;
+    letter-spacing:.2px; white-space:nowrap;
   }
-  .light .dot { box-shadow:0 0 0 3px rgba(255,255,255,.04); }
-  .light.todo      { border-color:rgba(107,114,128,.45); color:var(--muted); }
-  .light.draft     { border-color:rgba(255,192,0,.6); color:var(--accent3); }
-  .light.ready     { border-color:rgba(16,185,129,.55); color:var(--accent2); }
-  .light.excursion { border-color:rgba(239,68,68,.55); color:#ff8b8b; }
-  .light .n { opacity:.7; font-variant-numeric:tabular-nums; }
+  .chip.ms-Setup    { background:var(--ms-setup); color:#3a2900; }
+  .chip.ms-Tuning   { background:var(--ms-tuning); color:#fff; }
+  .chip.ms-Qualify  { background:var(--ms-qualify); color:#fff; }
+  .chip.st-todo      { background:rgba(107,114,128,.20); color:var(--muted); border:1px solid rgba(107,114,128,.45); }
+  .chip.st-draft     { background:rgba(255,192,0,.18);  color:var(--accent3); border:1px solid rgba(255,192,0,.55); }
+  .chip.st-ready     { background:rgba(16,185,129,.18); color:var(--accent2); border:1px solid rgba(16,185,129,.50); }
+  .chip.st-excursion { background:rgba(239,68,68,.18);  color:#ff8b8b;        border:1px solid rgba(239,68,68,.55); }
+  .chip.owner { background:var(--panel2); color:var(--text); border:1px solid var(--border); }
 
-  /* Group divider row */
-  tr.group td { background:var(--panel2); color:var(--muted); font-size:11.5px;
-    text-transform:uppercase; letter-spacing:.6px; font-weight:600; padding:6px 12px; }
+  /* Empty / warning */
+  .empty { padding:36px 20px; text-align:center; color:var(--muted); font-size:13px; }
+  .warn-row td { background:rgba(239,68,68,.10); color:#ff8b8b; }
 
-  /* Holistic + audit */
-  ul.checklist { list-style:none; padding:0; margin:0; display:grid; gap:8px; }
-  ul.checklist li { display:flex; gap:10px; align-items:flex-start;
-    padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:var(--panel2);
-    font-size:13.5px; }
-  ul.checklist input[type=checkbox] { margin-top:3px; accent-color:var(--accent2); }
-  ul.checklist .lbl { flex:1; }
-  ul.checklist .lbl .hint { display:block; color:var(--muted); font-size:12px; margin-top:2px; }
+  /* Holistic + footer */
+  .below { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px; }
+  @media (max-width:900px) { .below { grid-template-columns:1fr; } }
+  .card { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:14px 16px; }
+  .card h2 { margin:0 0 10px; font-size:12px; color:var(--muted);
+    letter-spacing:.4px; text-transform:uppercase; font-weight:600; }
+  ul.checklist { list-style:none; padding:0; margin:0; display:grid; gap:6px; }
+  ul.checklist li { display:flex; gap:8px; align-items:flex-start; font-size:13px;
+    padding:6px 8px; border:1px solid var(--border); border-radius:8px; background:var(--panel2); }
+  ul.checklist input { accent-color:var(--accent2); margin-top:2px; }
+  ul.checklist .hint { color:var(--muted); font-size:11.5px; display:block; margin-top:1px; }
+  ol.audit { padding-left:20px; margin:0; display:grid; gap:4px; font-size:12.5px; color:var(--text); }
+  ol.audit li { padding:2px 0; }
+  ol.audit code { background:var(--panel2); border:1px solid var(--border); padding:0 5px; border-radius:4px; font-size:11.5px; }
 
-  ol.audit { padding-left:22px; margin:0; display:grid; gap:6px; font-size:13.5px; }
-  ol.audit li { padding:4px 0; }
-  ol.audit li code { background:var(--panel2); padding:1px 6px; border-radius:5px; font-size:12px;
-    border:1px solid var(--border); }
-
-  /* Footer */
-  footer { margin-top:24px; color:var(--muted); font-size:12px;
+  footer { margin-top:20px; color:var(--muted); font-size:11.5px;
     display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
   footer a { color:var(--muted); }
   footer a:hover { color:var(--accent); }
@@ -146,93 +164,100 @@
 
   <div class="topbar">
     <a class="back" href="./../index.html">← Portal</a>
-    <span class="badge live">● Control Plan 點燈</span>
+    <span class="badge live">● Control Plan 總表</span>
     <div class="spacer"></div>
-    <a class="src" href="https://github.com/Benden-NPI/LiquidJet-Project-Visualization/blob/main/scope/control-plan.md" target="_blank" rel="noopener">View spec ↗</a>
+    <a class="src" href="https://github.com/Benden-NPI/LiquidJet-Project-Visualization/blob/main/scope/stations.json" target="_blank" rel="noopener">stations.json ↗</a>
+    <a class="src" href="https://github.com/Benden-NPI/LiquidJet-Project-Visualization/blob/main/scope/control-plan.json" target="_blank" rel="noopener">control-plan.json ↗</a>
   </div>
 
-  <h1>Control Plan 點燈框架 <span style="color:var(--muted); font-weight:400; font-size:15px;">v1 — first sketch</span></h1>
-  <p class="sub">
-    Stations × Milestones 對齊矩陣。每一格 = 該 station 在該 milestone 之前該長出的 control 是否就緒。
-    站點順序對齊 <a href="https://benden-npi.github.io/Yield/" target="_blank" rel="noopener" style="color:var(--accent)">Yield Process Readiness</a> 看板。
-  </p>
+  <h1>Control Plan 總表 <span style="color:var(--muted); font-weight:400; font-size:14px;">v2 — single-table view</span></h1>
+  <p class="sub">全 station × 全 milestone × 全 control 一張表看完。資料來源：<code>scope/stations.json</code> + <code>scope/control-plan.json</code>（build-time FK 驗證）。</p>
 
-  <div class="notice">
-    <span>⚠️</span>
-    <div>
-      <b>第一版說明</b>：站點清單與每格狀態目前為 placeholder。
-      正式對齊時請編輯本檔頂端的 <code>STATIONS</code> 與 <code>STATUS</code> 兩個 JS 物件
-      （Yield 站點是 SharePoint xlsx 動態載入，無法 build-time 同步）。
-    </div>
+  <!-- SSOT banner -->
+  <div class="ssot" id="ssot">
+    <span class="dot"></span>
+    <span><b>SSOT：</b><code>scope/stations.json</code> 為 station 唯一鍵</span>
+    <span class="pill">stations <span id="stationCount">0</span></span>
+    <span class="pill">controls <span id="controlCount">0</span></span>
+    <span class="pill">last synced with Yield: <span id="lastSynced">—</span></span>
+    <span class="spacer" style="flex:1;"></span>
+    <a href="https://benden-npi.github.io/Yield/" target="_blank" rel="noopener">Open Yield Process Readiness ↗</a>
   </div>
 
-  <!-- Legend -->
-  <section class="card">
-    <h2>圖例 <span class="count">Legend</span></h2>
-    <div style="display:grid; gap:10px;">
-      <div class="legend">
-        <span class="item"><span class="dot todo"></span>未設定 <span style="opacity:.6;">no control yet</span></span>
-        <span class="item"><span class="dot draft"></span>草擬中 <span style="opacity:.6;">drafted / MSA pending</span></span>
-        <span class="item"><span class="dot ready"></span>已就緒 <span style="opacity:.6;">control live + gate passed</span></span>
-        <span class="item"><span class="dot excursion"></span>異常 <span style="opacity:.6;">excursion / blocker</span></span>
-      </div>
-      <div class="legend">
-        <span class="item">Milestone：</span>
-        <span class="item"><span class="ms-chip setup">Setup</span>站點接線、首件可跑</span>
-        <span class="item"><span class="ms-chip tuning">Tuning</span>tuningCriteria 過關</span>
-        <span class="item"><span class="ms-chip qualify">Qualify</span>qualifyCriteria + holistic 全綠</span>
-      </div>
-    </div>
-  </section>
+  <!-- KPIs -->
+  <div class="kpis" id="kpis"></div>
 
-  <!-- Matrix -->
-  <section class="card">
-    <h2>Station × Milestone 矩陣 <span class="count" id="matrixCount">—</span></h2>
-    <div class="matrix-scroll">
-      <table class="matrix" id="matrix">
+  <!-- Filters -->
+  <div class="filters">
+    <label>Milestone
+      <select id="fMilestone">
+        <option value="">All</option>
+        <option>Setup</option><option>Tuning</option><option>Qualify</option>
+      </select>
+    </label>
+    <label>Status
+      <select id="fStatus">
+        <option value="">All</option>
+        <option value="todo">未設定</option>
+        <option value="draft">草擬中</option>
+        <option value="ready">已就緒</option>
+        <option value="excursion">異常</option>
+      </select>
+    </label>
+    <label>Station
+      <select id="fStation"><option value="">All</option></select>
+    </label>
+    <label>Owner
+      <select id="fOwner"><option value="">All</option></select>
+    </label>
+    <label>Type
+      <select id="fType">
+        <option value="">All</option>
+        <option value="coldplate">coldplate</option>
+        <option value="loop">loop</option>
+      </select>
+    </label>
+    <span class="spacer"></span>
+    <label>🔎 <input id="fSearch" type="search" placeholder="characteristic / control / reaction / PFMEA" /></label>
+    <button class="reset" id="fReset">Reset</button>
+  </div>
+
+  <!-- Main table -->
+  <div class="table-wrap">
+    <div class="table-scroll">
+      <table class="main" id="mainTable">
         <thead>
-          <tr>
-            <th style="width:24%;">Station</th>
-            <th style="width:14%;">Type</th>
-            <th class="ms-cell"><span class="ms-chip setup">Setup</span></th>
-            <th class="ms-cell"><span class="ms-chip tuning">Tuning</span></th>
-            <th class="ms-cell"><span class="ms-chip qualify">Qualify</span></th>
-          </tr>
+          <tr id="theadRow"></tr>
         </thead>
-        <tbody><!-- rendered by JS --></tbody>
+        <tbody id="tbody"></tbody>
       </table>
     </div>
-  </section>
+  </div>
 
-  <!-- Holistic Layer -->
-  <section class="card">
-    <h2>Holistic Layer <span class="count">Qualify 強制 Exit Criteria</span></h2>
-    <ul class="checklist">
-      <li><input type="checkbox" disabled><span class="lbl"><b>Traceability</b><span class="hint">每顆成品可回查批號 / 機台 / 作業者 / 量測值 / 時間戳。</span></span></li>
-      <li><input type="checkbox" disabled><span class="lbl"><b>4M Change Control</b><span class="hint">4M 變更觸發 FAI / 重新驗證流程文件已發行。</span></span></li>
-      <li><input type="checkbox" disabled><span class="lbl"><b>Excursion / Recovery</b><span class="hint">停線、重工、返修流程已寫且演練過。</span></span></li>
-      <li><input type="checkbox" disabled><span class="lbl"><b>Data Loop</b><span class="hint">量測 → SPC → CAPA → 設計回饋已閉環，至少跑過一次真實案例。</span></span></li>
-    </ul>
-  </section>
-
-  <!-- Self-audit -->
-  <section class="card">
-    <h2>Self-audit <span class="count">每週 5 分鐘，逐 station</span></h2>
-    <ol class="audit">
-      <li>目前 milestone = ？下一個 milestone exit criteria 全部列得出來嗎？</li>
-      <li>Move-in/Setup/Tuning/Qualify 該長出的元件，有沒有「不確定」？</li>
-      <li>該 station PFMEA 高 RPN cause，是否都對到 control plan 一行？</li>
-      <li>每行 control 是否都對到 FMEA cause 且標明 milestone 歸屬？</li>
-      <li><code>tuningCriteria</code> / <code>qualifyCriteria</code> 字串背後完整定義，是否在 <code>scope/tuning-qualify-criteria.md</code> 找得到？</li>
-      <li>三 owner（SurveyTool / EE / NPI）上週是否各看過一次？任何一位空白？</li>
-      <li>上週的 NG / 異常是否都進到 CAPA 或 SPC 看板？</li>
-    </ol>
-  </section>
+  <!-- Bottom: Holistic + Self-audit -->
+  <div class="below">
+    <section class="card">
+      <h2>Holistic Layer — Qualify 強制 Exit Criteria</h2>
+      <ul class="checklist" id="holistic"></ul>
+    </section>
+    <section class="card">
+      <h2>Self-audit — 每週 5 分鐘逐 station</h2>
+      <ol class="audit">
+        <li>目前 milestone = ？下一個 milestone exit criteria 全部列得出來嗎？</li>
+        <li>Move-in/Setup/Tuning/Qualify 該長出的元件，有沒有「不確定」？</li>
+        <li>該 station PFMEA 高 RPN cause，是否都對到 control plan 一行？</li>
+        <li>每行 control 是否都對到 FMEA cause 且標明 milestone 歸屬？</li>
+        <li><code>tuningCriteria</code> / <code>qualifyCriteria</code> 字串完整定義在 <code>scope/tuning-qualify-criteria.md</code> 找得到？</li>
+        <li>三 owner（SurveyTool / EE / NPI）上週是否各看過一次？</li>
+        <li>上週 NG / 異常是否都進到 CAPA 或 SPC 看板？</li>
+      </ol>
+    </section>
+  </div>
 
   <footer>
     <span>© Benden NPI · LiquidJet</span>
     <span>
-      <a href="https://github.com/Benden-NPI/LiquidJet-Project-Visualization/blob/main/scope/control-plan.md" target="_blank" rel="noopener">spec</a>
+      <a href="https://github.com/Benden-NPI/LiquidJet-Project-Visualization/blob/main/scope/control-plan.md" target="_blank" rel="noopener">spec (md)</a>
       ·
       <a href="https://github.com/Benden-NPI/LiquidJet-Project-Visualization/blob/main/decisions/0002-control-plan-framework.md" target="_blank" rel="noopener">ADR-0002</a>
       ·
@@ -242,101 +267,181 @@
   </footer>
 </div>
 
+<!-- Inlined SSOT data -->
+<script id="data-stations" type="application/json">__STATIONS_JSON__</script>
+<script id="data-controlplan" type="application/json">__CONTROL_PLAN_JSON__</script>
+
 <script>
-  // -------------------------------------------------------------------------
-  // STATIONS — 對齊 Yield Process Readiness 看板的順序與命名
-  // 格式：{ name, type }，type ∈ "coldplate" | "loop"
-  // 這是 placeholder；正式請由 NPI 對齊真實 Yield 表格後更新。
-  // -------------------------------------------------------------------------
-  const STATIONS = [
-    { name: "ColdPlate 1", type: "coldplate" },
-    { name: "ColdPlate 2", type: "coldplate" },
-    { name: "ColdPlate 3", type: "coldplate" },
-    { name: "ColdPlate 4", type: "coldplate" },
-    { name: "ColdPlate 5", type: "coldplate" },
-    { name: "ColdPlate 6", type: "coldplate" },
-    { name: "Assembly 1",  type: "loop" },
-    { name: "Assembly 2",  type: "loop" },
-    { name: "Assembly 3",  type: "loop" },
-  ];
+(function () {
+  // ---------- Load SSOT ----------
+  const STATIONS_DOC = JSON.parse(document.getElementById("data-stations").textContent);
+  const CP_DOC       = JSON.parse(document.getElementById("data-controlplan").textContent);
+  const STATIONS = STATIONS_DOC.stations || [];
+  const CONTROLS = CP_DOC.controls || [];
+  const HOLISTIC = CP_DOC.holistic || [];
 
-  // -------------------------------------------------------------------------
-  // STATUS — 每個 station × milestone 的狀態與 control 行數
-  // status: "todo" | "draft" | "ready" | "excursion"
-  // n:      該格目前已掛上的 control 行數（用於右側小數字）
-  // 預設全 todo / n=0；之後可由人工或從 control-plan.md 解析填入。
-  // -------------------------------------------------------------------------
-  const STATUS = {
-    // 範例：對齊 control-plan.md 中 ColdPlate 4 的三條範例 control
-    "ColdPlate 4": {
-      setup:   { status: "ready", n: 1 },   // torque poka-yoke (Setup)
-      tuning:  { status: "draft", n: 1 },   // flow interlock (Tuning)
-      qualify: { status: "todo",  n: 1 },   // flatness CMM (Qualify)
-    },
-  };
+  // Station lookup: name -> { type, stationNo, order }
+  const STATION_MAP = {};
+  STATIONS.forEach((s, i) => { STATION_MAP[s.name] = Object.assign({ _order: i }, s); });
 
-  const MILESTONES = [
-    { key: "setup",   label: "Setup" },
-    { key: "tuning",  label: "Tuning" },
-    { key: "qualify", label: "Qualify" },
-  ];
+  // ---------- SSOT banner ----------
+  document.getElementById("stationCount").textContent = STATIONS.length;
+  document.getElementById("controlCount").textContent = CONTROLS.length;
+  document.getElementById("lastSynced").textContent   = STATIONS_DOC.lastSyncedAt || "—";
 
-  const STATUS_DEFS = {
-    todo:      { label: "未設定", cls: "todo" },
-    draft:     { label: "草擬中", cls: "draft" },
-    ready:     { label: "已就緒", cls: "ready" },
-    excursion: { label: "異常",   cls: "excursion" },
-  };
-
-  function getCell(station, msKey) {
-    const row = STATUS[station] || {};
-    const cell = row[msKey] || { status: "todo", n: 0 };
-    return cell;
+  // ---------- KPIs ----------
+  function renderKPIs(rows) {
+    const total = rows.length;
+    const by = { ready:0, draft:0, todo:0, excursion:0 };
+    rows.forEach(r => { by[r.status] = (by[r.status]||0) + 1; });
+    const pct = n => total ? Math.round(n/total*100) : 0;
+    const seg = (cls,n) => `<span class="${cls}" style="width:${pct(n)}%"></span>`;
+    const html = `
+      <div class="kpi"><div class="lbl">Controls</div><div class="val">${total}</div>
+        <div class="bar">${seg("b-ready",by.ready)}${seg("b-draft",by.draft)}${seg("b-excursion",by.excursion)}${seg("b-todo",by.todo)}</div>
+        <p class="sub">ready ${by.ready} · draft ${by.draft} · excursion ${by.excursion} · todo ${by.todo}</p>
+      </div>
+      <div class="kpi ready"><div class="lbl">Ready</div><div class="val">${by.ready}</div><p class="sub">${pct(by.ready)}% 已就緒</p></div>
+      <div class="kpi draft"><div class="lbl">Draft</div><div class="val">${by.draft}</div><p class="sub">${pct(by.draft)}% 草擬中</p></div>
+      <div class="kpi todo"><div class="lbl">Todo</div><div class="val">${by.todo}</div><p class="sub">${pct(by.todo)}% 未設定</p></div>
+      <div class="kpi excursion"><div class="lbl">Excursion</div><div class="val">${by.excursion}</div><p class="sub">需立即處理</p></div>
+    `;
+    document.getElementById("kpis").innerHTML = html;
   }
 
-  function renderMatrix() {
-    const tbody = document.querySelector("#matrix tbody");
-    const groups = [
-      { key: "coldplate", label: "ColdPlate stations" },
-      { key: "loop",      label: "Loop / Assembly stations" },
-    ];
-    let html = "";
-    for (const g of groups) {
-      const rows = STATIONS.filter(s => s.type === g.key);
-      if (!rows.length) continue;
-      html += `<tr class="group"><td colspan="5">${g.label} · ${rows.length}</td></tr>`;
-      for (const s of rows) {
-        html += `<tr><td class="station">${s.name}</td><td class="type-tag">${s.type}</td>`;
-        for (const m of MILESTONES) {
-          const c = getCell(s.name, m.key);
-          const def = STATUS_DEFS[c.status] || STATUS_DEFS.todo;
-          html += `<td class="ms-cell"><span class="light ${def.cls}" title="${s.name} · ${m.label}: ${def.label}">`
-               + `<span class="dot ${def.cls}"></span>${def.label}`
-               + (c.n ? `<span class="n">· ${c.n}</span>` : "")
-               + `</span></td>`;
-        }
-        html += `</tr>`;
+  // ---------- Filters ----------
+  const fMilestone = document.getElementById("fMilestone");
+  const fStatus    = document.getElementById("fStatus");
+  const fStation   = document.getElementById("fStation");
+  const fOwner     = document.getElementById("fOwner");
+  const fType      = document.getElementById("fType");
+  const fSearch    = document.getElementById("fSearch");
+  const fReset     = document.getElementById("fReset");
+
+  // Populate station filter from SSOT order
+  STATIONS.forEach(s => {
+    const o = document.createElement("option");
+    o.value = s.name; o.textContent = s.name; fStation.appendChild(o);
+  });
+  // Populate owner from controls
+  const owners = Array.from(new Set(CONTROLS.map(c => c.owner).filter(Boolean))).sort();
+  owners.forEach(n => {
+    const o = document.createElement("option"); o.value = n; o.textContent = n; fOwner.appendChild(o);
+  });
+
+  // ---------- Sorting ----------
+  const COLUMNS = [
+    { key:"_stationOrder", label:"#",        cellKey:"_stationOrder", render:(c)=>`<td class="id">${(STATION_MAP[c.station]?._order ?? "-")+1}</td>` },
+    { key:"station",       label:"Station",  render:(c)=>`<td class="station">${c.station}</td>` },
+    { key:"_type",         label:"Type",     render:(c)=>`<td class="id">${STATION_MAP[c.station]?.type ?? "-"}</td>` },
+    { key:"milestone",     label:"Milestone",render:(c)=>`<td><span class="chip ms-${c.milestone}">${c.milestone}</span></td>` },
+    { key:"status",        label:"Status",   render:(c)=>`<td><span class="chip st-${c.status}">${STATUS_LABEL[c.status]||c.status}</span></td>` },
+    { key:"id",            label:"ID",       render:(c)=>`<td class="id">${c.id||""}</td>` },
+    { key:"characteristic",label:"Characteristic (CTQ / X)", render:(c)=>`<td class="char">${esc(c.characteristic)}</td>` },
+    { key:"spec",          label:"Spec",     render:(c)=>`<td class="spec">${esc(c.spec)}</td>` },
+    { key:"method",        label:"Method",   render:(c)=>`<td class="method">${esc(c.method)}</td>` },
+    { key:"msa",           label:"MSA",      render:(c)=>`<td class="msa">${esc(c.msa)}</td>` },
+    { key:"sampling",      label:"Sampling", render:(c)=>`<td class="sample">${esc(c.sampling)}</td>` },
+    { key:"control",       label:"Control",  render:(c)=>`<td class="control">${esc(c.control)}</td>` },
+    { key:"reaction",      label:"Reaction Plan", render:(c)=>`<td class="reaction">${esc(c.reaction)}</td>` },
+    { key:"owner",         label:"Owner",    render:(c)=>`<td><span class="chip owner">${c.owner||"-"}</span></td>` },
+    { key:"pfmea",         label:"PFMEA",    render:(c)=>`<td class="pfmea">${c.pfmea||""}</td>` },
+  ];
+  const STATUS_LABEL = { todo:"未設定", draft:"草擬中", ready:"已就緒", excursion:"異常" };
+  const MS_ORDER = { Setup:0, Tuning:1, Qualify:2 };
+
+  let sortKey = "_stationOrder";
+  let sortDir = 1; // 1 asc, -1 desc
+
+  function esc(s) {
+    if (s == null) return "";
+    return String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;" }[c]));
+  }
+
+  function sortVal(c, key) {
+    if (key === "_stationOrder") return STATION_MAP[c.station]?._order ?? 999;
+    if (key === "_type")         return STATION_MAP[c.station]?.type ?? "";
+    if (key === "milestone")     return MS_ORDER[c.milestone] ?? 99;
+    if (key === "status")        return ["excursion","todo","draft","ready"].indexOf(c.status);
+    return (c[key] ?? "").toString().toLowerCase();
+  }
+
+  function renderHead() {
+    const tr = document.getElementById("theadRow");
+    tr.innerHTML = COLUMNS.map(col => {
+      const sorted = col.key === sortKey;
+      const arrow = sorted ? (sortDir > 0 ? "▲" : "▼") : "↕";
+      return `<th data-key="${col.key}" class="${sorted?'sorted':''}">${col.label}<span class="sort">${arrow}</span></th>`;
+    }).join("");
+    tr.querySelectorAll("th").forEach(th => {
+      th.addEventListener("click", () => {
+        const k = th.dataset.key;
+        if (k === sortKey) sortDir = -sortDir; else { sortKey = k; sortDir = 1; }
+        render();
+      });
+    });
+  }
+
+  // ---------- Render rows ----------
+  function getFiltered() {
+    const ms = fMilestone.value, st = fStatus.value, sn = fStation.value,
+          ow = fOwner.value, tp = fType.value, q = fSearch.value.trim().toLowerCase();
+    return CONTROLS.filter(c => {
+      if (ms && c.milestone !== ms) return false;
+      if (st && c.status    !== st) return false;
+      if (sn && c.station   !== sn) return false;
+      if (ow && c.owner     !== ow) return false;
+      if (tp && STATION_MAP[c.station]?.type !== tp) return false;
+      if (q) {
+        const blob = [c.characteristic,c.control,c.reaction,c.pfmea,c.spec,c.method,c.msa,c.sampling,c.id]
+          .filter(Boolean).join(" ").toLowerCase();
+        if (!blob.includes(q)) return false;
       }
-    }
-    tbody.innerHTML = html;
-
-    // count summary
-    let total = STATIONS.length * MILESTONES.length;
-    let ready = 0;
-    for (const s of STATIONS) for (const m of MILESTONES)
-      if (getCell(s.name, m.key).status === "ready") ready++;
-    document.getElementById("matrixCount").textContent =
-      `${STATIONS.length} stations · ${ready}/${total} ready`;
+      return true;
+    });
   }
 
-  renderMatrix();
+  function render() {
+    const rows = getFiltered().slice().sort((a,b) => {
+      const va = sortVal(a, sortKey), vb = sortVal(b, sortKey);
+      if (va < vb) return -1*sortDir;
+      if (va > vb) return  1*sortDir;
+      return 0;
+    });
+    renderKPIs(rows);
+    renderHead();
+    const tbody = document.getElementById("tbody");
+    if (!rows.length) {
+      tbody.innerHTML = `<tr><td colspan="${COLUMNS.length}" class="empty">沒有符合條件的 control（目前 ${CONTROLS.length} 筆 control，套用篩選後為 0）。</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = rows.map(c => `<tr>${COLUMNS.map(col => col.render(c)).join("")}</tr>`).join("");
+  }
 
-  // build timestamp (replaced at build time)
-  (function () {
-    var ts = "__BUILD_TS__";
-    var el = document.getElementById("buildInfo");
-    if (el && !ts.startsWith("__")) el.textContent = "Built " + ts;
-  })();
+  [fMilestone, fStatus, fStation, fOwner, fType].forEach(el => el.addEventListener("change", render));
+  fSearch.addEventListener("input", render);
+  fReset.addEventListener("click", () => {
+    fMilestone.value = fStatus.value = fStation.value = fOwner.value = fType.value = "";
+    fSearch.value = "";
+    sortKey = "_stationOrder"; sortDir = 1;
+    render();
+  });
+
+  // ---------- Holistic ----------
+  const hList = document.getElementById("holistic");
+  hList.innerHTML = HOLISTIC.map(h =>
+    `<li><input type="checkbox" disabled ${h.done?"checked":""}>
+      <span><b>${esc(h.label)}</b><span class="hint">${esc(h.hint)}</span></span></li>`
+  ).join("");
+
+  // ---------- Initial render ----------
+  render();
+
+  // ---------- Build stamp ----------
+  var ts = "__BUILD_TS__";
+  var el = document.getElementById("buildInfo");
+  if (el && !ts.startsWith("__")) el.textContent = "Built " + ts;
+})();
 </script>
 </body>
 </html>

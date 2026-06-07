@@ -1,0 +1,56 @@
+{
+  "$schema_comment": "LiquidJet Control Plan — SSOT for control rows + holistic exit criteria. station 欄位為 FK，必須對應 scope/stations.json 內的 name；build 時驗證，違反會 fail loud。milestone ∈ {Setup, Tuning, Qualify}；status ∈ {todo, draft, ready, excursion}；owner ∈ {SurveyTool, EE, NPI, Operator, IQC, Supplier}。",
+  "controls": [
+    {
+      "id": "CP4-013",
+      "station": "ColdPlate 4",
+      "milestone": "Setup",
+      "characteristic": "Torque, mounting bolts (X)",
+      "spec": "4.5 ± 0.3 N·m",
+      "method": "Smart torque wrench, traceable",
+      "msa": "GR&R 5%; Last cal 2026-05-20",
+      "sampling": "100% with poka-yoke",
+      "control": "Poka-Yoke (wrench rejects out-of-range)",
+      "reaction": "Operator: 重打標記 → NPI: 每日複查 → 連續 3 NG → SOP review",
+      "pfmea": "PFMEA-CP4-013",
+      "owner": "NPI",
+      "status": "ready"
+    },
+    {
+      "id": "CP4-007",
+      "station": "ColdPlate 4",
+      "milestone": "Tuning",
+      "characteristic": "Coolant flow rate (X) — 影響 thermal Y",
+      "spec": "8.0 ± 0.5 L/min",
+      "method": "Inline flow meter, 0.1 L/min res.",
+      "msa": "GR&R 8%; Last cal 2026-05-01; Next 2026-08-01",
+      "sampling": "100% per part, logged 1 Hz",
+      "control": "SPC X-bar/R + low-flow interlock",
+      "reaction": "Operator: interlock 停線 → EE: 30 min 判定 → NPI: 連續 2 NG → 8D",
+      "pfmea": "PFMEA-CP4-007",
+      "owner": "EE",
+      "status": "draft"
+    },
+    {
+      "id": "CP4-002",
+      "station": "ColdPlate 4",
+      "milestone": "Qualify",
+      "characteristic": "Cold-plate surface flatness (Y, CTQ)",
+      "spec": "≤ 25 μm TIR",
+      "method": "CMM, 5-point",
+      "msa": "GR&R 12%; Last cal 2026-04-15",
+      "sampling": "AQL 1.0, n=5 / lot",
+      "control": "100% incoming + SPC trend",
+      "reaction": "IQC: 隔離整批 → Supplier QE: 48h CAR → NPI: 4M 變更評估",
+      "pfmea": "PFMEA-CP4-002",
+      "owner": "SurveyTool",
+      "status": "todo"
+    }
+  ],
+  "holistic": [
+    { "key": "traceability", "label": "Traceability",         "hint": "每顆成品可回查批號 / 機台 / 作業者 / 量測值 / 時間戳。",        "done": false },
+    { "key": "fourm",        "label": "4M Change Control",    "hint": "4M 變更觸發 FAI / 重新驗證流程文件已發行。",                       "done": false },
+    { "key": "excursion",    "label": "Excursion / Recovery", "hint": "停線、重工、返修流程已寫且演練過。",                                "done": false },
+    { "key": "dataloop",     "label": "Data Loop",            "hint": "量測 → SPC → CAPA → 設計回饋已閉環，至少跑過一次真實案例。",      "done": false }
+  ]
+}

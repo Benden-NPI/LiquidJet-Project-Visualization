@@ -7,6 +7,8 @@ on:
       - 'editor/**'
       - 'portal/**'
       - 'scope/control-plan.md'
+      - 'scope/control-plan.json'
+      - 'scope/stations.json'
       - 'scripts/build-index.mjs'
       - '.github/workflows/pages.yml'
   pull_request:
@@ -14,6 +16,8 @@ on:
       - 'editor/**'
       - 'portal/**'
       - 'scope/control-plan.md'
+      - 'scope/control-plan.json'
+      - 'scope/stations.json'
       - 'scripts/build-index.mjs'
   workflow_dispatch:
 

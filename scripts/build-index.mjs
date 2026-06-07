@@ -50,12 +50,36 @@ const buildTs = new Date().toISOString();
 const portalHtml = readFileSync(portalSrc, "utf8").replaceAll("__BUILD_TS__", buildTs);
 writeFileSync(join(distDir, "index.html"), portalHtml);
 
-// 3) Render scope/control-plan.html (static 點燈 dashboard, no markdown injection)
-//    The page is fully self-contained; we just stamp the build timestamp.
-const cpTemplate = join(root, "portal", "control-plan.html");
+// 3) Render scope/control-plan.html (static 點燈 dashboard)
+//    SSOT 拆兩個 JSON:
+//      - scope/stations.json     (station identity, Yield Process Readiness 鏡像)
+//      - scope/control-plan.json (controls + holistic, station 為 FK)
+//    Build-time 做 FK 驗證；違反即 fail loud。
+const cpTemplate     = join(root, "portal", "control-plan.html");
+const stationsSource = join(root, "scope",  "stations.json");
+const cpSource       = join(root, "scope",  "control-plan.json");
 let controlPlanCount = 0;
-if (existsSync(cpTemplate)) {
-  const tpl = readFileSync(cpTemplate, "utf8").replaceAll("__BUILD_TS__", buildTs);
+if (existsSync(cpTemplate) && existsSync(stationsSource) && existsSync(cpSource)) {
+  const stationsDoc = JSON.parse(readFileSync(stationsSource, "utf8"));
+  const cpDoc       = JSON.parse(readFileSync(cpSource, "utf8"));
+  const stationNames = new Set((stationsDoc.stations || []).map(s => s.name));
+  const orphans = (cpDoc.controls || [])
+    .filter(c => !stationNames.has(c.station))
+    .map(c => `${c.id || "(no id)"} → station=${JSON.stringify(c.station)}`);
+  if (orphans.length) {
+    console.error("control-plan.json references unknown stations (FK violation):");
+    for (const o of orphans) console.error("  -", o);
+    console.error("Fix scope/control-plan.json or sync scope/stations.json from Yield.");
+    process.exit(1);
+  }
+  // Inline as JSON string literals; escape "</" so a literal "</script>" in
+  // any text field cannot terminate the surrounding <script> tag.
+  const stationsJson = JSON.stringify(stationsDoc).replaceAll("</", "<\\/");
+  const cpJson       = JSON.stringify(cpDoc).replaceAll("</", "<\\/");
+  const tpl = readFileSync(cpTemplate, "utf8")
+    .replaceAll("__STATIONS_JSON__",     stationsJson)
+    .replaceAll("__CONTROL_PLAN_JSON__", cpJson)
+    .replaceAll("__BUILD_TS__",          buildTs);
   const outPath = join(distDir, "scope", "control-plan.html");
   mkdirSync(dirname(outPath), { recursive: true });
   writeFileSync(outPath, tpl);
