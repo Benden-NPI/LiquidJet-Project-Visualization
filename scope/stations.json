@@ -38,6 +38,8 @@
     { "name": "ColdPlate 28", "type": "coldplate", "stationNo": 28 },
     { "name": "ColdPlate 29", "type": "coldplate", "stationNo": 29 },
     { "name": "ColdPlate 30", "type": "coldplate", "stationNo": 30 },
+    { "name": "ColdPlate 31", "type": "coldplate", "stationNo": 31 },
+    { "name": "ColdPlate 32a", "type": "coldplate", "stationNo": 32 },
     { "name": "ColdPlate 32b", "type": "coldplate", "stationNo": 32 },
     { "name": "ColdPlate 33", "type": "coldplate", "stationNo": 33 },
     { "name": "ColdPlate 34", "type": "coldplate", "stationNo": 34 },
