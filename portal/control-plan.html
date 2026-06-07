@@ -138,6 +138,10 @@
   .empty { padding:36px 20px; text-align:center; color:var(--muted); font-size:13px; }
   .warn-row td { background:rgba(239,68,68,.10); color:#ff8b8b; }
 
+  /* Placeholder rows: stations imported from Yield but with no controls yet */
+  table.main tbody tr.placeholder-row td { opacity:.45; }
+  table.main tbody tr.placeholder-row:hover td { opacity:.65; }
+
   /* Holistic + footer */
   .below { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px; }
   @media (max-width:900px) { .below { grid-template-columns:1fr; } }
@@ -610,21 +614,89 @@
       return true;
     });
   }
+  // Build placeholder rows for stations that have no controls in the current view.
+  // These are stations present in STATIONS (active list) but absent from filteredRows
+  // after applying the station / type filters. Owner / text / status filters are
+  // intentionally NOT applied — we always want empty stations to be visible so the
+  // user can see every imported station even when it has no controls yet.
+  function getPlaceholders(filteredRows) {
+    const ms = fMilestone.value, tp = fType.value, sn = fStation.value;
+    // Stations that already have ≥1 control in this filtered view
+    const hasCtrls = new Set(filteredRows.map(c => c.station));
+    return STATIONS
+      .filter(s => {
+        if (sn && s.name !== sn) return false;
+        if (tp && s.type !== tp) return false;
+        return !hasCtrls.has(s.name);
+      })
+      .map(s => ({
+        _isPlaceholder: true,
+        station: s.name,
+        milestone: ms || "",
+        status: "todo",
+        id: "", characteristic: "", spec: "", method: "", msa: "",
+        sampling: "", control: "", reaction: "", owner: "", pfmea: "",
+      }));
+  }
+  // Renders the fixed-column cells for a placeholder row (station exists but no controls).
+  function renderPlaceholderCells(c) {
+    const order = (STATION_MAP[c.station]?._order ?? -1) + 1 || "?";
+    const type  = STATION_MAP[c.station]?.type ?? "?";
+    const msHtml = c.milestone
+      ? `<span class="chip ms-${c.milestone}">${c.milestone}</span>`
+      : `<span style="color:var(--muted)">—</span>`;
+    return [
+      `<td class="id">${order}</td>`,
+      `<td class="station">${esc(c.station)}</td>`,
+      `<td class="id">${esc(type)}</td>`,
+      `<td>${msHtml}</td>`,
+      `<td><span class="chip st-todo">未設定</span></td>`,
+      `<td class="id"></td>`,
+      `<td class="char" style="font-style:italic;">（尚無 control 定義）</td>`,
+      `<td class="spec"></td>`,
+      `<td class="method"></td>`,
+      `<td class="msa"></td>`,
+      `<td class="sample"></td>`,
+      `<td class="control"></td>`,
+      `<td class="reaction"></td>`,
+      `<td></td>`,
+      `<td class="pfmea"></td>`,
+    ].join("");
+  }
   function render() {
-    const rows = getFiltered().slice().sort((a,b) => {
+    const filtered = getFiltered();
+    const rows = filtered.slice().sort((a,b) => {
       const va = sortVal(a, sortKey), vb = sortVal(b, sortKey);
       if (va < vb) return -1*sortDir;
       if (va > vb) return  1*sortDir;
       return 0;
     });
+    // KPIs are based on real controls only (not placeholders)
     renderKPIs(rows);
     renderHead();
     const tbody = document.getElementById("tbody");
-    if (!rows.length) {
+
+    // Merge in placeholder rows for imported stations that have no controls yet.
+    // Skip placeholders when a free-text search is active (the user is clearly
+    // looking for specific content, not browsing the station list).
+    const q = fSearch.value.trim();
+    const stPlaceholders = q ? [] : getPlaceholders(filtered);
+    const allRows = [...rows, ...stPlaceholders].sort((a,b) => {
+      const va = sortVal(a, sortKey), vb = sortVal(b, sortKey);
+      if (va < vb) return -1*sortDir;
+      if (va > vb) return  1*sortDir;
+      return 0;
+    });
+
+    if (!allRows.length) {
       tbody.innerHTML = `<tr><td colspan="${COLUMNS.length}" class="empty">沒有符合條件的 control（目前 ${CONTROLS.length} 筆 control，套用篩選後為 0）。</td></tr>`;
       return;
     }
-    tbody.innerHTML = rows.map(c => `<tr>${COLUMNS.map(col => col.render(c)).join("")}</tr>`).join("");
+    tbody.innerHTML = allRows.map(c =>
+      c._isPlaceholder
+        ? `<tr class="placeholder-row">${renderPlaceholderCells(c)}</tr>`
+        : `<tr>${COLUMNS.map(col => col.render(c)).join("")}</tr>`
+    ).join("");
   }
 
   [fMilestone, fStatus, fStation, fOwner, fType].forEach(el => el.addEventListener("change", render));
