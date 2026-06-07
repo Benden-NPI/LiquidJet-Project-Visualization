@@ -640,8 +640,9 @@
   }
   // Renders the fixed-column cells for a placeholder row (station exists but no controls).
   function renderPlaceholderCells(c) {
-    const order = (STATION_MAP[c.station]?._order ?? -1) + 1 || "?";
-    const type  = STATION_MAP[c.station]?.type ?? "?";
+    const sm    = STATION_MAP[c.station];
+    const order = sm?._order !== undefined ? sm._order + 1 : "?";
+    const type  = sm?.type ?? "?";
     const msHtml = c.milestone
       ? `<span class="chip ms-${c.milestone}">${c.milestone}</span>`
       : `<span style="color:var(--muted)">—</span>`;
@@ -663,14 +664,15 @@
       `<td class="pfmea"></td>`,
     ].join("");
   }
+  function compareBySortKey(a, b) {
+    const va = sortVal(a, sortKey), vb = sortVal(b, sortKey);
+    if (va < vb) return -1 * sortDir;
+    if (va > vb) return  1 * sortDir;
+    return 0;
+  }
   function render() {
     const filtered = getFiltered();
-    const rows = filtered.slice().sort((a,b) => {
-      const va = sortVal(a, sortKey), vb = sortVal(b, sortKey);
-      if (va < vb) return -1*sortDir;
-      if (va > vb) return  1*sortDir;
-      return 0;
-    });
+    const rows = filtered.slice().sort(compareBySortKey);
     // KPIs are based on real controls only (not placeholders)
     renderKPIs(rows);
     renderHead();
@@ -681,12 +683,7 @@
     // looking for specific content, not browsing the station list).
     const q = fSearch.value.trim();
     const stPlaceholders = q ? [] : getPlaceholders(filtered);
-    const allRows = [...rows, ...stPlaceholders].sort((a,b) => {
-      const va = sortVal(a, sortKey), vb = sortVal(b, sortKey);
-      if (va < vb) return -1*sortDir;
-      if (va > vb) return  1*sortDir;
-      return 0;
-    });
+    const allRows = [...rows, ...stPlaceholders].sort(compareBySortKey);
 
     if (!allRows.length) {
       tbody.innerHTML = `<tr><td colspan="${COLUMNS.length}" class="empty">沒有符合條件的 control（目前 ${CONTROLS.length} 筆 control，套用篩選後為 0）。</td></tr>`;
