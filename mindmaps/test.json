@@ -1,0 +1,221 @@
+{
+  "id": "n325",
+  "text": "🎯 Project Name",
+  "x": 0,
+  "y": 0,
+  "children": [
+    {
+      "id": "n326",
+      "text": "Scope",
+      "x": 204,
+      "y": -373.75,
+      "children": [
+        {
+          "id": "n327",
+          "text": "In Scope",
+          "x": 396,
+          "y": -408.25,
+          "children": [
+            {
+              "id": "n328",
+              "text": "Item A",
+              "x": 576,
+              "y": -431.25,
+              "children": []
+            },
+            {
+              "id": "n329",
+              "text": "Item B",
+              "x": 576,
+              "y": -385.25,
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "n330",
+          "text": "Out of Scope",
+          "x": 396,
+          "y": -339.25,
+          "children": [
+            {
+              "id": "n331",
+              "text": "Item C",
+              "x": 576,
+              "y": -339.25,
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "n332",
+      "text": "Stakeholders",
+      "x": 204,
+      "y": -247.25,
+      "children": [
+        {
+          "id": "n333",
+          "text": "Sponsor",
+          "x": 396,
+          "y": -293.25,
+          "children": []
+        },
+        {
+          "id": "n334",
+          "text": "End User",
+          "x": 396,
+          "y": -247.25,
+          "children": []
+        },
+        {
+          "id": "n335",
+          "text": "Dev Team",
+          "x": 396,
+          "y": -201.25,
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "n336",
+      "text": "Goals",
+      "x": 204,
+      "y": -86.25,
+      "children": [
+        {
+          "id": "n337",
+          "text": "Business",
+          "x": 396,
+          "y": -132.25,
+          "children": [
+            {
+              "id": "n338",
+              "text": "KPI 1",
+              "x": 576,
+              "y": -155.25,
+              "children": []
+            },
+            {
+              "id": "n339",
+              "text": "KPI 2",
+              "x": 576,
+              "y": -109.25,
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "n340",
+          "text": "Technical",
+          "x": 396,
+          "y": -40.25,
+          "children": [
+            {
+              "id": "n341",
+              "text": "Perf",
+              "x": 576,
+              "y": -63.25,
+              "children": []
+            },
+            {
+              "id": "n342",
+              "text": "Reliability",
+              "x": 576,
+              "y": -17.25,
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "n343",
+      "text": "Risks",
+      "x": 204,
+      "y": 74.75,
+      "children": [
+        {
+          "id": "n344",
+          "text": "Technical",
+          "x": 396,
+          "y": 28.75,
+          "children": []
+        },
+        {
+          "id": "n345",
+          "text": "Schedule",
+          "x": 396,
+          "y": 74.75,
+          "children": []
+        },
+        {
+          "id": "n346",
+          "text": "Resource",
+          "x": 396,
+          "y": 120.75,
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "n347",
+      "text": "Milestones",
+      "x": 204,
+      "y": 235.75,
+      "children": [
+        {
+          "id": "n348",
+          "text": "M1 - Kickoff",
+          "x": 396,
+          "y": 166.75,
+          "children": []
+        },
+        {
+          "id": "n349",
+          "text": "M2 - PoC",
+          "x": 396,
+          "y": 212.75,
+          "children": []
+        },
+        {
+          "id": "n350",
+          "text": "M3 - Pilot",
+          "x": 396,
+          "y": 258.75,
+          "children": []
+        },
+        {
+          "id": "n351",
+          "text": "M4 - Release",
+          "x": 396,
+          "y": 304.75,
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "n352",
+      "text": "Open Questions",
+      "x": 204,
+      "y": 373.75,
+      "children": [
+        {
+          "id": "n353",
+          "text": "Q1 ?",
+          "x": 396,
+          "y": 350.75,
+          "children": []
+        },
+        {
+          "id": "n354",
+          "text": "Q2 ?",
+          "x": 396,
+          "y": 396.75,
+          "children": []
+        }
+      ]
+    }
+  ]
+}
