@@ -63,7 +63,7 @@ if (existsSync(cpTemplate) && existsSync(cpMarkdown)) {
   // JSON.stringify handles all special characters; additionally escape `</`
   // to `<\/` so that a literal "</script>" in the markdown cannot terminate
   // the surrounding <script> tag when the JSON literal is inlined into HTML.
-  const mdJson = JSON.stringify(mdRaw).replace(/<\//g, "<\\/");
+  const mdJson = JSON.stringify(mdRaw).replaceAll("</", "<\\/");
   const html = tpl
     .replaceAll("__CONTROL_PLAN_MD_JSON__", mdJson)
     .replaceAll("__BUILD_TS__", buildTs);
