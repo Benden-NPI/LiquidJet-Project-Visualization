@@ -40,6 +40,17 @@ function copyDir(src, dst) {
 // 1) Copy the static canvas editor into dist/editor/
 const editorCount = copyDir(join(root, "editor"), join(distDir, "editor"));
 
+// 1b) Copy the manage (點燈) page into dist/manage/ (with build timestamp injected)
+const manageSrc = join(root, "manage", "index.html");
+let manageWrote = 0;
+if (existsSync(manageSrc)) {
+  const buildTsM = new Date().toISOString();
+  const manageHtml = readFileSync(manageSrc, "utf8").replaceAll("__BUILD_TS__", buildTsM);
+  mkdirSync(join(distDir, "manage"), { recursive: true });
+  writeFileSync(join(distDir, "manage", "index.html"), manageHtml);
+  manageWrote = 1;
+}
+
 // 2) Copy the portal into dist/index.html (with build timestamp injected)
 const portalSrc = join(root, "portal", "index.html");
 if (!existsSync(portalSrc)) {
@@ -52,5 +63,6 @@ writeFileSync(join(distDir, "index.html"), portalHtml);
 
 console.log(
   `Wrote ${relative(root, join(distDir, "index.html"))} (portal), ` +
-  `${editorCount} editor file(s).`,
+  `${editorCount} editor file(s), ` +
+  `${manageWrote} manage file(s).`,
 );
