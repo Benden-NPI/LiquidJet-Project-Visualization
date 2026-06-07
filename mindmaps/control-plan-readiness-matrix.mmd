@@ -1,0 +1,99 @@
+---
+title: Control Plan x Process Readiness Matrix (First Principles v2)
+config:
+  theme: default
+  themeVariables:
+    fontSize: 14px
+---
+mindmap
+  root((🛡️ Control Plan<br/>Readiness Matrix))
+    🧭 First Principles
+      物理公理
+        每步製程改變狀態變數
+      因果公理
+        Y = f(X, noise)
+      風險公理
+        X 會偏 / 量測會錯 / 人會錯
+        無 reaction plan 不是控制
+    🟦 Move-in
+      意涵
+        設備物理就位
+        能跑空車
+      必生元件
+        製程步驟 IPO 草稿
+        已知 CTQ 清單
+        預估 X 因子 (6M 掃過)
+      Exit Criteria
+        設備上電 OK
+        安全 / 環安 sign-off
+        IPO 含狀態變化句
+    🟨 Setup
+      意涵
+        參數收斂到能做出像樣的東西
+      必生元件
+        每個 X 初版操作窗
+        量測方法選定
+        量具到位
+        PFMEA 初稿 (high-severity)
+      Exit Criteria
+        連續 N 片落在初版 spec
+        量具校驗單歸檔
+        PFMEA 初稿 review
+    🟧 Tuning
+      意涵
+        找出真正的 USL / LSL
+        確認 X→Y 因果
+      必生元件
+        DOE / Cpk preliminary
+        MSA (Gage R&R) 完成
+        Control method 選定
+          SPC
+          100%
+          Poka-Yoke
+        Reaction plan 初稿
+      Exit Criteria
+        Cpk ≥ 約定值
+        GR&R < 約定值
+        每條 control 對到 PFMEA cause
+    🟩 Qualify
+      意涵
+        製程穩定 / 可放量 / 可交接
+      必生元件
+        Control Plan 正式版 (8 欄)
+        PFMEA 凍結版
+        訓練矩陣
+        SOP 發行
+        Traceability 上線
+        4M Change Control 上線
+      Exit Criteria
+        Cpk 達標
+        Qualification run 跑滿
+        Reaction plan 演練過
+        CAPA 閉環跑通
+      四個整體層
+        Traceability
+        4M Change Control
+        Excursion / Recovery
+        Data Loop
+    🔁 拾漏引擎
+      FMEA Cause → Control 行
+        沒對到 = 漏控
+      Control 行 → FMEA Cause
+        沒對到 = 過控
+      Control 行 → Milestone
+        沒對到 = 進度漏
+    👥 Owner Cross-check
+      ownerSurveyTool
+        設備 / 治具
+      ownerEE
+        量測 / 訊號鏈
+      ownerNPI
+        流程閘門 / 整合
+    📅 每週 5 分鐘自檢
+      下一 milestone exit criteria 列得出？
+      該長元件是否齊全？
+      高 RPN cause 是否都對到控制？
+      每行 control 是否標 milestone 歸屬？
+      tuning/qualify criteria 完整定義在 scope？
+      三 owner 上週都看過？
+      NG / 異常是否進 CAPA / SPC？
