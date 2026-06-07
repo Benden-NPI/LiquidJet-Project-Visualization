@@ -751,10 +751,12 @@ async function ghFetch(url, init = {}) {
   const { token } = gh();
   const res = await fetch(url, {
     ...init,
+    cache: "no-store",
     headers: {
       "accept": "application/vnd.github+json",
       "authorization": "Bearer " + token,
       "x-github-api-version": "2022-11-28",
+      "if-none-match": "",
       ...(init.body ? { "content-type": "application/json" } : {}),
       ...(init.headers || {}),
     },
@@ -876,6 +878,8 @@ const GitHubAdapter = {
 // --- Picker ---
 let storage = null;
 let storageBadge = "—";
+let cachedFiles = [];
+let listError = null;
 async function pickStorage() {
   if (settings.mode === "local") { storage = LocalAdapter; storageBadge = "Local server"; return; }
   if (settings.mode === "github") { storage = GitHubAdapter; storageBadge = "GitHub Repo"; return; }
@@ -888,18 +892,27 @@ async function pickStorage() {
 }
 
 async function refreshFileList() {
-  const el2 = $("files"); el2.innerHTML = "";
-  let files = [];
   try {
-    files = await storage.list();
+    cachedFiles = await storage.list();
   } catch (e) {
+    listError = e.message;
+    renderFileList();
+    return;
+  }
+  listError = null;
+  renderFileList();
+}
+
+function renderFileList() {
+  const el2 = $("files"); el2.innerHTML = "";
+  if (listError) {
     const d = document.createElement("div");
     d.style.padding = "8px 10px"; d.style.fontSize = "12px"; d.style.color = "var(--danger)";
-    d.textContent = e.message;
+    d.textContent = listError;
     el2.appendChild(d);
     return;
   }
-  for (const entry of files) {
+  for (const entry of cachedFiles) {
     const f = entry.name;
     const d = document.createElement("div");
     d.className = "file" + (f === currentFile ? " active" : "");
@@ -923,6 +936,24 @@ async function refreshFileList() {
   }
 }
 
+// Refresh from server a few times in case the backend (esp. GitHub
+// Contents API) hasn't yet seen the mutation we just made.
+function scheduleListReconcile(predicate) {
+  const delays = [400, 1200, 3000];
+  let attempt = 0;
+  const tick = async () => {
+    try {
+      const fresh = await storage.list();
+      if (!predicate || predicate(fresh)) {
+        cachedFiles = fresh; listError = null; renderFileList();
+        return;
+      }
+    } catch (e) { /* swallow, try again */ }
+    if (attempt < delays.length) setTimeout(tick, delays[attempt++]);
+  };
+  setTimeout(tick, delays[attempt++]);
+}
+
 async function renameFile(path, sha) {
   if (!storage.rename) { alert("此儲存後端不支援改名。"); return; }
   const ext = (path.match(/\.(mmd|json|md)$/i)?.[0]) || "";
@@ -940,12 +971,19 @@ async function renameFile(path, sha) {
     alert("改名失敗：" + e.message);
     return;
   }
+  // Optimistic local update
+  cachedFiles = cachedFiles
+    .map(f => f.name === path ? { ...f, name: target, sha: undefined } : f)
+    .sort((a, b) => a.name.localeCompare(b.name));
   if (currentFile === path) {
     currentFile = target;
     $("fname").value = target.replace(/\.(mmd|json|md)$/i, "");
   }
-  await refreshFileList();
+  renderFileList();
   updateStatus();
+  scheduleListReconcile((fresh) =>
+    fresh.some(f => f.name === target) && !fresh.some(f => f.name === path)
+  );
 }
 
 async function deleteFile(path, sha) {
@@ -957,13 +995,16 @@ async function deleteFile(path, sha) {
     alert("刪除失敗：" + e.message);
     return;
   }
+  // Optimistic local update
+  cachedFiles = cachedFiles.filter(f => f.name !== path);
   if (currentFile === path) {
     currentFile = null;
     savedSnapshot = snapshot();
     $("fname").value = path.replace(/\.(mmd|json|md)$/i, "");
   }
-  await refreshFileList();
+  renderFileList();
   updateStatus();
+  scheduleListReconcile((fresh) => !fresh.some(f => f.name === path));
 }
 
 function isDirty() { return snapshot() !== savedSnapshot; }
@@ -1022,8 +1063,13 @@ async function save() {
   catch (e) { alert("儲存失敗：" + e.message); return; }
   currentFile = name;
   savedSnapshot = snapshot();
-  await refreshFileList();
+  // Optimistic local update: add if new, otherwise just re-render.
+  if (!cachedFiles.some(f => f.name === name)) {
+    cachedFiles = [...cachedFiles, { name }].sort((a, b) => a.name.localeCompare(b.name));
+  }
+  renderFileList();
   updateStatus();
+  scheduleListReconcile((fresh) => fresh.some(f => f.name === name));
 }
 
 function serializeJson(n) {
