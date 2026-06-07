@@ -279,23 +279,22 @@
     <a class="back" href="./../index.html">← Portal</a>
     <span class="badge live">● Control Plan 總表</span>
     <div class="spacer"></div>
-    <a class="src" href="https://github.com/Benden-NPI/LiquidJet-Project-Visualization/blob/main/scope/stations.json" target="_blank" rel="noopener">stations.json ↗</a>
     <a class="src" href="https://github.com/Benden-NPI/LiquidJet-Project-Visualization/blob/main/scope/control-plan.json" target="_blank" rel="noopener">control-plan.json ↗</a>
     <button class="dirty-badge" id="dirtyBadge" title="點擊開啟 Settings 提交"><span class="dot"></span><span id="dirtyCount">0</span> unsaved</button>
     <button class="icon-btn" id="openSettings" title="同步設定">⚙️ Settings</button>
   </div>
 
   <h1>Control Plan 總表 <span style="color:var(--muted); font-weight:400; font-size:14px;">v2 — single-table view</span></h1>
-  <p class="sub">全 station × 全 milestone × 全 control 一張表看完。資料來源：<code>scope/stations.json</code> + <code>scope/control-plan.json</code>（build-time FK 驗證）。</p>
+  <p class="sub">全 station × 全 milestone × 全 control 一張表看完。Station 清單與 Yield · Process Readiness 對齊，由 Power Automate 從 SharePoint <code>Control_Plan.xlsx</code> 直接同步到本機 <code>localStorage</code>（首次使用請按右上 ⚙ Settings 設定 Webhook 並同步）；controls 來自 build-time 嵌入的 <code>scope/control-plan.json</code>。</p>
 
   <!-- SSOT banner -->
   <div class="ssot" id="ssot">
     <span class="dot"></span>
-    <span><b>SSOT：</b><span id="ssotLabel">scope/stations.json</span></span>
+    <span><b>SSOT：</b><span id="ssotLabel">未同步</span></span>
     <span class="pill">stations <span id="stationCount">0</span></span>
     <span class="pill">controls <span id="controlCount">0</span></span>
     <span class="pill">last synced: <span id="lastSynced">—</span></span>
-    <span class="source-pill local" id="sourcePill">內建 SSOT</span>
+    <span class="source-pill local" id="sourcePill">未同步</span>
     <span class="spacer" style="flex:1;"></span>
     <a href="https://benden-npi.github.io/Yield/" target="_blank" rel="noopener">Open Yield Process Readiness ↗</a>
   </div>
@@ -396,13 +395,13 @@
   <div class="body">
 
     <div class="source-now" id="sourceNow">
-      <span>目前資料源：<b id="sourceNowLabel">內建 SSOT JSON</b></span>
+      <span>目前資料源：<b id="sourceNowLabel">未同步</b></span>
       <span id="sourceNowDetail"></span>
     </div>
 
     <section>
       <h3>從 Yield 同步 46 站 (Power Automate)</h3>
-      <p class="desc">使用與 Yield · Tool Gantt 相同的 Power Automate HTTP GET webhook，讀取 Control Plan Excel 的 Process Flow sheet，把 station 清單覆寫到本機。</p>
+      <p class="desc">使用與 Yield · Tool Gantt 相同的 Power Automate HTTP GET webhook，讀取 Control Plan Excel 的 Process Flow sheet，把 station 清單存到本機 <code>localStorage</code>。此為唯一 station 來源（與 Yield · Process Readiness 對齊，無 build-time JSON fallback）。</p>
       <div class="help">
         URL 與 Yield 共用 <code>localStorage</code> key（<code>tool_gantt_sharepoint_webhook_url</code>）— 若你已在 Yield Settings 設過，此處會自動帶入。URL 含 <code>sig=</code> token，<b>只存本機瀏覽器，不會 commit</b>。
       </div>
@@ -416,10 +415,10 @@
     </section>
 
     <section>
-      <h3>回到內建 SSOT</h3>
-      <p class="desc">清除本機 override，改用 build-time 嵌入的 <code>scope/stations.json</code>。同步過的資料會被丟棄（你隨時可再同步一次）。</p>
+      <h3>清除本機 station 快取</h3>
+      <p class="desc">清掉本機 <code>localStorage</code> 裡的 station 清單。清除後畫面會空白，請重新「從 Yield 同步」。</p>
       <div class="row-btns">
-        <button id="resetOverride" class="danger">清除 override</button>
+        <button id="resetOverride" class="danger">清除本機 stations</button>
       </div>
     </section>
 
@@ -456,23 +455,23 @@
   </div>
 </aside>
 
-<!-- Inlined SSOT data -->
-<script id="data-stations" type="application/json">__STATIONS_JSON__</script>
+<!-- Inlined SSOT data (controls only; stations come from localStorage via Power Automate sync) -->
 <script id="data-controlplan" type="application/json">__CONTROL_PLAN_JSON__</script>
 
 <script>
 (function () {
   // ===========================================================================
-  // Load build-time SSOT (inline JSON)
+  // Load build-time SSOT (inline JSON) — controls/holistic only.
+  // Station list has NO build-time SSOT: it is fetched at runtime from
+  // SharePoint Control_Plan.xlsx via Power Automate and cached in
+  // localStorage, same model as Yield · Process Readiness.
   // ===========================================================================
-  const STATIONS_DOC = JSON.parse(document.getElementById("data-stations").textContent);
-  const CP_DOC       = JSON.parse(document.getElementById("data-controlplan").textContent);
-  const BASELINE_STATIONS = STATIONS_DOC.stations || [];
+  const CP_DOC = JSON.parse(document.getElementById("data-controlplan").textContent);
   const CONTROLS = CP_DOC.controls || [];
   const HOLISTIC = CP_DOC.holistic || [];
 
   // ===========================================================================
-  // localStorage override (shared key with Yield Tool Gantt)
+  // localStorage stations (shared webhook URL key with Yield Tool Gantt)
   // ===========================================================================
   const SP_URL_KEY     = "tool_gantt_sharepoint_webhook_url";  // 與 Yield 共用
   const OVERRIDE_KEY   = "liquidjet_cp_stations_override_v1";
@@ -498,14 +497,14 @@
   }
   function clearOverride() { try { localStorage.removeItem(OVERRIDE_KEY); } catch {} }
 
-  // Active stations: override wins
-  let STATIONS = BASELINE_STATIONS;
-  let STATION_SOURCE = { kind: "ssot", label: "內建 SSOT JSON", syncedAt: STATIONS_DOC.lastSyncedAt || null };
+  // Active stations: from localStorage (empty until first sync)
+  let STATIONS = [];
+  let STATION_SOURCE = { kind: "empty", label: "未同步", syncedAt: null };
   (function applyOverrideIfAny() {
     const ov = getOverride();
     if (ov) {
       STATIONS = ov.stations;
-      STATION_SOURCE = { kind: "override", label: "Yield · Tool Gantt webhook", syncedAt: ov.syncedAt };
+      STATION_SOURCE = { kind: "synced", label: "Yield · Tool Gantt webhook", syncedAt: ov.syncedAt };
     }
   })();
 
@@ -531,12 +530,12 @@
     document.getElementById("stationCount").textContent = STATIONS.length;
     document.getElementById("controlCount").textContent = CONTROLS.length;
     document.getElementById("lastSynced").textContent   = fmtDate(STATION_SOURCE.syncedAt);
-    document.getElementById("ssotLabel").innerHTML = STATION_SOURCE.kind === "override"
-      ? `<code>localStorage</code> override（Yield 同步）`
-      : `<code>scope/stations.json</code>`;
+    document.getElementById("ssotLabel").innerHTML = STATION_SOURCE.kind === "synced"
+      ? `<code>localStorage</code>（Yield · Tool Gantt 同步）`
+      : `未同步（請按 ⚙ Settings → 從 Yield 同步）`;
     const pill = document.getElementById("sourcePill");
-    pill.className = "source-pill " + (STATION_SOURCE.kind === "override" ? "live" : "local");
-    pill.textContent = STATION_SOURCE.kind === "override" ? "Yield 同步中" : "內建 SSOT";
+    pill.className = "source-pill " + (STATION_SOURCE.kind === "synced" ? "live" : "local");
+    pill.textContent = STATION_SOURCE.kind === "synced" ? "Yield 同步中" : "未同步";
   }
   function updateOrphanWarn() {
     const orphans = CONTROLS.filter(c => !STATION_MAP[c.station]);
@@ -544,8 +543,10 @@
     if (!orphans.length) { el.style.display = "none"; return; }
     el.style.display = "block";
     const names = Array.from(new Set(orphans.map(c => c.station))).slice(0,8);
-    el.innerHTML = `<b>⚠ ${orphans.length} 個 control 對應不到目前 stations</b>：${names.map(n=>`<code>${esc(n)}</code>`).join(" ")}${orphans.length>names.length?" …":""}　`
-      + `建議：(a) 在 Yield 同步最新 Process Flow，或 (b) 修正 <code>scope/control-plan.json</code> 的 <code>station</code> 欄。`;
+    const hint = STATION_SOURCE.kind === "synced"
+      ? `建議：(a) 在 Yield / SharePoint 補上對應 station，或 (b) 修正 <code>scope/control-plan.json</code> 的 <code>station</code> 欄。`
+      : `尚未從 Yield 同步 stations — 請按右上 ⚙ Settings → 從 Yield 同步。`;
+    el.innerHTML = `<b>⚠ ${orphans.length} 個 control 對應不到目前 stations</b>：${names.map(n=>`<code>${esc(n)}</code>`).join(" ")}${orphans.length>names.length?" …":""}　` + hint;
   }
 
   // ===========================================================================
@@ -872,12 +873,12 @@
     drawer.setAttribute("aria-hidden","true");
   }
   function refreshSourceNow() {
-    if (STATION_SOURCE.kind === "override") {
-      srcNowLab.textContent = "Yield · Tool Gantt webhook (本機 override)";
+    if (STATION_SOURCE.kind === "synced") {
+      srcNowLab.textContent = "Yield · Tool Gantt webhook (本機 localStorage)";
       srcNowDet.innerHTML = `${STATIONS.length} stations · synced ${fmtDate(STATION_SOURCE.syncedAt)}`;
     } else {
-      srcNowLab.textContent = "內建 SSOT JSON";
-      srcNowDet.innerHTML = `${STATIONS.length} stations · stations.json@${STATION_SOURCE.syncedAt || "—"}`;
+      srcNowLab.textContent = "未同步";
+      srcNowDet.innerHTML = `0 stations · 請從 Yield 同步`;
     }
   }
 
@@ -908,13 +909,13 @@
       }
       setOverride(stations);
       STATIONS = stations;
-      STATION_SOURCE = { kind:"override", label:"Yield · Tool Gantt webhook", syncedAt: new Date().toISOString() };
+      STATION_SOURCE = { kind:"synced", label:"Yield · Tool Gantt webhook", syncedAt: new Date().toISOString() };
       rebuildStationMap();
       rebuildFilters();
       updateBanner(); updateOrphanWarn(); refreshSourceNow();
       render();
       statusEl.className = "status-line ok";
-      statusEl.textContent = `已同步 ${stations.length} 個 stations，覆寫至本機。`;
+      statusEl.textContent = `已同步 ${stations.length} 個 stations，存到本機 localStorage。`;
     } catch (err) {
       statusEl.className = "status-line err";
       statusEl.textContent = "同步失敗：" + ((err && err.message) || err);
@@ -922,13 +923,13 @@
   });
   document.getElementById("resetOverride").addEventListener("click", () => {
     clearOverride();
-    STATIONS = BASELINE_STATIONS;
-    STATION_SOURCE = { kind:"ssot", label:"內建 SSOT JSON", syncedAt: STATIONS_DOC.lastSyncedAt || null };
+    STATIONS = [];
+    STATION_SOURCE = { kind:"empty", label:"未同步", syncedAt: null };
     rebuildStationMap();
     rebuildFilters();
     updateBanner(); updateOrphanWarn(); refreshSourceNow();
     render();
-    statusEl.className = "status-line ok"; statusEl.textContent = "已清除 override，改用內建 SSOT。";
+    statusEl.className = "status-line ok"; statusEl.textContent = "已清除本機 stations，請重新從 Yield 同步。";
   });
 
   // ===========================================================================
@@ -1330,7 +1331,7 @@
       }
       setOverride(stations);
       STATIONS = stations;
-      STATION_SOURCE = { kind:"override", label:"Yield · Tool Gantt webhook (auto)", syncedAt: new Date().toISOString() };
+      STATION_SOURCE = { kind:"synced", label:"Yield · Tool Gantt webhook (auto)", syncedAt: new Date().toISOString() };
       rebuildStationMap();
       rebuildFilters();
       updateBanner(); updateOrphanWarn();
