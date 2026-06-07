@@ -245,6 +245,31 @@
   }
   .drawer .help code { background:var(--panel2); border:1px solid var(--border);
     padding:0 5px; border-radius:4px; font-size:11.5px; }
+
+  /* === Click-to-edit === */
+  table.main td.editable { cursor:cell; position:relative; }
+  table.main td.editable:hover { background:rgba(79,140,255,.10); outline:1px dashed rgba(79,140,255,.45); outline-offset:-2px; }
+  table.main td.editable:hover::after {
+    content:"✎"; position:absolute; top:2px; right:4px; font-size:10px; color:var(--accent); opacity:.7;
+  }
+  table.main tbody tr.placeholder-row td.editable:hover::after { content:"+"; font-size:14px; }
+  .cell-editor {
+    width:100%; box-sizing:border-box; background:var(--panel2); border:1px solid var(--accent);
+    color:var(--text); padding:4px 6px; border-radius:4px; font-size:12.5px; font-family:inherit;
+    line-height:1.4;
+  }
+  textarea.cell-editor { resize:vertical; min-height:54px; font-family:inherit; }
+  select.cell-editor { padding:4px 6px; }
+
+  /* Dirty badge in topbar */
+  .topbar .dirty-badge {
+    background:rgba(255,192,0,.18); border:1px solid rgba(255,192,0,.55); color:var(--accent3);
+    font-size:12px; padding:5px 10px; border-radius:8px; cursor:pointer;
+    font-family:inherit; display:none;
+  }
+  .topbar .dirty-badge.show { display:inline-flex; align-items:center; gap:6px; }
+  .topbar .dirty-badge:hover { background:rgba(255,192,0,.28); }
+  .topbar .dirty-badge .dot { width:7px; height:7px; border-radius:50%; background:var(--accent3); }
 </style>
 </head>
 <body>
@@ -256,6 +281,7 @@
     <div class="spacer"></div>
     <a class="src" href="https://github.com/Benden-NPI/LiquidJet-Project-Visualization/blob/main/scope/stations.json" target="_blank" rel="noopener">stations.json ↗</a>
     <a class="src" href="https://github.com/Benden-NPI/LiquidJet-Project-Visualization/blob/main/scope/control-plan.json" target="_blank" rel="noopener">control-plan.json ↗</a>
+    <button class="dirty-badge" id="dirtyBadge" title="點擊開啟 Settings 提交"><span class="dot"></span><span id="dirtyCount">0</span> unsaved</button>
     <button class="icon-btn" id="openSettings" title="同步設定">⚙️ Settings</button>
   </div>
 
@@ -394,6 +420,31 @@
       <p class="desc">清除本機 override，改用 build-time 嵌入的 <code>scope/stations.json</code>。同步過的資料會被丟棄（你隨時可再同步一次）。</p>
       <div class="row-btns">
         <button id="resetOverride" class="danger">清除 override</button>
+      </div>
+    </section>
+
+    <section>
+      <h3>提交編輯到 GitHub Repo (PAT)</h3>
+      <p class="desc">使用 GitHub Personal Access Token 直接 commit 本機未存編輯到 <code>scope/control-plan.json</code>。</p>
+      <div class="help">
+        1. 到 <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub 建 fine-grained PAT</a>：Repository access 選 <code>LiquidJet-Project-Visualization</code>, Permissions 設 <b>Contents: Read and write</b>。<br>
+        2. 貼下方 → 儲存。提交後 GitHub Pages 自動重新部署（~30-60s）。<br>
+        3. PAT <b>只存本機 localStorage</b>，不會 commit。換電腦需重填。
+      </div>
+      <input id="githubPat" type="password" placeholder="github_pat_..." autocomplete="off" spellcheck="false" />
+      <div class="row-btns">
+        <button id="savePat">儲存 PAT</button>
+        <button id="togglePatVis" title="顯示 / 隱藏">👁</button>
+        <button id="clearPat" class="danger">清除</button>
+      </div>
+      <div style="margin-top:14px; padding-top:14px; border-top:1px dashed var(--border);">
+        <label style="display:block; font-size:11px; color:var(--muted); margin-bottom:4px; text-transform:uppercase; letter-spacing:.5px;">Commit message</label>
+        <input id="commitMsg" type="text" placeholder="control-plan: update controls" style="font-family:inherit;" />
+        <div class="row-btns">
+          <button id="commitBtn" class="primary">💾 提交未存編輯</button>
+          <button id="discardDraft" class="danger">丟棄未存編輯</button>
+        </div>
+        <div class="status-line" id="commitStatus"></div>
       </div>
     </section>
 
@@ -697,9 +748,10 @@
     }
     tbody.innerHTML = allRows.map(c =>
       c._isPlaceholder
-        ? `<tr class="placeholder-row">${renderPlaceholderCells(c)}</tr>`
-        : `<tr>${COLUMNS.map(col => col.render(c)).join("")}</tr>`
+        ? `<tr class="placeholder-row" data-station="${esc(c.station)}">${renderPlaceholderCells(c)}</tr>`
+        : `<tr data-cid="${esc(c.id)}" data-station="${esc(c.station)}">${COLUMNS.map(col => col.render(c)).join("")}</tr>`
     ).join("");
+    markEditableCells();
   }
 
   [fMilestone, fStatus, fStation, fOwner, fType].forEach(el => el.addEventListener("change", render));
@@ -878,6 +930,289 @@
     render();
     statusEl.className = "status-line ok"; statusEl.textContent = "已清除 override，改用內建 SSOT。";
   });
+
+  // ===========================================================================
+  // Click-to-edit + draft persistence + GitHub PAT commit
+  // ===========================================================================
+  const DRAFT_KEY = "liquidjet_cp_draft_v1";
+  const PAT_KEY   = "liquidjet_cp_github_pat_v1";
+  const REPO      = { owner:"Benden-NPI", repo:"LiquidJet-Project-Visualization", path:"scope/control-plan.json", branch:"main" };
+
+  const EDITABLE_FIELDS = {
+    milestone:      { type:"select",  options:["Setup","Tuning","Qualify"] },
+    status:         { type:"select",  options:[["todo","未設定"],["draft","草擬中"],["ready","已就緒"],["excursion","異常"]] },
+    id:             { type:"text" },
+    characteristic: { type:"textarea" },
+    spec:           { type:"text" },
+    method:         { type:"text" },
+    msa:            { type:"text" },
+    sampling:       { type:"text" },
+    control:        { type:"textarea" },
+    reaction:       { type:"textarea" },
+    owner:          { type:"select",  options:[["","(none)"],"SurveyTool","EE","NPI","Operator","IQC","Supplier"] },
+    pfmea:          { type:"text" },
+  };
+
+  function getDraft() {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return null;
+      const p = JSON.parse(raw);
+      return p && Array.isArray(p.controls) ? p : null;
+    } catch { return null; }
+  }
+  function setDraft() {
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({
+        controls: CONTROLS, savedAt: new Date().toISOString(),
+      }));
+    } catch (e) { console.warn("[CP-Edit] draft save failed:", e); }
+  }
+  function clearDraft() { try { localStorage.removeItem(DRAFT_KEY); } catch {} }
+  function getPat()  { try { return localStorage.getItem(PAT_KEY) || ""; } catch { return ""; } }
+  function setPat(t) { try { t ? localStorage.setItem(PAT_KEY, t) : localStorage.removeItem(PAT_KEY); } catch {} }
+
+  // Apply draft on load (mutate CONTROLS in place — before initial render)
+  (function applyDraftOnLoad() {
+    const d = getDraft();
+    if (!d) return;
+    CONTROLS.length = 0;
+    d.controls.forEach(c => CONTROLS.push(c));
+    console.info(`[CP-Edit] loaded draft: ${d.controls.length} controls (savedAt ${d.savedAt})`);
+  })();
+
+  function nextIdFor(stationName) {
+    const sm = STATION_MAP[stationName];
+    if (!sm) return `X-${Date.now().toString(36)}`;
+    const prefix = sm.type === "coldplate" ? `CP${sm.stationNo}` : `AS${sm.stationNo}`;
+    const used = new Set();
+    CONTROLS.forEach(c => {
+      if (c.station === stationName && typeof c.id === "string" && c.id.startsWith(prefix + "-")) {
+        const n = parseInt(c.id.slice(prefix.length + 1), 10);
+        if (Number.isFinite(n)) used.add(n);
+      }
+    });
+    let n = 1;
+    while (used.has(n)) n++;
+    return `${prefix}-${String(n).padStart(3,"0")}`;
+  }
+
+  function updateDirtyBadge() {
+    const d = getDraft();
+    const badge = document.getElementById("dirtyBadge");
+    const count = d ? d.controls.length : 0;
+    // "dirty" simply means we have a draft saved; count = total controls
+    if (!d) { badge.classList.remove("show"); return; }
+    badge.classList.add("show");
+    document.getElementById("dirtyCount").textContent = count;
+  }
+
+  function markEditableCells() {
+    const tbody = document.getElementById("tbody");
+    tbody.querySelectorAll("tr").forEach(tr => {
+      Array.from(tr.children).forEach((td, idx) => {
+        const col = COLUMNS[idx];
+        if (col && EDITABLE_FIELDS[col.key]) td.classList.add("editable");
+      });
+    });
+  }
+
+  document.getElementById("tbody").addEventListener("click", e => {
+    const td = e.target.closest("td.editable");
+    if (!td) return;
+    const tr = td.parentElement;
+    const idx = Array.from(tr.children).indexOf(td);
+    const col = COLUMNS[idx];
+    if (!col) return;
+    startEdit(td, tr, col);
+  });
+
+  function startEdit(td, tr, col) {
+    if (td.querySelector(".cell-editor")) return;
+
+    // Placeholder → promote (create real control + recurse onto new cell)
+    if (tr.classList.contains("placeholder-row")) {
+      const station = tr.dataset.station;
+      const newId = nextIdFor(station);
+      const newCtrl = {
+        id: newId, station,
+        milestone: "Setup", status: "todo",
+        characteristic: "", spec: "", method: "", msa: "",
+        sampling: "", control: "", reaction: "", owner: "", pfmea: "",
+      };
+      CONTROLS.push(newCtrl);
+      setDraft();
+      updateBanner();
+      render();
+      updateDirtyBadge();
+      requestAnimationFrame(() => {
+        const newTr = document.querySelector(`tr[data-cid="${newId}"]`);
+        if (!newTr) return;
+        const colIdx = COLUMNS.findIndex(c => c.key === col.key);
+        const target = newTr.children[colIdx];
+        if (target) startEdit(target, newTr, col);
+      });
+      return;
+    }
+
+    const cid = tr.dataset.cid;
+    const ctrl = CONTROLS.find(c => c.id === cid);
+    if (!ctrl) return;
+    const spec = EDITABLE_FIELDS[col.key];
+    const cur  = ctrl[col.key] != null ? String(ctrl[col.key]) : "";
+
+    let editor;
+    if (spec.type === "select") {
+      editor = document.createElement("select");
+      spec.options.forEach(o => {
+        const [v, l] = Array.isArray(o) ? o : [o, o];
+        const opt = document.createElement("option");
+        opt.value = v; opt.textContent = l;
+        if (v === cur) opt.selected = true;
+        editor.appendChild(opt);
+      });
+    } else if (spec.type === "textarea") {
+      editor = document.createElement("textarea");
+      editor.rows = 3; editor.value = cur;
+    } else {
+      editor = document.createElement("input");
+      editor.type = "text"; editor.value = cur;
+    }
+    editor.className = "cell-editor";
+    td.innerHTML = "";
+    td.appendChild(editor);
+    editor.focus();
+    if (editor.select) try { editor.select(); } catch {}
+
+    let done = false;
+    const commit = () => {
+      if (done) return;
+      const newVal = editor.value;
+      if (newVal !== cur) {
+        // ID uniqueness guard
+        if (col.key === "id") {
+          const trimmed = newVal.trim();
+          if (!trimmed) { alert("ID 不可空白"); editor.focus(); return; }
+          if (CONTROLS.some(c => c !== ctrl && c.id === trimmed)) {
+            alert(`ID "${trimmed}" 已存在`); editor.focus(); return;
+          }
+          ctrl.id = trimmed;
+        } else {
+          ctrl[col.key] = newVal;
+        }
+        setDraft();
+        updateDirtyBadge();
+      }
+      done = true;
+      render();
+    };
+    const cancel = () => { if (done) return; done = true; render(); };
+    editor.addEventListener("blur", commit);
+    editor.addEventListener("keydown", e => {
+      if (e.key === "Escape") { e.preventDefault(); cancel(); }
+      else if (e.key === "Enter" && (editor.tagName !== "TEXTAREA" || e.ctrlKey || e.metaKey)) {
+        e.preventDefault(); commit();
+      }
+    });
+  }
+
+  // Dirty badge → open Settings
+  document.getElementById("dirtyBadge").addEventListener("click", openDrawer);
+
+  // PAT wiring
+  const patInput     = document.getElementById("githubPat");
+  const commitMsgEl  = document.getElementById("commitMsg");
+  const commitStatus = document.getElementById("commitStatus");
+
+  function refreshPatField() { patInput.value = getPat(); }
+  document.getElementById("savePat").addEventListener("click", () => {
+    setPat(patInput.value.trim());
+    commitStatus.className = "status-line ok"; commitStatus.textContent = "PAT 已存於本機。";
+  });
+  document.getElementById("togglePatVis").addEventListener("click", () => {
+    patInput.type = patInput.type === "password" ? "text" : "password";
+  });
+  document.getElementById("clearPat").addEventListener("click", () => {
+    setPat(""); refreshPatField();
+    commitStatus.className = "status-line ok"; commitStatus.textContent = "PAT 已清除。";
+  });
+  document.getElementById("discardDraft").addEventListener("click", () => {
+    if (!getDraft()) { commitStatus.className = "status-line"; commitStatus.textContent = "目前沒有未存編輯。"; return; }
+    if (!confirm("確定丟棄所有未存編輯？此動作無法復原。")) return;
+    clearDraft();
+    // Restore from original CP_DOC controls
+    CONTROLS.length = 0;
+    (CP_DOC.controls || []).forEach(c => CONTROLS.push(c));
+    updateBanner(); rebuildFilters(); render(); updateDirtyBadge();
+    commitStatus.className = "status-line ok"; commitStatus.textContent = "已丟棄未存編輯。";
+  });
+
+  document.getElementById("commitBtn").addEventListener("click", async () => {
+    const pat = getPat() || patInput.value.trim();
+    if (!pat) { commitStatus.className = "status-line err"; commitStatus.textContent = "請先填入並儲存 GitHub PAT。"; return; }
+    if (!getDraft()) { commitStatus.className = "status-line"; commitStatus.textContent = "沒有未存編輯可提交。"; return; }
+    const msg = (commitMsgEl.value.trim()) || `control-plan: update ${CONTROLS.length} controls`;
+    const btn = document.getElementById("commitBtn"); btn.disabled = true;
+    commitStatus.className = "status-line"; commitStatus.textContent = "提交中…";
+    try {
+      const commit = await commitToGitHub(pat, msg);
+      clearDraft();
+      updateDirtyBadge();
+      commitStatus.className = "status-line ok";
+      commitStatus.innerHTML = `已提交：<a href="${commit.html_url}" target="_blank" rel="noopener" style="color:var(--accent2)">${commit.sha.slice(0,7)}</a>。GitHub Pages 重新部署中（~30-60s），完成後刷新即可。`;
+    } catch (err) {
+      commitStatus.className = "status-line err";
+      commitStatus.textContent = "提交失敗：" + ((err && err.message) || err);
+    } finally { btn.disabled = false; }
+  });
+
+  async function commitToGitHub(pat, message) {
+    const headers = {
+      "Authorization": `Bearer ${pat}`,
+      "Accept": "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+    };
+    // 1. GET current sha
+    const getUrl = `https://api.github.com/repos/${REPO.owner}/${REPO.repo}/contents/${REPO.path}?ref=${REPO.branch}`;
+    const getRes = await fetch(getUrl, { headers });
+    if (!getRes.ok) {
+      const t = await getRes.text();
+      throw new Error(`讀取 ${REPO.path} 失敗 (${getRes.status})：${t.slice(0,200)}`);
+    }
+    const meta = await getRes.json();
+    const sha  = meta.sha;
+    // 2. Build new JSON (preserve $schema_comment + holistic)
+    const newDoc = { ...CP_DOC, controls: CONTROLS };
+    const content = JSON.stringify(newDoc, null, 2) + "\n";
+    // UTF-8 safe base64
+    const b64 = btoa(String.fromCharCode(...new TextEncoder().encode(content)));
+    // 3. PUT
+    const putUrl = `https://api.github.com/repos/${REPO.owner}/${REPO.repo}/contents/${REPO.path}`;
+    const putRes = await fetch(putUrl, {
+      method: "PUT", headers,
+      body: JSON.stringify({ message, content: b64, sha, branch: REPO.branch }),
+    });
+    if (!putRes.ok) {
+      const t = await putRes.text();
+      if (putRes.status === 409) throw new Error(`衝突 (409)：repo 上的檔案在你編輯後已更新。請刷新頁面、重做編輯後再提交。\n${t.slice(0,200)}`);
+      if (putRes.status === 401 || putRes.status === 403) throw new Error(`PAT 驗證失敗 (${putRes.status})。請檢查 token 是否有 Contents:write 權限。\n${t.slice(0,200)}`);
+      throw new Error(`PUT 失敗 (${putRes.status})：${t.slice(0,300)}`);
+    }
+    const result = await putRes.json();
+    return result.commit;
+  }
+
+  // Auto-fill PAT field whenever drawer opens (extend existing openDrawer)
+  const _origOpenDrawer = openDrawer;
+  openDrawer = function() {
+    _origOpenDrawer();
+    refreshPatField();
+    commitStatus.textContent = ""; commitStatus.className = "status-line";
+    if (!commitMsgEl.value) commitMsgEl.value = `control-plan: update ${CONTROLS.length} controls`;
+  };
+  // Re-wire openSettings to use the patched openDrawer (the original listener captured _origOpenDrawer ref via closure, so we need to re-bind)
+  document.getElementById("openSettings").removeEventListener("click", _origOpenDrawer);
+  document.getElementById("openSettings").addEventListener("click", openDrawer);
 
   // ===========================================================================
   // Initial render
