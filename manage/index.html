@@ -161,7 +161,7 @@
       <li>「備註」可放實際數值、ADR 連結、量測檔路徑等。</li>
       <li>所有狀態保存在瀏覽器 localStorage,使用同一台電腦同一瀏覽器即可保留。</li>
       <li>跨機器同步：用「匯出 JSON」存檔丟進 repo 或 chat,另一台用「匯入 JSON」載入。</li>
-      <li>本頁僅做狀態追蹤,框架/條目定義仍以 <a href="../mindmaps/control-plan-readiness-matrix.mmd" target="_blank" rel="noopener">mindmap</a> 與 <code>scope/control-plan.md</code> 為準。</li>
+      <li>本頁僅做狀態追蹤,框架/條目定義仍以 <a href="https://github.com/Benden-NPI/LiquidJet-Project-Visualization/blob/main/mindmaps/control-plan-readiness-matrix.mmd" target="_blank" rel="noopener">mindmap</a> 與 <code>scope/control-plan.md</code> 為準。</li>
     </ul>
   </details>
 
@@ -373,7 +373,8 @@ function renderBoard() {
         const li = document.createElement("li");
         li.innerHTML = `
           <button class="light" data-st="${cur.status}" data-id="${it.id}"
-                  title="${STATUSES[cur.status].label}（點擊切換）" aria-label="切換狀態：${it.text}"></button>
+                  title="${STATUSES[cur.status].label}（點擊切換）"
+                  aria-label="${it.text}：目前 ${STATUSES[cur.status].label},點擊切換狀態"></button>
           <span class="label">${it.text}</span>
           <span class="note" data-note-for="${it.id}">${cur.note ? cur.note : ""}</span>
           <button class="note-btn" data-note-id="${it.id}">備註</button>`;
@@ -395,6 +396,7 @@ function bindBoardEvents() {
       setItem(id, { status: next });
       b.dataset.st = String(next);
       b.title = STATUSES[next].label + "（點擊切換）";
+      b.setAttribute("aria-label", `${b.closest("li").querySelector(".label").textContent}：目前 ${STATUSES[next].label},點擊切換狀態`);
       renderSummary();
       // refresh milestone header counts
       renderBoardHeadersOnly();
