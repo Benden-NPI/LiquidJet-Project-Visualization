@@ -3,12 +3,13 @@
 // GET    /              -> editor SPA (editor/index.html)
 // GET    /api/files     -> list of .mmd files
 // GET    /api/file?path -> raw file content
-// POST   /api/file      -> { path, content }  saves file
+// POST   /api/file      -> { path, content }      saves file
+// PATCH  /api/file      -> { from, to }           renames file
 // DELETE /api/file?path -> deletes file
 //
 // Usage: npm run edit  (then open http://localhost:5173)
 import { createServer } from "node:http";
-import { readFile, writeFile, readdir, stat, mkdir, unlink } from "node:fs/promises";
+import { readFile, writeFile, readdir, stat, mkdir, unlink, rename } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join, resolve, relative, extname, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -93,6 +94,18 @@ const server = createServer(async (req, res) => {
       if (!existsSync(abs)) return json(res, 404, { error: "not found", path: rel });
       await unlink(abs);
       return json(res, 200, { ok: true, path: rel });
+    }
+
+    if (path === "/api/file" && req.method === "PATCH") {
+      const { from, to } = await readBody(req);
+      if (!from || !to) return json(res, 400, { error: "from & to required" });
+      const src = safePath(from);
+      const dst = safePath(to);
+      if (!existsSync(src)) return json(res, 404, { error: "source not found", path: from });
+      if (existsSync(dst)) return json(res, 409, { error: "target already exists", path: to });
+      await mkdir(dirname(dst), { recursive: true });
+      await rename(src, dst);
+      return json(res, 200, { ok: true, from, to });
     }
 
     // --- Static (editor SPA) ---

@@ -40,9 +40,10 @@
   aside .file.active { background:var(--accent); color:#fff; }
   aside .file .dirty { color:var(--warn); font-weight:700; }
   aside .file .name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; }
-  aside .file .del { opacity:0; border:none; background:transparent; color:inherit; cursor:pointer; padding:0 4px; font-size:14px; line-height:1; border-radius:4px; }
-  aside .file:hover .del { opacity:.55; }
-  aside .file .del:hover { opacity:1; background:var(--danger); color:#fff; }
+  aside .file .iconbtn { opacity:0; border:none; background:transparent; color:inherit; cursor:pointer; padding:0 4px; font-size:13px; line-height:1; border-radius:4px; }
+  aside .file:hover .iconbtn { opacity:.55; }
+  aside .file .iconbtn:hover { opacity:1; background:var(--panel2); }
+  aside .file .del:hover { background:var(--danger); color:#fff; }
   aside .new { width:100%; margin-top:8px; }
   aside input { width:100%; background:var(--panel2); border:1px solid var(--border); border-radius:6px; padding:6px 8px; font-size:13px; }
 
@@ -725,6 +726,19 @@ const LocalAdapter = {
     if (!r.ok) throw new Error("delete failed");
     return r.json();
   },
+  async rename(from, to /* sha unused on local */) {
+    const r = await fetch("/api/file", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ from, to }),
+    });
+    if (!r.ok) {
+      let msg = "rename failed";
+      try { const j = await r.json(); if (j.error) msg = j.error; } catch {}
+      throw new Error(msg);
+    }
+    return r.json();
+  },
 };
 
 // --- GitHub Contents API adapter ---
@@ -815,6 +829,43 @@ const GitHubAdapter = {
     });
     return { ok: true, path };
   },
+  async rename(from, to, sha) {
+    // GitHub has no native rename: create-at-new-path + delete-at-old-path.
+    // Both writes commit individually but the pair is atomic enough for
+    // our editor use case.
+    const { repo, branch, dir } = gh();
+    const fromFull = `${dir}/${from}`;
+    const toFull = `${dir}/${to}`;
+    // Refuse if target exists
+    try {
+      const list = await ghFetch(`https://api.github.com/repos/${repo}/contents/${encodeURIComponent(dir)}?ref=${encodeURIComponent(branch)}`);
+      if (Array.isArray(list) && list.some(f => f.type === "file" && f.name === to)) {
+        throw new Error(`目標檔名「${to}」已存在。`);
+      }
+    } catch (e) {
+      if (/已存在/.test(e.message)) throw e;
+      // listing failure: continue, the create-step will surface the error.
+    }
+    // 1) read original content
+    const data = await ghFetch(`https://api.github.com/repos/${repo}/contents/${encodeURIComponent(fromFull).replace(/%2F/g,"/")}?ref=${encodeURIComponent(branch)}`);
+    if (Array.isArray(data) || !data?.content) throw new Error("讀取原檔失敗。");
+    if (!sha) sha = data.sha;
+    // 2) create at new path with same base64 content
+    await ghFetch(`https://api.github.com/repos/${repo}/contents/${encodeURIComponent(toFull).replace(/%2F/g,"/")}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        message: `editor: rename ${from} -> ${to}`,
+        content: data.content.replace(/\n/g, ""),
+        branch,
+      }),
+    });
+    // 3) delete the old path
+    await ghFetch(`https://api.github.com/repos/${repo}/contents/${encodeURIComponent(fromFull).replace(/%2F/g,"/")}`, {
+      method: "DELETE",
+      body: JSON.stringify({ message: `editor: rename ${from} -> ${to} (cleanup)`, branch, sha }),
+    });
+    return { ok: true, from, to };
+  },
   async test() {
     const { repo, branch } = gh();
     await ghFetch(`https://api.github.com/repos/${repo}/branches/${encodeURIComponent(branch)}`);
@@ -853,10 +904,16 @@ async function refreshFileList() {
     const d = document.createElement("div");
     d.className = "file" + (f === currentFile ? " active" : "");
     const dirtyMark = (f === currentFile && isDirty()) ? '<span class="dirty">●</span>' : '';
-    d.innerHTML = `<span class="name">${f}</span>${dirtyMark}<button class="del" title="刪除檔案">✕</button>`;
+    d.innerHTML = `<span class="name">${f}</span>${dirtyMark}`
+      + `<button class="iconbtn ren" title="重新命名">✎</button>`
+      + `<button class="iconbtn del" title="刪除檔案">✕</button>`;
     d.onclick = (e) => {
-      if (e.target.closest(".del")) return;
+      if (e.target.closest(".iconbtn")) return;
       openFile(f);
+    };
+    d.querySelector(".ren").onclick = (e) => {
+      e.stopPropagation();
+      renameFile(f, entry.sha);
     };
     d.querySelector(".del").onclick = (e) => {
       e.stopPropagation();
@@ -864,6 +921,31 @@ async function refreshFileList() {
     };
     el2.appendChild(d);
   }
+}
+
+async function renameFile(path, sha) {
+  if (!storage.rename) { alert("此儲存後端不支援改名。"); return; }
+  const ext = (path.match(/\.(mmd|json|md)$/i)?.[0]) || "";
+  const base = path.slice(0, path.length - ext.length);
+  const input = prompt(`重新命名「${path}」\n輸入新名稱（含副檔名才會被保留，預設使用 ${ext || ".mmd"}）：`, base);
+  if (input == null) return;
+  let target = input.trim();
+  if (!target) { alert("名稱不可為空。"); return; }
+  if (!/[./]/.test(target) && !/\.(mmd|json|md)$/i.test(target)) target += ext || ".mmd";
+  if (target === path) return;
+  if (/[\\\/]/.test(target)) { alert("名稱不可含 /、\\。"); return; }
+  try {
+    await storage.rename(path, target, sha);
+  } catch (e) {
+    alert("改名失敗：" + e.message);
+    return;
+  }
+  if (currentFile === path) {
+    currentFile = target;
+    $("fname").value = target.replace(/\.(mmd|json|md)$/i, "");
+  }
+  await refreshFileList();
+  updateStatus();
 }
 
 async function deleteFile(path, sha) {
