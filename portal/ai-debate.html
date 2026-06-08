@@ -640,7 +640,8 @@ async function callOpenAIStream(apiKey, model, sysPrompt, conversation, onChunk)
       ...conversation,
     ],
   };
-  const res = await fetch(apiEndpoint(apiKey), {
+  const endpoint = apiEndpoint(apiKey);
+  const res = await fetch(endpoint, {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -664,7 +665,8 @@ async function callOpenAIStream(apiKey, model, sysPrompt, conversation, onChunk)
         `重新產生 PAT 並勾選「Models → Read」權限後再試。`
       );
     }
-    throw new Error(`OpenAI ${res.status}: ${err}`);
+    const provider = endpoint.includes("x.ai") ? "xAI" : endpoint.includes("azure.com") ? "GitHub Models" : "OpenAI";
+    throw new Error(`${provider} API ${res.status}: ${err}`);
   }
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
