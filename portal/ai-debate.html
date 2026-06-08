@@ -266,7 +266,10 @@
         </div>
         <div class="hint">Key 僅存於 localStorage，不會傳送到任何伺服器以外的地方。<br/>
           如果已在編輯器設定過，會自動讀取。</div>
-        <button class="btn" id="btnSaveKey" style="align-self:flex-start;">儲存 Key</button>
+        <div style="display:flex; gap:6px;">
+          <button class="btn" id="btnSaveKey">儲存 Key</button>
+          <button class="btn" id="btnLoadFromEditor">從編輯器讀取</button>
+        </div>
       </div>
     </details>
 
@@ -430,6 +433,17 @@ $("btnSaveKey").onclick = () => {
     localStorage.setItem(AI_LS_KEY, JSON.stringify(s));
     setStatus("done", "API Key 已儲存");
   } catch { setStatus("error", "儲存失敗"); }
+};
+$("btnLoadFromEditor").onclick = () => {
+  try {
+    const s = JSON.parse(localStorage.getItem(AI_LS_KEY) || "{}");
+    if (s.apiKey) {
+      $("apiKey").value = s.apiKey;
+      setStatus("done", "已從編輯器讀取 API Key");
+    } else {
+      setStatus("error", "編輯器尚未儲存 API Key");
+    }
+  } catch { setStatus("error", "讀取失敗"); }
 };
 
 // ─── Status helpers ───────────────────────────────────────────────────────────
