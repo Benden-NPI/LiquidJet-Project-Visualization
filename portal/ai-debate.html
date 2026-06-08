@@ -222,8 +222,14 @@
       <div class="field">
         <label>模型</label>
         <select id="model">
-          <option value="gpt-4o-mini">gpt-4o-mini</option>
-          <option value="gpt-4o">gpt-4o</option>
+          <optgroup label="Anthropic（需 GitHub PAT）">
+            <option value="claude-opus-4-7">claude-opus-4-7</option>
+            <option value="claude-3-5-sonnet">claude-3-5-sonnet</option>
+          </optgroup>
+          <optgroup label="xAI Grok（需 GitHub PAT 或 xai- Key）">
+            <option value="grok-3">grok-3</option>
+            <option value="grok-3-mini">grok-3-mini</option>
+          </optgroup>
         </select>
       </div>
     </div>
@@ -262,11 +268,12 @@
       <div style="margin-top:10px; display:flex; flex-direction:column; gap:6px;">
         <div class="field">
           <label>API Key</label>
-          <input type="text" id="apiKey" placeholder="sk-... 或 github_pat_..." autocomplete="off" />
+          <input type="text" id="apiKey" placeholder="xai-... 或 github_pat_..." autocomplete="off" />
         </div>
         <div class="hint">Key 僅存於 localStorage，不會傳送到任何伺服器以外的地方。<br/>
-          支援 <b>OpenAI API Key</b>（以 <code>sk-</code> 開頭，可在 <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">platform.openai.com</a> 取得）<br/>
-          或 <b>GitHub PAT</b>（以 <code>github_pat_</code> / <code>ghp_</code> 開頭，使用 <a href="https://github.com/marketplace/models" target="_blank" rel="noopener">GitHub Models</a>）。<br/>
+          支援 <b>xAI API Key</b>（以 <code>xai-</code> 開頭，可在 <a href="https://console.x.ai/" target="_blank" rel="noopener">console.x.ai</a> 取得；適用 Grok 系列）<br/>
+          或 <b>xAI API Key</b>（以 <code>xai-</code> 開頭，可在 <a href="https://console.x.ai/" target="_blank" rel="noopener">console.x.ai</a> 取得；適用 Grok 系列）<br/>
+          或 <b>GitHub PAT</b>（以 <code>github_pat_</code> / <code>ghp_</code> 開頭，使用 <a href="https://github.com/marketplace/models" target="_blank" rel="noopener">GitHub Models</a>；建立 PAT 時需勾選 <b>Models → Read</b> 權限，可存取 Claude、Grok 等多種模型）。<br/>
           如果已在編輯器將 Key 設定為 Webhook API Key，可點「從編輯器讀取」。</div>
         <div style="display:flex; gap:6px;">
           <button class="btn" id="btnSaveKey">儲存 Key</button>
@@ -317,10 +324,10 @@
 // ─── Constants ────────────────────────────────────────────────────────────────
 const AI_LS_KEY        = "mindmap.ai.settings.v1";
 const DEBATE_KEY       = "ai.debate.v1";
-const OPENAI_URL       = "https://api.openai.com/v1/chat/completions";
 const GITHUB_MODELS_URL = "https://models.inference.ai.azure.com/chat/completions";
+const XAI_URL           = "https://api.x.ai/v1/chat/completions";
 const ERR_INVALID_KEY =
-  "API Key 格式錯誤：請填入 OpenAI Key（sk- 開頭）或 GitHub PAT（github_pat_ / ghp_ 開頭）。\n\n" +
+  "API Key 格式錯誤：請填入 xAI Key（xai- 開頭）或 GitHub PAT（github_pat_ / ghp_ 開頭）。\n\n" +
   "請至側欄「🔑 API Key 設定」更正後再試。";
 const ROLE_COLORS = ["#4f8cff","#38d39f","#f3b54a","#f06292"];
 const MAX_ROLES   = 4;
@@ -417,14 +424,15 @@ function loadState() {
 
 // ─── API Key ──────────────────────────────────────────────────────────────────
 function isValidApiKey(key) {
-  // OpenAI keys start with "sk-"; GitHub PATs start with "github_pat_" or "ghp_"
+  // xAI keys start with "xai-"; GitHub PATs start with "github_pat_" or "ghp_"
   return typeof key === "string" &&
-    (key.startsWith("sk-") || key.startsWith("github_pat_") || key.startsWith("ghp_"));
+    (key.startsWith("xai-") || key.startsWith("github_pat_") || key.startsWith("ghp_"));
 }
 function apiEndpoint(key) {
-  return (typeof key === "string" && (key.startsWith("github_pat_") || key.startsWith("ghp_")))
-    ? GITHUB_MODELS_URL
-    : OPENAI_URL;
+  if (typeof key !== "string") return GITHUB_MODELS_URL;
+  if (key.startsWith("github_pat_") || key.startsWith("ghp_")) return GITHUB_MODELS_URL;
+  if (key.startsWith("xai-")) return XAI_URL;
+  return GITHUB_MODELS_URL;
 }
 function getApiKey() {
   // Prefer the dedicated debate key input; fall back to editor AI settings.
@@ -444,7 +452,7 @@ function loadApiKeyInput() {
 $("btnSaveKey").onclick = () => {
   const key = $("apiKey").value.trim();
   if (key && !isValidApiKey(key)) {
-    setStatus("error", "API Key 格式錯誤：請填入 OpenAI Key（sk- 開頭）或 GitHub PAT（github_pat_ / ghp_ 開頭）。");
+    setStatus("error", "API Key 格式錯誤：請填入 xAI Key（xai- 開頭）或 GitHub PAT（github_pat_ / ghp_ 開頭）。");
     return;
   }
   try {
@@ -459,7 +467,7 @@ $("btnLoadFromEditor").onclick = () => {
     const s = JSON.parse(localStorage.getItem(AI_LS_KEY) || "{}");
     if (s.apiKey) {
       if (!isValidApiKey(s.apiKey)) {
-        setStatus("error", "編輯器儲存的 Key 格式不正確（需以 sk-、github_pat_ 或 ghp_ 開頭），請重新設定。");
+        setStatus("error", "編輯器儲存的 Key 格式不正確（需以 xai-、github_pat_ 或 ghp_ 開頭），請重新設定。");
         return;
       }
       $("apiKey").value = s.apiKey;
@@ -616,8 +624,8 @@ function finalizeBubble(div) {
   if (cursor) cursor.remove();
 }
 
-// ─── OpenAI streaming call ────────────────────────────────────────────────────
-async function callOpenAIStream(apiKey, model, sysPrompt, conversation, onChunk) {
+// ─── AI streaming call ────────────────────────────────────────────────────────
+async function callAIStream(apiKey, model, sysPrompt, conversation, onChunk) {
   const payload = {
     model,
     stream: true,
@@ -627,7 +635,8 @@ async function callOpenAIStream(apiKey, model, sysPrompt, conversation, onChunk)
       ...conversation,
     ],
   };
-  const res = await fetch(apiEndpoint(apiKey), {
+  const endpoint = apiEndpoint(apiKey);
+  const res = await fetch(endpoint, {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -637,7 +646,22 @@ async function callOpenAIStream(apiKey, model, sysPrompt, conversation, onChunk)
   });
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`OpenAI ${res.status}: ${err}`);
+    // Provide a clear hint when the GitHub Models API reports missing permission.
+    let errJson = null;
+    try { errJson = JSON.parse(err); } catch {}
+    if (
+      res.status === 401 &&
+      (errJson?.error?.code === "unauthorized" || errJson?.error?.code === "models_permission_required") &&
+      String(errJson?.error?.message ?? "").toLowerCase().includes("models")
+    ) {
+      throw new Error(
+        `GitHub PAT 缺少 Models 存取權限。\n\n` +
+        `請前往 GitHub → Settings → Developer settings → Personal access tokens，\n` +
+        `重新產生 PAT 並勾選「Models → Read」權限後再試。`
+      );
+    }
+    const provider = endpoint.includes("x.ai") ? "xAI" : "GitHub Models";
+    throw new Error(`${provider} API ${res.status}: ${err}`);
   }
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
@@ -693,7 +717,7 @@ async function runDebate() {
   setControlsRunning(true);
   setStatus("running", "辯論進行中...");
 
-  // Build conversation history (OpenAI format)
+  // Build conversation history (OpenAI-compatible format)
   // Each call uses entire prior history as context.
   const history = []; // { role:"user"|"assistant", content, _who }
 
@@ -735,7 +759,7 @@ async function runDebate() {
         let text = "";
 
         try {
-          text = await callOpenAIStream(
+          text = await callAIStream(
             apiKey, model, sysPrompt, conversation,
             chunk => appendToBubble(div, chunk),
           );
@@ -780,7 +804,7 @@ async function runDebate() {
       const div = createStreamingBubble(-1, "摘要", 0);
       let summaryText = "";
       try {
-        summaryText = await callOpenAIStream(
+        summaryText = await callAIStream(
           apiKey, model, summaryPrompt, summaryConversation,
           chunk => appendToBubble(div, chunk),
         );
