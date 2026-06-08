@@ -258,16 +258,16 @@
 
     <!-- API key -->
     <details class="api-section">
-      <summary>🔑 OpenAI API Key 設定</summary>
+      <summary>🔑 API Key 設定</summary>
       <div style="margin-top:10px; display:flex; flex-direction:column; gap:6px;">
         <div class="field">
           <label>API Key</label>
-          <input type="text" id="apiKey" placeholder="sk-..." autocomplete="off" />
+          <input type="text" id="apiKey" placeholder="sk-... 或 github_pat_..." autocomplete="off" />
         </div>
         <div class="hint">Key 僅存於 localStorage，不會傳送到任何伺服器以外的地方。<br/>
-          請填入 <b>OpenAI API Key</b>（以 <code>sk-</code> 開頭），可在 <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">platform.openai.com</a> 取得。<br/>
-          <b>請勿</b>填入 GitHub Token 或其他非 OpenAI 憑證。<br/>
-          如果已在編輯器將 OpenAI Key 設定為 Webhook API Key，可點「從編輯器讀取」。</div>
+          支援 <b>OpenAI API Key</b>（以 <code>sk-</code> 開頭，可在 <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">platform.openai.com</a> 取得）<br/>
+          或 <b>GitHub PAT</b>（以 <code>github_pat_</code> / <code>ghp_</code> 開頭，使用 <a href="https://github.com/marketplace/models" target="_blank" rel="noopener">GitHub Models</a>）。<br/>
+          如果已在編輯器將 Key 設定為 Webhook API Key，可點「從編輯器讀取」。</div>
         <div style="display:flex; gap:6px;">
           <button class="btn" id="btnSaveKey">儲存 Key</button>
           <button class="btn" id="btnLoadFromEditor">從編輯器讀取</button>
@@ -315,13 +315,13 @@
 "use strict";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const AI_LS_KEY   = "mindmap.ai.settings.v1";
-const DEBATE_KEY  = "ai.debate.v1";
-const OPENAI_URL  = "https://api.openai.com/v1/chat/completions";
+const AI_LS_KEY        = "mindmap.ai.settings.v1";
+const DEBATE_KEY       = "ai.debate.v1";
+const OPENAI_URL       = "https://api.openai.com/v1/chat/completions";
+const GITHUB_MODELS_URL = "https://models.inference.ai.azure.com/chat/completions";
 const ERR_INVALID_KEY =
-  "API Key 格式錯誤：OpenAI Key 必須以 sk- 開頭。\n" +
-  "請勿填入 GitHub Token 或其他非 OpenAI 憑證。\n\n" +
-  "請至側欄「🔑 OpenAI API Key 設定」更正後再試。";
+  "API Key 格式錯誤：請填入 OpenAI Key（sk- 開頭）或 GitHub PAT（github_pat_ / ghp_ 開頭）。\n\n" +
+  "請至側欄「🔑 API Key 設定」更正後再試。";
 const ROLE_COLORS = ["#4f8cff","#38d39f","#f3b54a","#f06292"];
 const MAX_ROLES   = 4;
 
@@ -416,9 +416,15 @@ function loadState() {
 }
 
 // ─── API Key ──────────────────────────────────────────────────────────────────
-function isValidOpenAIKey(key) {
-  // OpenAI keys start with "sk-" (classic or project keys like "sk-proj-...")
-  return typeof key === "string" && key.startsWith("sk-");
+function isValidApiKey(key) {
+  // OpenAI keys start with "sk-"; GitHub PATs start with "github_pat_" or "ghp_"
+  return typeof key === "string" &&
+    (key.startsWith("sk-") || key.startsWith("github_pat_") || key.startsWith("ghp_"));
+}
+function apiEndpoint(key) {
+  return (typeof key === "string" && (key.startsWith("github_pat_") || key.startsWith("ghp_")))
+    ? GITHUB_MODELS_URL
+    : OPENAI_URL;
 }
 function getApiKey() {
   // Prefer the dedicated debate key input; fall back to editor AI settings.
@@ -432,13 +438,13 @@ function getApiKey() {
 function loadApiKeyInput() {
   try {
     const s = JSON.parse(localStorage.getItem(AI_LS_KEY) || "{}");
-    if (s.apiKey && isValidOpenAIKey(s.apiKey)) $("apiKey").value = s.apiKey;
+    if (s.apiKey && isValidApiKey(s.apiKey)) $("apiKey").value = s.apiKey;
   } catch {}
 }
 $("btnSaveKey").onclick = () => {
   const key = $("apiKey").value.trim();
-  if (key && !isValidOpenAIKey(key)) {
-    setStatus("error", "API Key 格式錯誤：OpenAI Key 必須以 sk- 開頭，請勿填入 GitHub Token 或其他憑證。");
+  if (key && !isValidApiKey(key)) {
+    setStatus("error", "API Key 格式錯誤：請填入 OpenAI Key（sk- 開頭）或 GitHub PAT（github_pat_ / ghp_ 開頭）。");
     return;
   }
   try {
@@ -452,8 +458,8 @@ $("btnLoadFromEditor").onclick = () => {
   try {
     const s = JSON.parse(localStorage.getItem(AI_LS_KEY) || "{}");
     if (s.apiKey) {
-      if (!isValidOpenAIKey(s.apiKey)) {
-        setStatus("error", "編輯器儲存的 Key 不是有效的 OpenAI API Key（需以 sk- 開頭），請重新設定。");
+      if (!isValidApiKey(s.apiKey)) {
+        setStatus("error", "編輯器儲存的 Key 格式不正確（需以 sk-、github_pat_ 或 ghp_ 開頭），請重新設定。");
         return;
       }
       $("apiKey").value = s.apiKey;
@@ -621,7 +627,7 @@ async function callOpenAIStream(apiKey, model, sysPrompt, conversation, onChunk)
       ...conversation,
     ],
   };
-  const res = await fetch(OPENAI_URL, {
+  const res = await fetch(apiEndpoint(apiKey), {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -675,8 +681,8 @@ async function runDebate() {
 
   if (!topic) { alert("請填入討論主題！"); return; }
   if (roles.some(r => !r.name.trim())) { alert("請為所有角色填入名稱！"); return; }
-  if (!apiKey) { alert("請先設定 OpenAI API Key（側欄最下方）。"); return; }
-  if (!isValidOpenAIKey(apiKey)) { alert(ERR_INVALID_KEY); return; }
+  if (!apiKey) { alert("請先設定 API Key（側欄最下方）。"); return; }
+  if (!isValidApiKey(apiKey)) { alert(ERR_INVALID_KEY); return; }
 
   // Reset
   messages = [];
