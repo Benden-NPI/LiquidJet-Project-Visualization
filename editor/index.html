@@ -20,8 +20,8 @@
   * { box-sizing:border-box; }
   html, body { margin:0; height:100%; background:var(--bg); color:var(--text);
     font-family:-apple-system,Segoe UI,Roboto,"PingFang TC","Noto Sans TC",sans-serif; overflow:hidden; }
-  .app { display:grid; grid-template-columns:240px 1fr; grid-template-rows:48px 1fr 26px; height:100vh; }
-  header { grid-column:1/3; display:flex; align-items:center; gap:6px; padding:0 12px; background:var(--panel); border-bottom:1px solid var(--border); flex-wrap:wrap; }
+  .app { display:grid; grid-template-columns:240px 1fr 320px; grid-template-rows:48px 1fr 26px; height:100vh; }
+  header { grid-column:1/4; display:flex; align-items:center; gap:6px; padding:0 12px; background:var(--panel); border-bottom:1px solid var(--border); flex-wrap:wrap; }
   header h1 { font-size:14px; margin:0 8px 0 0; font-weight:600; }
   header .spacer { flex:1; }
   header .status { font-size:12px; color:var(--muted); margin-left:8px; }
@@ -94,7 +94,21 @@
   .modal .pill.ok { color:var(--accent2); border-color:var(--accent2); }
   .modal .pill.bad { color:var(--danger); border-color:var(--danger); }
 
-  footer { grid-column:1/3; background:var(--panel); border-top:1px solid var(--border); font-size:11px; color:var(--muted); display:flex; align-items:center; gap:14px; padding:0 12px; }
+  .ai-panel { background:var(--panel); border-left:1px solid var(--border); overflow:auto; display:flex; flex-direction:column; }
+  .ai-head { padding:10px 12px; border-bottom:1px solid var(--border); }
+  .ai-head .title { font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; }
+  .ai-head .hint { margin-top:4px; font-size:11.5px; color:var(--muted); }
+  .ai-status { margin-top:6px; font-size:12px; color:var(--muted); }
+  .ai-list { padding:10px; display:flex; flex-direction:column; gap:8px; }
+  .ai-item { border:1px solid var(--border); border-radius:10px; padding:10px; background:var(--panel2); }
+  .ai-item .k { display:inline-block; font-size:10px; color:var(--muted); border:1px solid var(--border); border-radius:99px; padding:1px 6px; margin-bottom:6px; }
+  .ai-item .t { font-size:13px; font-weight:600; }
+  .ai-item .d { margin-top:4px; font-size:12px; color:var(--muted); line-height:1.5; white-space:pre-wrap; }
+  .ai-item pre { margin:8px 0 0; padding:8px; background:var(--panel); border:1px solid var(--border); border-radius:8px; font-size:11px; overflow:auto; white-space:pre-wrap; }
+  .ai-item .row { display:flex; gap:6px; margin-top:8px; }
+  .ai-item .row button { padding:4px 8px; font-size:12px; }
+  .ai-empty { padding:16px 12px; color:var(--muted); font-size:12px; line-height:1.6; }
+  footer { grid-column:1/4; background:var(--panel); border-top:1px solid var(--border); font-size:11px; color:var(--muted); display:flex; align-items:center; gap:14px; padding:0 12px; }
   footer .spacer { flex:1; }
 
   /* Mini buttons in zoom controls */
@@ -130,6 +144,7 @@
     <button id="btnSave" class="primary" title="儲存 (Ctrl+S)">💾 儲存</button>
     <button id="btnExportSvg" title="下載 SVG">SVG</button>
     <button id="btnExportPng" title="下載 PNG">PNG</button>
+    <button id="btnAI" title="觸發 AI 建議（僅草稿，不會自動提交）">AI Suggest</button>
     <button id="btnSettings" title="設定（儲存位置 / GitHub Token）">⚙</button>
     <span class="status" id="status">ready</span>
   </header>
@@ -165,6 +180,15 @@
       <kbd>空白拖</kbd> 平移 · <kbd>滾輪</kbd> 平移 · <kbd>Ctrl+滾輪</kbd> 縮放
     </div>
   </main>
+
+  <section class="ai-panel">
+    <div class="ai-head">
+      <div class="title">AI Auto-Operation</div>
+      <div class="hint">僅產生草稿建議，不會自動 commit。</div>
+      <div class="ai-status" id="aiStatus">idle</div>
+    </div>
+    <div class="ai-list" id="aiList"></div>
+  </section>
 
   <footer>
     <span id="footerInfo">—</span>
@@ -203,6 +227,34 @@
       </div>
     </div>
 
+    <div class="row">
+      <label>AI 模式</label>
+      <select id="aiMode">
+        <option value="off">關閉</option>
+        <option value="local-rules">Local Rules（建議）</option>
+        <option value="webhook">Webhook（外部 AI）</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Webhook URL（僅 webhook 模式使用）</label>
+      <input id="aiWebhookUrl" placeholder="https://example.com/ai/suggest" />
+      <label style="margin-top:6px;">Webhook API Key（可留空）</label>
+      <input id="aiApiKey" type="password" placeholder="api_key" autocomplete="off" />
+      <div class="hint">金鑰只存在 localStorage，不會寫入 repo。</div>
+    </div>
+    <div class="row">
+      <label>每分鐘請求上限</label>
+      <input id="aiRpm" type="number" min="1" max="120" step="1" />
+      <label style="margin-top:6px;">重試次數</label>
+      <input id="aiRetries" type="number" min="0" max="5" step="1" />
+    </div>
+    <div class="row">
+      <label>
+        <input id="aiAutoCheck" type="checkbox" style="width:auto; margin-right:6px;" />
+        儲存後自動檢查（可選）
+      </label>
+    </div>
+
     <div class="actions">
       <button id="btnTestGh">測試連線</button>
       <span class="spacer" style="flex:1;"></span>
@@ -233,6 +285,8 @@ let savedSnapshot = "";
 let selectedId = tree.id;
 const history = []; let histIdx = -1;
 let view = { x: 0, y: 0, k: 1 };
+let aiSuggestions = [];
+let aiBusy = false;
 
 function snapshot() { return JSON.stringify(tree); }
 function pushHistory() {
@@ -356,6 +410,21 @@ function addChild(parentId) {
   selectedId = n.id;
   pushHistory(); render();
   setTimeout(() => beginRename(n.id), 50);
+}
+function addChildWithText(parentId, text) {
+  const r = findNode(parentId); if (!r) return null;
+  const m = measure(text || "New");
+  const n = mkNode(text || "New");
+  const dir = $("layoutDir").value;
+  const dx = dir === "RL" ? -160 : 160;
+  const dy = dir === "TB" ? 100 : (dir === "BT" ? -100 : 0);
+  if (dir === "TB" || dir === "BT") { n.x = (r.node.x ?? 0) + (r.node.children.length * (m.w + 20)) - 100; n.y = (r.node.y ?? 0) + dy; }
+  else { n.x = (r.node.x ?? 0) + dx; n.y = (r.node.y ?? 0) + (r.node.children.length * (m.h + 14)) - 30; }
+  n.w = m.w; n.h = m.h;
+  r.node.children.push(n);
+  selectedId = n.id;
+  pushHistory(); render();
+  return n.id;
 }
 function addSibling(id) {
   const r = findNode(id); if (!r) return;
@@ -698,6 +767,277 @@ function loadSettings() {
 }
 function saveSettings(s) { localStorage.setItem(LS_KEY, JSON.stringify(s)); }
 let settings = loadSettings();
+
+// ---------- AI auto-operation ----------
+const AI_LS_KEY = "mindmap.ai.settings.v1";
+const defaultAISettings = {
+  mode: "local-rules", // off | local-rules | webhook
+  webhookUrl: "",
+  apiKey: "",
+  rpm: 12,
+  retries: 2,
+  autoCheckAfterSave: false,
+};
+function loadAISettings() {
+  try { return { ...defaultAISettings, ...JSON.parse(localStorage.getItem(AI_LS_KEY) || "{}") }; }
+  catch { return { ...defaultAISettings }; }
+}
+function saveAISettings(s) { localStorage.setItem(AI_LS_KEY, JSON.stringify(s)); }
+let aiSettings = loadAISettings();
+let aiSeq = 0;
+let aiHits = [];
+const AI_TASKS = ["structure-completion", "naming-classification", "control-plan-check"];
+const AI_LABEL = {
+  "structure-completion": "Structure",
+  "naming-classification": "Naming",
+  "control-plan-check": "Control Plan",
+};
+
+function setAIStatus(msg) {
+  const el = $("aiStatus");
+  if (el) el.textContent = msg;
+}
+function renderAISuggestions() {
+  const root = $("aiList");
+  if (!root) return;
+  root.innerHTML = "";
+  if (!aiSuggestions.length) {
+    const empty = document.createElement("div");
+    empty.className = "ai-empty";
+    empty.textContent = "尚無建議。點選 AI Suggest 產生草稿建議。";
+    root.appendChild(empty);
+    return;
+  }
+  for (const s of aiSuggestions) {
+    const item = document.createElement("div");
+    item.className = "ai-item";
+    const applyLabel = s.applied ? "已套用" : "套用";
+    const disabled = s.applied || !s.action ? "disabled" : "";
+    item.innerHTML =
+      `<div class="k">${AI_LABEL[s.task] || s.task}</div>` +
+      `<div class="t">${s.title}</div>` +
+      `<div class="d">${s.detail || ""}</div>` +
+      `${s.diff ? `<pre>${s.diff}</pre>` : ""}` +
+      `<div class="row">` +
+      `<button data-ai-apply="${s.id}" ${disabled}>${applyLabel}</button>` +
+      `</div>`;
+    root.appendChild(item);
+  }
+  root.querySelectorAll("[data-ai-apply]").forEach((btn) => {
+    btn.onclick = () => applyAISuggestion(btn.getAttribute("data-ai-apply"));
+  });
+}
+function aiSuggestion(task, title, detail, diff, action = null) {
+  return { id: "ai-" + (++aiSeq), task, title, detail, diff, action, applied: false };
+}
+function pruneAIHits() {
+  const now = Date.now();
+  aiHits = aiHits.filter((t) => now - t < 60_000);
+}
+function checkAIRateLimit() {
+  pruneAIHits();
+  const rpm = Math.max(1, Number(aiSettings.rpm || 12));
+  if (aiHits.length >= rpm) throw new Error(`AI 請求過快（每分鐘上限 ${rpm} 次）`);
+  aiHits.push(Date.now());
+}
+async function withRetry(fn, retries = 0) {
+  let lastErr = null;
+  for (let i = 0; i <= retries; i++) {
+    try { return await fn(); }
+    catch (err) {
+      lastErr = err;
+      if (i < retries) await new Promise((r) => setTimeout(r, 350 * (i + 1)));
+    }
+  }
+  throw lastErr;
+}
+function buildAIContext() {
+  const nodes = [];
+  walkTree(tree, (n, parent, depth) => {
+    nodes.push({ id: n.id, parentId: parent?.id ?? null, depth, text: n.text });
+  });
+  return {
+    file: currentFile,
+    nodeCount: nodes.length,
+    selectedId,
+    nodes,
+    timestamp: new Date().toISOString(),
+  };
+}
+async function loadControlPlanDoc() {
+  const candidates = [];
+  const add = (u) => { if (u && !candidates.includes(u)) candidates.push(u); };
+  try { add(new URL("../scope/control-plan.json", location.href).toString()); } catch {}
+  try { add(new URL("./scope/control-plan.json", location.href).toString()); } catch {}
+  add("/scope/control-plan.json");
+  if (settings.ghRepo && settings.ghBranch) {
+    add(`https://raw.githubusercontent.com/${settings.ghRepo}/${encodeURIComponent(settings.ghBranch)}/scope/control-plan.json`);
+  }
+  for (const url of candidates) {
+    try {
+      const r = await fetch(url, { cache: "no-store" });
+      if (!r.ok) continue;
+      const data = await r.json();
+      if (Array.isArray(data?.controls)) return data;
+    } catch {}
+  }
+  return null;
+}
+
+const LocalRulesAIAdapter = {
+  name: "local-rules",
+  async runTask(task, ctx) {
+    if (task === "structure-completion") {
+      const leaves = [];
+      walkTree(tree, (n, _p, depth) => {
+        if (!n.children.length && depth <= 2) leaves.push(n);
+      });
+      if (!leaves.length) return [aiSuggestion(task, "No structural gaps detected", "目前結構完整，暫無補全建議。", "")];
+      return leaves.slice(0, 3).map((n, idx) => {
+        const text = idx === 0 ? "Action Item" : (idx === 1 ? "Owner & Due Date" : "Risk / Blocker");
+        return aiSuggestion(
+          task,
+          `補全節點：${n.text}`,
+          `在「${n.text}」下新增子節點，補齊可執行資訊。`,
+          `+ ${n.text}\n  + ${text}`,
+          { type: "add-child", parentId: n.id, text },
+        );
+      });
+    }
+    if (task === "naming-classification") {
+      const out = [];
+      walkTree(tree, (n, _p, depth) => {
+        if (out.length >= 3) return;
+        const t = String(n.text || "").trim();
+        let next = "";
+        if (/^new topic$/i.test(t)) next = "LiquidJet Topic";
+        else if (/^branch\b/i.test(t)) next = depth <= 1 ? "Workstream" : "Substream";
+        else if (/^item\b/i.test(t)) next = "Task";
+        else if (/^new$/i.test(t)) next = "Action";
+        if (!next || next === t) return;
+        out.push(aiSuggestion(
+          task,
+          `命名優化：${t}`,
+          "建議使用較可讀且可分類的名稱。",
+          `- ${t}\n+ ${next}`,
+          { type: "rename", nodeId: n.id, newText: next },
+        ));
+      });
+      if (!out.length) out.push(aiSuggestion(task, "No naming changes suggested", "目前命名未偵測到明顯通用名稱。", ""));
+      return out;
+    }
+    if (task === "control-plan-check") {
+      const cp = await loadControlPlanDoc();
+      if (!cp) {
+        return [aiSuggestion(task, "Control Plan source unavailable", "找不到 `scope/control-plan.json`，請確認頁面路徑或 repo 設定。", "")];
+      }
+      const required = ["characteristic", "spec", "method", "msa", "sampling", "control", "reaction", "owner", "pfmea"];
+      const rows = Array.isArray(cp.controls) ? cp.controls : [];
+      const misses = [];
+      for (const row of rows) {
+        const missing = required.filter((k) => !String(row?.[k] ?? "").trim());
+        if (missing.length) misses.push({ id: row?.id || "(no-id)", missing });
+      }
+      if (!misses.length) return [aiSuggestion(task, "Control Plan looks complete", "未偵測到必填欄位缺漏。", "")];
+      const top = misses.slice(0, 5).map((m) => `${m.id}: ${m.missing.join(", ")}`);
+      return [aiSuggestion(
+        task,
+        `Control Plan 缺漏：${misses.length} row(s)`,
+        "建議先建立缺漏追蹤分支（草稿），再逐項補齊。",
+        top.map((x) => `- ${x}`).join("\n"),
+        { type: "add-checklist", parentId: tree.id, title: `Control Plan gaps (${misses.length})`, items: top },
+      )];
+    }
+    return [aiSuggestion(task, "Unsupported task", `不支援的任務：${task}`, "")];
+  },
+};
+
+const WebhookAIAdapter = {
+  name: "webhook",
+  async runTask(task, ctx) {
+    if (!aiSettings.webhookUrl) throw new Error("尚未設定 Webhook URL");
+    const res = await fetch(aiSettings.webhookUrl, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        ...(aiSettings.apiKey ? { "authorization": "Bearer " + aiSettings.apiKey } : {}),
+      },
+      body: JSON.stringify({ task, context: ctx }),
+    });
+    if (!res.ok) throw new Error(`Webhook ${res.status} ${res.statusText}`);
+    const data = await res.json();
+    const list = Array.isArray(data?.suggestions) ? data.suggestions : [];
+    if (!list.length) {
+      return [aiSuggestion(task, "Webhook returned no suggestions", "外部服務沒有回傳建議。", "")];
+    }
+    return list.slice(0, 8).map((s) => aiSuggestion(
+      task,
+      s.title || "AI suggestion",
+      s.detail || "",
+      s.diff || "",
+      sanitizeAIAction(s.action),
+    ));
+  },
+};
+function sanitizeAIAction(action) {
+  if (!action || typeof action !== "object") return null;
+  if (action.type === "add-child") return { type: "add-child", parentId: action.parentId, text: String(action.text || "Action Item") };
+  if (action.type === "rename") return { type: "rename", nodeId: action.nodeId, newText: String(action.newText || "") };
+  if (action.type === "add-checklist") return {
+    type: "add-checklist",
+    parentId: action.parentId || tree.id,
+    title: String(action.title || "Checklist"),
+    items: Array.isArray(action.items) ? action.items.map((x) => String(x)) : [],
+  };
+  return null;
+}
+function pickAIAdapter() {
+  if (aiSettings.mode === "off") return null;
+  if (aiSettings.mode === "webhook") return WebhookAIAdapter;
+  return LocalRulesAIAdapter;
+}
+async function runAIAnalysis({ tasks = AI_TASKS, reason = "manual" } = {}) {
+  if (aiBusy) return;
+  const adapter = pickAIAdapter();
+  if (!adapter) { setAIStatus("AI mode is off"); return; }
+  aiBusy = true;
+  setAIStatus(`running (${reason}) ...`);
+  const ctx = buildAIContext();
+  const out = [];
+  for (const task of tasks) {
+    try {
+      checkAIRateLimit();
+      const retry = Math.max(0, Number(aiSettings.retries || 0));
+      const part = await withRetry(() => adapter.runTask(task, ctx), retry);
+      out.push(...(Array.isArray(part) ? part : []));
+      setAIStatus(`done: ${AI_LABEL[task] || task}`);
+    } catch (err) {
+      out.push(aiSuggestion(task, "Task failed", String(err?.message || err), ""));
+      setAIStatus(`failed: ${AI_LABEL[task] || task}`);
+    }
+  }
+  aiSuggestions = out;
+  renderAISuggestions();
+  aiBusy = false;
+}
+function applyAISuggestion(id) {
+  const s = aiSuggestions.find((x) => x.id === id);
+  if (!s || s.applied || !s.action) return;
+  const a = s.action;
+  if (a.type === "add-child") {
+    addChildWithText(a.parentId, a.text);
+  } else if (a.type === "rename") {
+    renameNode(a.nodeId, a.newText);
+  } else if (a.type === "add-checklist") {
+    const rootId = addChildWithText(a.parentId || tree.id, a.title || "Checklist");
+    if (rootId) for (const item of (a.items || [])) addChildWithText(rootId, item);
+  } else {
+    return;
+  }
+  s.applied = true;
+  renderAISuggestions();
+  setAIStatus("suggestion applied (draft only)");
+}
 
 // --- Local server adapter (works when you run `npm run edit`) ---
 const LocalAdapter = {
@@ -1071,6 +1411,9 @@ async function save() {
   renderFileList();
   updateStatus();
   scheduleListReconcile((fresh) => fresh.some(f => f.name === name));
+  if (aiSettings.autoCheckAfterSave) {
+    runAIAnalysis({ tasks: ["control-plan-check"], reason: "post-save" });
+  }
 }
 
 function serializeJson(n) {
@@ -1205,6 +1548,7 @@ $("btnUndo").onclick = undo;
 $("btnRedo").onclick = redo;
 $("btnAutoLayout").onclick = () => autoLayout();
 $("btnSave").onclick = save;
+$("btnAI").onclick = () => runAIAnalysis({ reason: "manual" });
 $("btnZoomIn").onclick = () => { view.k = Math.min(3, view.k * 1.2); applyView(); };
 $("btnZoomOut").onclick = () => { view.k = Math.max(0.2, view.k / 1.2); applyView(); };
 $("btnZoom100").onclick = () => { view.k = 1; applyView(); };
@@ -1232,6 +1576,12 @@ function openSettings() {
   $("ghBranch").value = settings.ghBranch;
   $("ghDir").value = settings.ghDir;
   $("ghToken").value = settings.ghToken;
+  $("aiMode").value = aiSettings.mode;
+  $("aiWebhookUrl").value = aiSettings.webhookUrl || "";
+  $("aiApiKey").value = aiSettings.apiKey || "";
+  $("aiRpm").value = String(aiSettings.rpm ?? 12);
+  $("aiRetries").value = String(aiSettings.retries ?? 2);
+  $("aiAutoCheck").checked = !!aiSettings.autoCheckAfterSave;
   $("modeBadge").textContent = "目前：" + storageBadge;
   $("modeBadge").className = "pill " + (storage === GitHubAdapter ? "ok" : "");
   $("settingsMask").classList.add("open");
@@ -1250,6 +1600,16 @@ $("btnSettingsSave").onclick = async () => {
     ghToken: $("ghToken").value.trim(),
   };
   saveSettings(settings);
+  aiSettings = {
+    ...aiSettings,
+    mode: $("aiMode").value,
+    webhookUrl: $("aiWebhookUrl").value.trim(),
+    apiKey: $("aiApiKey").value.trim(),
+    rpm: Math.max(1, Math.min(120, Number($("aiRpm").value || 12))),
+    retries: Math.max(0, Math.min(5, Number($("aiRetries").value || 2))),
+    autoCheckAfterSave: $("aiAutoCheck").checked,
+  };
+  saveAISettings(aiSettings);
   await pickStorage();
   await refreshFileList();
   updateStatus();
@@ -1281,6 +1641,8 @@ $("btnTestGh").onclick = async () => {
 ensureLayout();
 pushHistory();
 savedSnapshot = snapshot();
+renderAISuggestions();
+setAIStatus(`idle · ${aiSettings.mode}`);
 (async () => {
   await pickStorage();
   await refreshFileList();
