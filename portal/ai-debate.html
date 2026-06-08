@@ -1,0 +1,879 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<title>LiquidJet · AI 角色辯論</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="description" content="設定主題與 AI 角色，讓多個 AI 人格互相討論數個回合。" />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><path d='M32 6 L18 30 L46 30 Z' fill='%23ffffff'/><path d='M14 30 L50 30 L57 50 L40 58 L22 56 L9 46 Z' fill='%237cc4ff'/></svg>" />
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg:#0f1115; --panel:#161a22; --panel2:#1e2330; --border:#2a3142;
+    --text:#e6e9ef; --muted:#8a93a6;
+    --accent:#4f8cff; --accent2:#38d39f; --accent3:#f3b54a; --accent4:#f06292;
+
+    /* Role colors (up to 4 roles) */
+    --role0:#4f8cff; --role0-bg:rgba(79,140,255,.12);
+    --role1:#38d39f; --role1-bg:rgba(56,211,159,.12);
+    --role2:#f3b54a; --role2-bg:rgba(243,181,74,.12);
+    --role3:#f06292; --role3-bg:rgba(240,98,146,.12);
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg:#f6f7fb; --panel:#fff; --panel2:#f0f2f7; --border:#dde2ea;
+      --text:#1c2230; --muted:#5b6478;
+      --role0-bg:rgba(79,140,255,.08);
+      --role1-bg:rgba(56,211,159,.08);
+      --role2-bg:rgba(243,181,74,.08);
+      --role3-bg:rgba(240,98,146,.08);
+    }
+  }
+
+  * { box-sizing:border-box; }
+  html, body {
+    margin:0; min-height:100%; background:var(--bg); color:var(--text);
+    font-family:-apple-system,Segoe UI,Roboto,"PingFang TC","Noto Sans TC",sans-serif;
+    line-height:1.6;
+  }
+  body {
+    background:
+      radial-gradient(1100px 500px at 10% -5%, rgba(79,140,255,.15), transparent 55%),
+      radial-gradient(800px 400px at 90% 5%, rgba(240,98,146,.10), transparent 55%),
+      var(--bg);
+  }
+
+  /* ── Layout ── */
+  .layout { display:grid; grid-template-columns:340px 1fr; min-height:100vh; }
+  @media (max-width:780px) { .layout { grid-template-columns:1fr; } }
+
+  /* ── Left sidebar ── */
+  .sidebar {
+    background:var(--panel); border-right:1px solid var(--border);
+    padding:20px 18px 32px; display:flex; flex-direction:column; gap:16px;
+    overflow-y:auto;
+  }
+  .topbar { display:flex; align-items:center; gap:10px; margin-bottom:2px; }
+  .topbar a.back {
+    color:var(--muted); text-decoration:none; font-size:12px;
+    padding:5px 9px; border:1px solid var(--border); border-radius:7px;
+    background:var(--panel2); white-space:nowrap;
+  }
+  .topbar a.back:hover { border-color:var(--accent); color:var(--text); }
+  h1 { margin:0; font-size:19px; }
+  .sub { color:var(--muted); font-size:12.5px; margin:0; }
+
+  label { display:block; font-size:12.5px; color:var(--muted); margin-bottom:4px; font-weight:600; letter-spacing:.4px; }
+  input[type=text], input[type=number], select, textarea {
+    width:100%; padding:7px 10px; border-radius:8px; border:1px solid var(--border);
+    background:var(--panel2); color:var(--text); font-size:13px; font-family:inherit;
+    outline:none; transition:border-color .15s;
+  }
+  input:focus, select:focus, textarea:focus { border-color:var(--accent); }
+  textarea { resize:vertical; min-height:52px; line-height:1.5; }
+
+  .field { display:flex; flex-direction:column; gap:4px; }
+  .row2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .hint { font-size:11.5px; color:var(--muted); }
+
+  /* ── Role cards ── */
+  .roles-list { display:flex; flex-direction:column; gap:10px; }
+  .role-card {
+    border:1px solid var(--border); border-radius:10px; padding:11px 12px;
+    background:var(--panel2); position:relative;
+  }
+  .role-card .role-header { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .role-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  .role-card input[type=text] { margin-bottom:6px; }
+  .btn-remove-role {
+    position:absolute; top:8px; right:8px;
+    background:none; border:none; cursor:pointer; color:var(--muted);
+    font-size:15px; padding:2px 5px; border-radius:5px; line-height:1;
+  }
+  .btn-remove-role:hover { color:#ef4444; background:rgba(239,68,68,.1); }
+
+  .presets { display:flex; flex-wrap:wrap; gap:6px; }
+  .preset-btn {
+    font-size:11.5px; padding:4px 9px; border-radius:7px; cursor:pointer;
+    border:1px solid var(--border); background:var(--panel2); color:var(--muted);
+    transition:border-color .15s, color .15s;
+  }
+  .preset-btn:hover { border-color:var(--accent); color:var(--text); }
+
+  /* ── Summary toggle ── */
+  .toggle-row { display:flex; align-items:center; gap:8px; }
+  .toggle-row input[type=checkbox] { width:auto; accent-color:var(--accent); }
+
+  /* ── Buttons ── */
+  .btn {
+    display:inline-flex; align-items:center; justify-content:center; gap:6px;
+    font-size:13px; padding:8px 14px; border-radius:8px; cursor:pointer;
+    border:1px solid var(--border); background:var(--panel2); color:var(--text);
+    transition:filter .15s, border-color .15s, background .15s; font-family:inherit;
+  }
+  .btn:hover { border-color:var(--accent); }
+  .btn:disabled { opacity:.45; cursor:not-allowed; }
+  .btn.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .btn.primary:hover:not(:disabled) { filter:brightness(1.12); }
+  .btn.danger { border-color:#ef4444; color:#ef4444; }
+  .btn.danger:hover { background:rgba(239,68,68,.1); }
+  .btn-add-role { width:100%; justify-content:center; font-size:12.5px; }
+
+  /* ── API key section ── */
+  .api-section {
+    border-top:1px solid var(--border); padding-top:14px; display:flex; flex-direction:column; gap:8px;
+  }
+  .api-section summary { font-size:12.5px; color:var(--muted); cursor:pointer; user-select:none; }
+  .api-section summary:hover { color:var(--text); }
+
+  /* ── Main content ── */
+  .main { display:flex; flex-direction:column; overflow:hidden; }
+
+  /* ── Control bar ── */
+  .ctrl-bar {
+    display:flex; align-items:center; gap:8px; padding:12px 18px;
+    border-bottom:1px solid var(--border); background:var(--panel); flex-wrap:wrap;
+  }
+  .ctrl-bar .spacer { flex:1; }
+  .progress-info { font-size:12px; color:var(--muted); }
+
+  /* ── Chat area ── */
+  .chat-wrap {
+    flex:1; overflow-y:auto; padding:20px 18px 32px;
+    display:flex; flex-direction:column; gap:14px;
+  }
+  .chat-empty {
+    margin:auto; text-align:center; color:var(--muted); max-width:360px;
+    display:flex; flex-direction:column; align-items:center; gap:10px;
+  }
+  .chat-empty .icon { font-size:40px; }
+  .chat-empty p { font-size:14px; margin:0; line-height:1.7; }
+
+  /* ── Bubble ── */
+  .bubble {
+    border-radius:12px; padding:12px 15px;
+    border-left:3px solid; max-width:740px;
+    animation: fadeIn .25s ease;
+  }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+  .bubble[data-role="0"] { border-color:var(--role0); background:var(--role0-bg); }
+  .bubble[data-role="1"] { border-color:var(--role1); background:var(--role1-bg); }
+  .bubble[data-role="2"] { border-color:var(--role2); background:var(--role2-bg); }
+  .bubble[data-role="3"] { border-color:var(--role3); background:var(--role3-bg); }
+  .bubble.summary { border-color:var(--muted); background:rgba(138,147,166,.08); }
+
+  .bubble .bub-head { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .bubble .bub-name { font-weight:700; font-size:13px; }
+  .bubble[data-role="0"] .bub-name { color:var(--role0); }
+  .bubble[data-role="1"] .bub-name { color:var(--role1); }
+  .bubble[data-role="2"] .bub-name { color:var(--role2); }
+  .bubble[data-role="3"] .bub-name { color:var(--role3); }
+  .bubble.summary .bub-name { color:var(--muted); }
+  .bubble .bub-round { font-size:11px; color:var(--muted); }
+  .bubble .bub-body { font-size:14px; white-space:pre-wrap; word-break:break-word; }
+
+  /* Typing cursor */
+  .cursor { display:inline-block; width:2px; height:1em; background:currentColor; margin-left:2px; vertical-align:text-bottom; animation:blink .8s steps(1) infinite; }
+  @keyframes blink { 50% { opacity:0; } }
+
+  /* ── Status strip ── */
+  .status-strip {
+    padding:8px 18px; border-top:1px solid var(--border); background:var(--panel);
+    font-size:12px; color:var(--muted); min-height:32px; display:flex; align-items:center; gap:8px;
+  }
+  .status-dot { width:7px; height:7px; border-radius:50%; background:var(--muted); flex-shrink:0; }
+  .status-dot.running { background:var(--accent3); animation:pulse .9s ease infinite; }
+  .status-dot.done { background:var(--accent2); }
+  .status-dot.error { background:#ef4444; }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.4;} }
+
+  /* ── Section labels ── */
+  .section-label { font-size:11.5px; font-weight:700; letter-spacing:.6px; color:var(--muted); text-transform:uppercase; }
+
+  /* ── Divider ── */
+  .divider { height:1px; background:var(--border); margin:2px 0; }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ══════════════════════════ SIDEBAR / SETUP ══════════════════════════ -->
+  <aside class="sidebar">
+    <div class="topbar">
+      <a class="back" href="index.html">← 門戶</a>
+      <h1>AI 辯論室</h1>
+    </div>
+    <p class="sub">設定主題、角色與回合數，讓多個 AI 人格互相討論。</p>
+
+    <div class="divider"></div>
+
+    <!-- Topic -->
+    <div class="field">
+      <label>討論主題</label>
+      <textarea id="topic" rows="2" placeholder="例：LiquidJet 製程導入的最大風險為何？"></textarea>
+    </div>
+
+    <!-- Rounds & model -->
+    <div class="row2">
+      <div class="field">
+        <label>回合數（每角色）</label>
+        <input type="number" id="rounds" min="1" max="20" value="4" />
+      </div>
+      <div class="field">
+        <label>模型</label>
+        <select id="model">
+          <option value="gpt-4o-mini">gpt-4o-mini</option>
+          <option value="gpt-4o">gpt-4o</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Summary toggle -->
+    <div class="toggle-row">
+      <input type="checkbox" id="doSummary" checked />
+      <label for="doSummary" style="margin:0;font-weight:normal;">最後由主持人 AI 做結論摘要</label>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Presets -->
+    <div class="field">
+      <label>預設角色範本</label>
+      <div class="presets">
+        <button class="preset-btn" data-preset="tech">技術辯論</button>
+        <button class="preset-btn" data-preset="risk">風險評估</button>
+        <button class="preset-btn" data-preset="retro">專案回顧</button>
+        <button class="preset-btn" data-preset="custom">自訂（清空）</button>
+      </div>
+    </div>
+
+    <!-- Role list -->
+    <div class="field">
+      <label class="section-label">角色設定</label>
+      <div class="roles-list" id="rolesList"></div>
+      <button class="btn btn-add-role" id="btnAddRole" style="margin-top:8px;">＋ 新增角色（最多 4 個）</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- API key -->
+    <details class="api-section">
+      <summary>🔑 OpenAI API Key 設定</summary>
+      <div style="margin-top:10px; display:flex; flex-direction:column; gap:6px;">
+        <div class="field">
+          <label>API Key</label>
+          <input type="text" id="apiKey" placeholder="sk-..." autocomplete="off" />
+        </div>
+        <div class="hint">Key 僅存於 localStorage，不會傳送到任何伺服器以外的地方。<br/>
+          如果已在編輯器設定過，會自動讀取。</div>
+        <button class="btn" id="btnSaveKey" style="align-self:flex-start;">儲存 Key</button>
+      </div>
+    </details>
+
+    <div style="margin-top:auto; padding-top:8px;">
+      <button class="btn primary" id="btnStart" style="width:100%; font-size:14px; padding:10px;">▶ 開始辯論</button>
+    </div>
+  </aside>
+
+  <!-- ══════════════════════════ MAIN CONTENT ══════════════════════════ -->
+  <div class="main">
+
+    <!-- Control bar -->
+    <div class="ctrl-bar">
+      <button class="btn" id="btnPause" disabled>⏸ 暫停</button>
+      <button class="btn" id="btnResume" disabled>▶ 繼續</button>
+      <button class="btn danger" id="btnRestart" disabled>↺ 重新開始</button>
+      <div class="spacer"></div>
+      <span class="progress-info" id="progressInfo"></span>
+      <button class="btn" id="btnCopy" disabled>📋 複製全文</button>
+      <button class="btn" id="btnExportMd" disabled>⬇ 匯出 .md</button>
+    </div>
+
+    <!-- Chat bubbles -->
+    <div class="chat-wrap" id="chatWrap">
+      <div class="chat-empty" id="chatEmpty">
+        <div class="icon">💬</div>
+        <p>在左側設定主題與角色後，<br/>點選「▶ 開始辯論」啟動 AI 對話。</p>
+      </div>
+    </div>
+
+    <!-- Status strip -->
+    <div class="status-strip">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">就緒</span>
+    </div>
+
+  </div>
+</div>
+
+<script>
+"use strict";
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+const AI_LS_KEY   = "mindmap.ai.settings.v1";
+const DEBATE_KEY  = "ai.debate.v1";
+const OPENAI_URL  = "https://api.openai.com/v1/chat/completions";
+const ROLE_COLORS = ["#4f8cff","#38d39f","#f3b54a","#f06292"];
+const MAX_ROLES   = 4;
+
+const PRESETS = {
+  tech: {
+    topic: "LiquidJet 製程導入的最大技術瓶頸為何？該如何突破？",
+    roles: [
+      { name: "樂觀工程師", desc: "你是一位充滿熱情的工程師，相信技術可以解決一切問題，傾向積極推進、接受挑戰。" },
+      { name: "懷疑論者", desc: "你是一位嚴謹的品保人員，習慣質疑假設、找出漏洞與潛在失效，強調風險管控。" },
+    ],
+  },
+  risk: {
+    topic: "現階段推進 LiquidJet 量產的主要風險為何？",
+    roles: [
+      { name: "推進派 PM", desc: "你是一位急於達成里程碑的 PM，關注時程與交付，傾向接受合理風險以加速進展。" },
+      { name: "謹慎派工程師", desc: "你是一位謹慎的工程師，強調技術就緒度，認為沒有充分驗證就不應量產。" },
+    ],
+  },
+  retro: {
+    topic: "回顧本階段 LiquidJet 開發，哪裡做得好？哪裡需要改善？",
+    roles: [
+      { name: "PM", desc: "你代表 PM 視角，關注時程、資源與跨團隊協作。" },
+      { name: "開發工程師", desc: "你代表開發端，關注技術可行性、工具與流程品質。" },
+      { name: "品質工程師", desc: "你代表 QA 端，關注可靠度、良率與缺陷防止。" },
+    ],
+  },
+  custom: { topic: "", roles: [] },
+};
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let roles = [];          // { name, desc }
+let messages = [];       // { roleIndex, roleName, round, text } | { type:"summary", text }
+let running = false;
+let paused  = false;
+let aborted = false;
+let pauseResolve = null;
+
+// ─── DOM refs ─────────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const rolesList   = $("rolesList");
+const chatWrap    = $("chatWrap");
+const chatEmpty   = $("chatEmpty");
+const btnStart    = $("btnStart");
+const btnPause    = $("btnPause");
+const btnResume   = $("btnResume");
+const btnRestart  = $("btnRestart");
+const btnCopy     = $("btnCopy");
+const btnExportMd = $("btnExportMd");
+const btnAddRole  = $("btnAddRole");
+const progressInfo = $("progressInfo");
+const statusDot   = $("statusDot");
+const statusText  = $("statusText");
+
+// ─── Persistence ──────────────────────────────────────────────────────────────
+function saveState() {
+  try {
+    localStorage.setItem(DEBATE_KEY, JSON.stringify({
+      topic:     $("topic").value,
+      rounds:    $("rounds").value,
+      model:     $("model").value,
+      doSummary: $("doSummary").checked,
+      roles,
+      messages,
+    }));
+  } catch {}
+}
+function loadState() {
+  try {
+    const s = JSON.parse(localStorage.getItem(DEBATE_KEY) || "{}");
+    if (s.topic)     $("topic").value     = s.topic;
+    if (s.rounds)    $("rounds").value    = s.rounds;
+    if (s.model)     $("model").value     = s.model;
+    if (typeof s.doSummary === "boolean") $("doSummary").checked = s.doSummary;
+    if (Array.isArray(s.roles) && s.roles.length) {
+      roles = s.roles;
+    } else {
+      roles = [...PRESETS.tech.roles];
+    }
+    if (Array.isArray(s.messages) && s.messages.length) {
+      messages = s.messages;
+    }
+  } catch {
+    roles = [...PRESETS.tech.roles];
+  }
+}
+
+// ─── API Key ──────────────────────────────────────────────────────────────────
+function getApiKey() {
+  // Prefer the dedicated debate key input; fall back to editor AI settings.
+  const local = $("apiKey").value.trim();
+  if (local) return local;
+  try {
+    const s = JSON.parse(localStorage.getItem(AI_LS_KEY) || "{}");
+    return s.apiKey || "";
+  } catch { return ""; }
+}
+function loadApiKeyInput() {
+  try {
+    const s = JSON.parse(localStorage.getItem(AI_LS_KEY) || "{}");
+    if (s.apiKey) $("apiKey").value = s.apiKey;
+  } catch {}
+}
+$("btnSaveKey").onclick = () => {
+  const key = $("apiKey").value.trim();
+  try {
+    const s = JSON.parse(localStorage.getItem(AI_LS_KEY) || "{}");
+    s.apiKey = key;
+    localStorage.setItem(AI_LS_KEY, JSON.stringify(s));
+    setStatus("done", "API Key 已儲存");
+  } catch { setStatus("error", "儲存失敗"); }
+};
+
+// ─── Status helpers ───────────────────────────────────────────────────────────
+function setStatus(type, msg) {
+  statusDot.className = "status-dot" + (type ? " " + type : "");
+  statusText.textContent = msg;
+}
+
+// ─── Role UI ──────────────────────────────────────────────────────────────────
+function renderRoles() {
+  rolesList.innerHTML = "";
+  roles.forEach((r, i) => {
+    const color = ROLE_COLORS[i] || ROLE_COLORS[0];
+    const card = document.createElement("div");
+    card.className = "role-card";
+    card.innerHTML = `
+      <div class="role-header">
+        <div class="role-dot" style="background:${color}"></div>
+        <span style="font-size:12px;color:var(--muted);font-weight:600;">角色 ${i + 1}</span>
+      </div>
+      <input type="text" placeholder="角色名稱" value="${esc(r.name)}" data-ri="${i}" data-field="name" />
+      <textarea placeholder="角色設定（個性、立場、口吻）" data-ri="${i}" data-field="desc">${esc(r.desc)}</textarea>
+      ${roles.length > 2 ? `<button class="btn-remove-role" data-remove="${i}" title="移除此角色">✕</button>` : ""}
+    `;
+    rolesList.appendChild(card);
+  });
+  // Event delegation
+  rolesList.querySelectorAll("input[data-field], textarea[data-field]").forEach(el => {
+    el.oninput = () => {
+      const i = +el.dataset.ri;
+      roles[i][el.dataset.field] = el.value;
+      saveState();
+    };
+  });
+  rolesList.querySelectorAll("[data-remove]").forEach(btn => {
+    btn.onclick = () => {
+      roles.splice(+btn.dataset.remove, 1);
+      renderRoles();
+      saveState();
+    };
+  });
+  btnAddRole.disabled = roles.length >= MAX_ROLES;
+}
+
+function esc(s) { return String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+btnAddRole.onclick = () => {
+  if (roles.length >= MAX_ROLES) return;
+  roles.push({ name: `角色 ${roles.length + 1}`, desc: "" });
+  renderRoles();
+  saveState();
+};
+
+// Presets
+document.querySelectorAll(".preset-btn").forEach(btn => {
+  btn.onclick = () => {
+    const p = PRESETS[btn.dataset.preset];
+    if (!p) return;
+    if (p.topic) $("topic").value = p.topic;
+    roles = p.roles.map(r => ({ ...r }));
+    if (!roles.length) roles = [{ name: "角色 1", desc: "" }, { name: "角色 2", desc: "" }];
+    renderRoles();
+    saveState();
+  };
+});
+
+// ─── Chat rendering ───────────────────────────────────────────────────────────
+function renderMessages() {
+  // Remove all bubbles (keep chatEmpty)
+  Array.from(chatWrap.children).forEach(el => {
+    if (el !== chatEmpty) el.remove();
+  });
+  if (messages.length) {
+    chatEmpty.style.display = "none";
+    messages.forEach(m => addBubbleDOM(m, false));
+  } else {
+    chatEmpty.style.display = "";
+  }
+}
+
+function addBubbleDOM(msg, animate = true) {
+  chatEmpty.style.display = "none";
+  const div = document.createElement("div");
+
+  if (msg.type === "summary") {
+    div.className = "bubble summary" + (animate ? "" : "");
+    div.innerHTML = `
+      <div class="bub-head">
+        <span class="bub-name">🧩 主持人摘要</span>
+      </div>
+      <div class="bub-body">${esc(msg.text)}</div>
+    `;
+  } else {
+    div.className = "bubble";
+    div.dataset.role = msg.roleIndex;
+    div.innerHTML = `
+      <div class="bub-head">
+        <span class="bub-name">${esc(msg.roleName)}</span>
+        <span class="bub-round">第 ${msg.round} 輪</span>
+      </div>
+      <div class="bub-body">${esc(msg.text)}</div>
+    `;
+  }
+  if (!animate) div.style.animation = "none";
+  chatWrap.appendChild(div);
+  return div;
+}
+
+// ─── Streaming bubble ─────────────────────────────────────────────────────────
+function createStreamingBubble(roleIndex, roleName, round) {
+  chatEmpty.style.display = "none";
+  const div = document.createElement("div");
+  div.className = "bubble";
+  div.dataset.role = roleIndex;
+  const isSummary = roleIndex === -1;
+  if (isSummary) {
+    div.className = "bubble summary";
+    div.innerHTML = `<div class="bub-head"><span class="bub-name">🧩 主持人摘要</span></div><div class="bub-body"><span class="cursor"></span></div>`;
+  } else {
+    div.innerHTML = `
+      <div class="bub-head">
+        <span class="bub-name" style="color:${ROLE_COLORS[roleIndex]}">${esc(roleName)}</span>
+        <span class="bub-round">第 ${round} 輪</span>
+      </div>
+      <div class="bub-body"><span class="cursor"></span></div>
+    `;
+  }
+  chatWrap.appendChild(div);
+  chatWrap.scrollTop = chatWrap.scrollHeight;
+  return div;
+}
+
+function appendToBubble(div, chunk) {
+  const body = div.querySelector(".bub-body");
+  const cursor = body.querySelector(".cursor");
+  if (cursor) {
+    cursor.before(document.createTextNode(chunk));
+  } else {
+    body.appendChild(document.createTextNode(chunk));
+  }
+  chatWrap.scrollTop = chatWrap.scrollHeight;
+}
+
+function finalizeBubble(div) {
+  const cursor = div.querySelector(".cursor");
+  if (cursor) cursor.remove();
+}
+
+// ─── OpenAI streaming call ────────────────────────────────────────────────────
+async function callOpenAIStream(apiKey, model, sysPrompt, conversation, onChunk) {
+  const payload = {
+    model,
+    stream: true,
+    max_tokens: 600,
+    messages: [
+      { role: "system", content: sysPrompt },
+      ...conversation,
+    ],
+  };
+  const res = await fetch(OPENAI_URL, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "authorization": "Bearer " + apiKey,
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`OpenAI ${res.status}: ${err}`);
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let fullText = "";
+  let buf = "";
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    const lines = buf.split("\n");
+    buf = lines.pop() ?? "";
+    for (const line of lines) {
+      const l = line.trim();
+      if (!l || l === "data: [DONE]") continue;
+      if (!l.startsWith("data: ")) continue;
+      try {
+        const json = JSON.parse(l.slice(6));
+        const chunk = json.choices?.[0]?.delta?.content || "";
+        if (chunk) { fullText += chunk; onChunk(chunk); }
+      } catch {}
+    }
+  }
+  return fullText;
+}
+
+// ─── Pause support ────────────────────────────────────────────────────────────
+async function checkPause() {
+  while (paused && !aborted) {
+    await new Promise(r => { pauseResolve = r; });
+  }
+}
+
+// ─── Main debate loop ─────────────────────────────────────────────────────────
+async function runDebate() {
+  const topic     = $("topic").value.trim();
+  const rounds    = Math.max(1, Math.min(20, +$("rounds").value || 4));
+  const model     = $("model").value;
+  const doSummary = $("doSummary").checked;
+  const apiKey    = getApiKey();
+
+  if (!topic) { alert("請填入討論主題！"); return; }
+  if (roles.some(r => !r.name.trim())) { alert("請為所有角色填入名稱！"); return; }
+  if (!apiKey) { alert("請先設定 OpenAI API Key（側欄最下方）。"); return; }
+
+  // Reset
+  messages = [];
+  aborted  = false;
+  paused   = false;
+  running  = true;
+  renderMessages();
+  setControlsRunning(true);
+  setStatus("running", "辯論進行中...");
+
+  // Build conversation history (OpenAI format)
+  // Each call uses entire prior history as context.
+  const history = []; // { role:"user"|"assistant", content, _who }
+
+  const totalTurns = roles.length * rounds;
+  let turn = 0;
+
+  try {
+    for (let r = 0; r < rounds; r++) {
+      for (let ri = 0; ri < roles.length; ri++) {
+        if (aborted) break;
+        await checkPause();
+
+        const role = roles[ri];
+        turn++;
+
+        progressInfo.textContent = `第 ${r + 1}/${rounds} 輪 · ${role.name}（${turn}/${totalTurns}）`;
+        setStatus("running", `${role.name} 正在回應...`);
+
+        const sysPrompt =
+          `你是「${role.name}」，你的個性與立場：${role.desc || "（未指定）"}。\n` +
+          `現在正在參與一場關於「${topic}」的多方討論。\n` +
+          `請保持角色一致、觀點鮮明，回應簡潔（不超過 200 字）。不要重複說明你的身分。`;
+
+        // Convert history to conversation messages for this role
+        const conversation = history.map(h => ({
+          role: h._who === role.name ? "assistant" : "user",
+          content: `[${h._who}]: ${h.content}`,
+        }));
+
+        // Add opening prompt if first turn
+        if (history.length === 0) {
+          conversation.push({
+            role: "user",
+            content: `請針對主題「${topic}」發表你的第一個觀點。`,
+          });
+        }
+
+        const div = createStreamingBubble(ri, role.name, r + 1);
+        let text = "";
+
+        try {
+          text = await callOpenAIStream(
+            apiKey, model, sysPrompt, conversation,
+            chunk => appendToBubble(div, chunk),
+          );
+        } catch (err) {
+          finalizeBubble(div);
+          appendToBubble(div, `\n[錯誤：${err.message}]`);
+          setStatus("error", "API 呼叫失敗：" + err.message);
+          running = false;
+          setControlsRunning(false);
+          saveState();
+          return;
+        }
+
+        finalizeBubble(div);
+        const msg = { roleIndex: ri, roleName: role.name, round: r + 1, text };
+        messages.push(msg);
+        history.push({ _who: role.name, content: text });
+        saveState();
+
+        // Brief pause between turns for visual rhythm
+        if (!aborted) await new Promise(r => setTimeout(r, 800));
+      }
+      if (aborted) break;
+    }
+
+    // Summary
+    if (doSummary && !aborted) {
+      await checkPause();
+      setStatus("running", "主持人正在產生摘要...");
+      progressInfo.textContent = "主持人摘要中...";
+
+      const summaryPrompt =
+        `你是一位中立的主持人。以下是一場關於「${topic}」的討論記錄。\n` +
+        `請用繁體中文，以 3–5 個重點條列方式，簡潔總結各方觀點與共識/分歧。`;
+
+      const summaryConversation = history.map(h => ({
+        role: "user",
+        content: `[${h._who}]: ${h.content}`,
+      }));
+      summaryConversation.push({ role: "user", content: "請提供討論摘要。" });
+
+      const div = createStreamingBubble(-1, "摘要", 0);
+      let summaryText = "";
+      try {
+        summaryText = await callOpenAIStream(
+          apiKey, model, summaryPrompt, summaryConversation,
+          chunk => appendToBubble(div, chunk),
+        );
+      } catch (err) {
+        appendToBubble(div, `\n[摘要失敗：${err.message}]`);
+      }
+      finalizeBubble(div);
+      if (summaryText) {
+        messages.push({ type: "summary", text: summaryText });
+        saveState();
+      }
+    }
+
+    if (!aborted) {
+      setStatus("done", "辯論完成 🎉");
+      progressInfo.textContent = `共 ${totalTurns} 輪對話`;
+    } else {
+      setStatus("", "已中止");
+      progressInfo.textContent = "";
+    }
+  } finally {
+    running = false;
+    setControlsRunning(false);
+    btnCopy.disabled     = messages.length === 0;
+    btnExportMd.disabled = messages.length === 0;
+  }
+}
+
+// ─── Controls ─────────────────────────────────────────────────────────────────
+function setControlsRunning(isRunning) {
+  btnStart.disabled   = isRunning;
+  btnPause.disabled   = !isRunning || paused;
+  btnResume.disabled  = !isRunning || !paused;
+  btnRestart.disabled = !isRunning && messages.length === 0;
+  btnCopy.disabled    = !isRunning && messages.length === 0;
+  btnExportMd.disabled = !isRunning && messages.length === 0;
+}
+
+btnStart.onclick = () => { if (!running) runDebate(); };
+
+btnPause.onclick = () => {
+  paused = true;
+  btnPause.disabled  = true;
+  btnResume.disabled = false;
+  setStatus("", "已暫停");
+};
+
+btnResume.onclick = () => {
+  paused = false;
+  btnPause.disabled  = false;
+  btnResume.disabled = true;
+  setStatus("running", "繼續中...");
+  if (pauseResolve) { pauseResolve(); pauseResolve = null; }
+};
+
+btnRestart.onclick = () => {
+  if (running) {
+    aborted = true;
+    paused  = false;
+    if (pauseResolve) { pauseResolve(); pauseResolve = null; }
+  }
+  messages = [];
+  renderMessages();
+  setControlsRunning(false);
+  setStatus("", "就緒");
+  progressInfo.textContent = "";
+  btnRestart.disabled = true;
+  saveState();
+};
+
+btnCopy.onclick = () => {
+  const text = buildPlainText();
+  navigator.clipboard.writeText(text).then(() => {
+    setStatus("done", "已複製到剪貼簿");
+    setTimeout(() => setStatus("done", "辯論完成"), 2000);
+  });
+};
+
+btnExportMd.onclick = () => {
+  const topic = $("topic").value.trim() || "AI辯論";
+  const md    = buildMarkdown(topic);
+  const blob  = new Blob([md], { type:"text/markdown" });
+  const url   = URL.createObjectURL(blob);
+  const a     = document.createElement("a");
+  a.href = url;
+  a.download = `ai-debate-${topic.slice(0,20).replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g,"_")}-${Date.now()}.md`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+// ─── Export helpers ───────────────────────────────────────────────────────────
+function buildPlainText() {
+  const topic = $("topic").value.trim();
+  const lines = [`討論主題：${topic}`, ""];
+  for (const m of messages) {
+    if (m.type === "summary") {
+      lines.push("── 主持人摘要 ──", m.text, "");
+    } else {
+      lines.push(`[第 ${m.round} 輪] ${m.roleName}：`, m.text, "");
+    }
+  }
+  return lines.join("\n");
+}
+
+function buildMarkdown(topic) {
+  const ts = new Date().toLocaleString("zh-TW");
+  const lines = [
+    `# AI 辯論紀錄`,
+    ``,
+    `**主題：** ${topic}`,
+    `**時間：** ${ts}`,
+    ``,
+    `---`,
+    ``,
+  ];
+  for (const m of messages) {
+    if (m.type === "summary") {
+      lines.push("## 🧩 主持人摘要", "", m.text, "");
+    } else {
+      lines.push(`### 第 ${m.round} 輪 · ${m.roleName}`, "", m.text, "");
+    }
+  }
+  return lines.join("\n");
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+loadState();
+loadApiKeyInput();
+renderRoles();
+renderMessages();
+setControlsRunning(false);
+
+// Re-enable action buttons if there are saved messages
+if (messages.length > 0) {
+  btnCopy.disabled     = false;
+  btnExportMd.disabled = false;
+  btnRestart.disabled  = false;
+  setStatus("done", "載入上次對話紀錄");
+}
+</script>
+</body>
+</html>
