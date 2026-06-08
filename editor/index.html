@@ -144,7 +144,7 @@
     <button id="btnSave" class="primary" title="儲存 (Ctrl+S)">💾 儲存</button>
     <button id="btnExportSvg" title="下載 SVG">SVG</button>
     <button id="btnExportPng" title="下載 PNG">PNG</button>
-    <button id="btnAI" title="觸發 AI 建議（僅草稿，不會自動提交）">AI Suggest</button>
+    <button id="btnAI" title="觸發 AI 建議（僅草稿，不會自動提交）" aria-label="觸發 AI 建議（僅草稿，不會自動提交）">AI Suggest</button>
     <button id="btnSettings" title="設定（儲存位置 / GitHub Token）">⚙</button>
     <span class="status" id="status">ready</span>
   </header>
@@ -785,13 +785,18 @@ function loadAISettings() {
 function saveAISettings(s) { localStorage.setItem(AI_LS_KEY, JSON.stringify(s)); }
 let aiSettings = loadAISettings();
 let aiSeq = 0;
-let aiHits = [];
+let aiRequestTimestamps = [];
 const AI_TASKS = ["structure-completion", "naming-classification", "control-plan-check"];
 const AI_LABEL = {
   "structure-completion": "Structure",
   "naming-classification": "Naming",
   "control-plan-check": "Control Plan",
 };
+const CONTROL_PLAN_REQUIRED_FIELDS = ["characteristic", "spec", "method", "msa", "sampling", "control", "reaction", "owner", "pfmea"];
+const RATE_LIMIT_WINDOW_MS = 60000;
+const RETRY_BASE_DELAY_MS = 350;
+const MAX_AI_RPM = 120;
+const MAX_AI_RETRIES = 5;
 
 function setAIStatus(msg) {
   const el = $("aiStatus");
@@ -832,13 +837,13 @@ function aiSuggestion(task, title, detail, diff, action = null) {
 }
 function pruneAIHits() {
   const now = Date.now();
-  aiHits = aiHits.filter((t) => now - t < 60_000);
+  aiRequestTimestamps = aiRequestTimestamps.filter((timestamp) => now - timestamp < RATE_LIMIT_WINDOW_MS);
 }
 function checkAIRateLimit() {
   pruneAIHits();
   const rpm = Math.max(1, Number(aiSettings.rpm || 12));
-  if (aiHits.length >= rpm) throw new Error(`AI 請求過快（每分鐘上限 ${rpm} 次）`);
-  aiHits.push(Date.now());
+  if (aiRequestTimestamps.length >= rpm) throw new Error(`AI 請求過快（每分鐘上限 ${rpm} 次）`);
+  aiRequestTimestamps.push(Date.now());
 }
 async function withRetry(fn, retries = 0) {
   let lastErr = null;
@@ -846,7 +851,7 @@ async function withRetry(fn, retries = 0) {
     try { return await fn(); }
     catch (err) {
       lastErr = err;
-      if (i < retries) await new Promise((r) => setTimeout(r, 350 * (i + 1)));
+      if (i < retries) await new Promise((r) => setTimeout(r, RETRY_BASE_DELAY_MS * (i + 1)));
     }
   }
   throw lastErr;
@@ -866,12 +871,12 @@ function buildAIContext() {
 }
 async function loadControlPlanDoc() {
   const candidates = [];
-  const add = (u) => { if (u && !candidates.includes(u)) candidates.push(u); };
-  try { add(new URL("../scope/control-plan.json", location.href).toString()); } catch {}
-  try { add(new URL("./scope/control-plan.json", location.href).toString()); } catch {}
-  add("/scope/control-plan.json");
+  const addCandidate = (url) => { if (url && !candidates.includes(url)) candidates.push(url); };
+  try { addCandidate(new URL("../scope/control-plan.json", location.href).toString()); } catch (err) { console.debug(err); }
+  try { addCandidate(new URL("./scope/control-plan.json", location.href).toString()); } catch (err) { console.debug(err); }
+  addCandidate("/scope/control-plan.json");
   if (settings.ghRepo && settings.ghBranch) {
-    add(`https://raw.githubusercontent.com/${settings.ghRepo}/${encodeURIComponent(settings.ghBranch)}/scope/control-plan.json`);
+    addCandidate(`https://raw.githubusercontent.com/${settings.ghRepo}/${encodeURIComponent(settings.ghBranch)}/scope/control-plan.json`);
   }
   for (const url of candidates) {
     try {
@@ -879,7 +884,9 @@ async function loadControlPlanDoc() {
       if (!r.ok) continue;
       const data = await r.json();
       if (Array.isArray(data?.controls)) return data;
-    } catch {}
+    } catch (err) {
+      console.debug("Control plan candidate fetch failed:", url, err);
+    }
   }
   return null;
 }
@@ -889,26 +896,26 @@ const LocalRulesAIAdapter = {
   async runTask(task, ctx) {
     if (task === "structure-completion") {
       const leaves = [];
-      walkTree(tree, (n, _p, depth) => {
-        if (!n.children.length && depth <= 2) leaves.push(n);
+      walkTree(tree, (node, _parent, depth) => {
+        if (!node.children.length && depth <= 2) leaves.push(node);
       });
       if (!leaves.length) return [aiSuggestion(task, "No structural gaps detected", "目前結構完整，暫無補全建議。", "")];
-      return leaves.slice(0, 3).map((n, idx) => {
+      return leaves.slice(0, 3).map((node, idx) => {
         const text = idx === 0 ? "Action Item" : (idx === 1 ? "Owner & Due Date" : "Risk / Blocker");
         return aiSuggestion(
           task,
-          `補全節點：${n.text}`,
-          `在「${n.text}」下新增子節點，補齊可執行資訊。`,
-          `+ ${n.text}\n  + ${text}`,
-          { type: "add-child", parentId: n.id, text },
+          `補全節點：${node.text}`,
+          `在「${node.text}」下新增子節點，補齊可執行資訊。`,
+          `+ ${node.text}\n  + ${text}`,
+          { type: "add-child", parentId: node.id, text },
         );
       });
     }
     if (task === "naming-classification") {
       const out = [];
-      walkTree(tree, (n, _p, depth) => {
+      walkTree(tree, (node, _parent, depth) => {
         if (out.length >= 3) return;
-        const t = String(n.text || "").trim();
+        const t = String(node.text || "").trim();
         let next = "";
         if (/^new topic$/i.test(t)) next = "LiquidJet Topic";
         else if (/^branch\b/i.test(t)) next = depth <= 1 ? "Workstream" : "Substream";
@@ -920,10 +927,10 @@ const LocalRulesAIAdapter = {
           `命名優化：${t}`,
           "建議使用較可讀且可分類的名稱。",
           `- ${t}\n+ ${next}`,
-          { type: "rename", nodeId: n.id, newText: next },
+          { type: "rename", nodeId: node.id, newText: next },
         ));
       });
-      if (!out.length) out.push(aiSuggestion(task, "No naming changes suggested", "目前命名未偵測到明顯通用名稱。", ""));
+      if (!out.length) out.push(aiSuggestion(task, "No naming changes suggested", "目前名稱未偵測到 `New Topic` / `Branch` / `Item` 等通用命名。", ""));
       return out;
     }
     if (task === "control-plan-check") {
@@ -931,11 +938,10 @@ const LocalRulesAIAdapter = {
       if (!cp) {
         return [aiSuggestion(task, "Control Plan source unavailable", "找不到 `scope/control-plan.json`，請確認頁面路徑或 repo 設定。", "")];
       }
-      const required = ["characteristic", "spec", "method", "msa", "sampling", "control", "reaction", "owner", "pfmea"];
       const rows = Array.isArray(cp.controls) ? cp.controls : [];
       const misses = [];
       for (const row of rows) {
-        const missing = required.filter((k) => !String(row?.[k] ?? "").trim());
+        const missing = CONTROL_PLAN_REQUIRED_FIELDS.filter((k) => !String(row?.[k] ?? "").trim());
         if (missing.length) misses.push({ id: row?.id || "(no-id)", missing });
       }
       if (!misses.length) return [aiSuggestion(task, "Control Plan looks complete", "未偵測到必填欄位缺漏。", "")];
@@ -981,11 +987,17 @@ const WebhookAIAdapter = {
 };
 function sanitizeAIAction(action) {
   if (!action || typeof action !== "object") return null;
-  if (action.type === "add-child") return { type: "add-child", parentId: action.parentId, text: String(action.text || "Action Item") };
-  if (action.type === "rename") return { type: "rename", nodeId: action.nodeId, newText: String(action.newText || "") };
+  if (action.type === "add-child") {
+    if (!findNode(action.parentId)) return null;
+    return { type: "add-child", parentId: action.parentId, text: String(action.text || "Action Item") };
+  }
+  if (action.type === "rename") {
+    if (!findNode(action.nodeId)) return null;
+    return { type: "rename", nodeId: action.nodeId, newText: String(action.newText || "") };
+  }
   if (action.type === "add-checklist") return {
     type: "add-checklist",
-    parentId: action.parentId || tree.id,
+    parentId: findNode(action.parentId)?.node?.id || tree.id,
     title: String(action.title || "Checklist"),
     items: Array.isArray(action.items) ? action.items.map((x) => String(x)) : [],
   };
@@ -1136,7 +1148,9 @@ const GitHubAdapter = {
     try {
       const cur = await ghFetch(`https://api.github.com/repos/${repo}/contents/${encodeURIComponent(full).replace(/%2F/g,"/")}?ref=${encodeURIComponent(branch)}`);
       if (cur && cur.sha) sha = cur.sha;
-    } catch {}
+    } catch (err) {
+      console.debug("Existing file lookup failed:", full, err);
+    }
     const b64 = btoa(unescape(encodeURIComponent(content)));
     const body = {
       message: `editor: update ${path}`,
@@ -1605,8 +1619,8 @@ $("btnSettingsSave").onclick = async () => {
     mode: $("aiMode").value,
     webhookUrl: $("aiWebhookUrl").value.trim(),
     apiKey: $("aiApiKey").value.trim(),
-    rpm: Math.max(1, Math.min(120, Number($("aiRpm").value || 12))),
-    retries: Math.max(0, Math.min(5, Number($("aiRetries").value || 2))),
+    rpm: Math.max(1, Math.min(MAX_AI_RPM, Number($("aiRpm").value || 12))),
+    retries: Math.max(0, Math.min(MAX_AI_RETRIES, Number($("aiRetries").value || 2))),
     autoCheckAfterSave: $("aiAutoCheck").checked,
   };
   saveAISettings(aiSettings);
