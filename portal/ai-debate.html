@@ -638,11 +638,17 @@ async function callOpenAIStream(apiKey, model, sysPrompt, conversation, onChunk)
   if (!res.ok) {
     const err = await res.text();
     // Provide a clear hint when the GitHub Models API reports missing permission.
-    if (res.status === 401 && err.includes("models") && err.includes("permission")) {
+    let errJson = null;
+    try { errJson = JSON.parse(err); } catch {}
+    if (
+      res.status === 401 &&
+      (errJson?.error?.code === "unauthorized" || errJson?.error?.code === "models_permission_required") &&
+      String(errJson?.error?.message ?? "").toLowerCase().includes("models")
+    ) {
       throw new Error(
-        "GitHub PAT 缺少 Models 存取權限。\n\n" +
-        "請前往 GitHub → Settings → Developer settings → Personal access tokens，\n" +
-        "重新產生 PAT 並勾選「Models → Read」權限後再試。"
+        `GitHub PAT 缺少 Models 存取權限。\n\n` +
+        `請前往 GitHub → Settings → Developer settings → Personal access tokens，\n` +
+        `重新產生 PAT 並勾選「Models → Read」權限後再試。`
       );
     }
     throw new Error(`OpenAI ${res.status}: ${err}`);
