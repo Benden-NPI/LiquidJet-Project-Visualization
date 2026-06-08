@@ -80,9 +80,11 @@ if (existsSync(cpTemplate) && existsSync(cpSource)) {
 
 // 4) Copy portal/ai-debate.html → dist/ai-debate.html (static, no substitutions)
 const debateSrc  = join(root, "portal", "ai-debate.html");
-const debateCount = existsSync(debateSrc)
-  ? (writeFileSync(join(distDir, "ai-debate.html"), readFileSync(debateSrc, "utf8")), 1)
-  : 0;
+let debateCount  = 0;
+if (existsSync(debateSrc)) {
+  writeFileSync(join(distDir, "ai-debate.html"), readFileSync(debateSrc, "utf8"));
+  debateCount = 1;
+}
 
 console.log(
   `Wrote ${relative(root, join(distDir, "index.html"))} (portal), ` +
