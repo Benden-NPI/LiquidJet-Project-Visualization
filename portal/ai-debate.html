@@ -266,7 +266,7 @@
         </div>
         <div class="hint">Key 僅存於 localStorage，不會傳送到任何伺服器以外的地方。<br/>
           支援 <b>OpenAI API Key</b>（以 <code>sk-</code> 開頭，可在 <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">platform.openai.com</a> 取得）<br/>
-          或 <b>GitHub PAT</b>（以 <code>github_pat_</code> / <code>ghp_</code> 開頭，使用 <a href="https://github.com/marketplace/models" target="_blank" rel="noopener">GitHub Models</a>）。<br/>
+          或 <b>GitHub PAT</b>（以 <code>github_pat_</code> / <code>ghp_</code> 開頭，使用 <a href="https://github.com/marketplace/models" target="_blank" rel="noopener">GitHub Models</a>；建立 PAT 時需勾選 <b>Models → Read</b> 權限）。<br/>
           如果已在編輯器將 Key 設定為 Webhook API Key，可點「從編輯器讀取」。</div>
         <div style="display:flex; gap:6px;">
           <button class="btn" id="btnSaveKey">儲存 Key</button>
@@ -637,6 +637,14 @@ async function callOpenAIStream(apiKey, model, sysPrompt, conversation, onChunk)
   });
   if (!res.ok) {
     const err = await res.text();
+    // Provide a clear hint when the GitHub Models API reports missing permission.
+    if (res.status === 401 && err.includes("models") && err.includes("permission")) {
+      throw new Error(
+        "GitHub PAT 缺少 Models 存取權限。\n\n" +
+        "請前往 GitHub → Settings → Developer settings → Personal access tokens，\n" +
+        "重新產生 PAT 並勾選「Models → Read」權限後再試。"
+      );
+    }
     throw new Error(`OpenAI ${res.status}: ${err}`);
   }
   const reader = res.body.getReader();
