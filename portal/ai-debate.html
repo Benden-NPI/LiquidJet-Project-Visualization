@@ -265,7 +265,9 @@
           <input type="text" id="apiKey" placeholder="sk-..." autocomplete="off" />
         </div>
         <div class="hint">Key 僅存於 localStorage，不會傳送到任何伺服器以外的地方。<br/>
-          如果已在編輯器設定過，會自動讀取。</div>
+          請填入 <b>OpenAI API Key</b>（以 <code>sk-</code> 開頭），可在 <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">platform.openai.com</a> 取得。<br/>
+          <b>請勿</b>填入 GitHub Token 或其他非 OpenAI 憑證。<br/>
+          如果已在編輯器將 OpenAI Key 設定為 Webhook API Key，可點「從編輯器讀取」。</div>
         <div style="display:flex; gap:6px;">
           <button class="btn" id="btnSaveKey">儲存 Key</button>
           <button class="btn" id="btnLoadFromEditor">從編輯器讀取</button>
@@ -316,6 +318,10 @@
 const AI_LS_KEY   = "mindmap.ai.settings.v1";
 const DEBATE_KEY  = "ai.debate.v1";
 const OPENAI_URL  = "https://api.openai.com/v1/chat/completions";
+const ERR_INVALID_KEY =
+  "API Key 格式錯誤：OpenAI Key 必須以 sk- 開頭。\n" +
+  "請勿填入 GitHub Token 或其他非 OpenAI 憑證。\n\n" +
+  "請至側欄「🔑 OpenAI API Key 設定」更正後再試。";
 const ROLE_COLORS = ["#4f8cff","#38d39f","#f3b54a","#f06292"];
 const MAX_ROLES   = 4;
 
@@ -410,6 +416,10 @@ function loadState() {
 }
 
 // ─── API Key ──────────────────────────────────────────────────────────────────
+function isValidOpenAIKey(key) {
+  // OpenAI keys start with "sk-" (classic or project keys like "sk-proj-...")
+  return typeof key === "string" && key.startsWith("sk-");
+}
 function getApiKey() {
   // Prefer the dedicated debate key input; fall back to editor AI settings.
   const local = $("apiKey").value.trim();
@@ -422,11 +432,15 @@ function getApiKey() {
 function loadApiKeyInput() {
   try {
     const s = JSON.parse(localStorage.getItem(AI_LS_KEY) || "{}");
-    if (s.apiKey) $("apiKey").value = s.apiKey;
+    if (s.apiKey && isValidOpenAIKey(s.apiKey)) $("apiKey").value = s.apiKey;
   } catch {}
 }
 $("btnSaveKey").onclick = () => {
   const key = $("apiKey").value.trim();
+  if (key && !isValidOpenAIKey(key)) {
+    setStatus("error", "API Key 格式錯誤：OpenAI Key 必須以 sk- 開頭，請勿填入 GitHub Token 或其他憑證。");
+    return;
+  }
   try {
     const s = JSON.parse(localStorage.getItem(AI_LS_KEY) || "{}");
     s.apiKey = key;
@@ -438,6 +452,10 @@ $("btnLoadFromEditor").onclick = () => {
   try {
     const s = JSON.parse(localStorage.getItem(AI_LS_KEY) || "{}");
     if (s.apiKey) {
+      if (!isValidOpenAIKey(s.apiKey)) {
+        setStatus("error", "編輯器儲存的 Key 不是有效的 OpenAI API Key（需以 sk- 開頭），請重新設定。");
+        return;
+      }
       $("apiKey").value = s.apiKey;
       setStatus("done", "已從編輯器讀取 API Key");
     } else {
@@ -658,6 +676,7 @@ async function runDebate() {
   if (!topic) { alert("請填入討論主題！"); return; }
   if (roles.some(r => !r.name.trim())) { alert("請為所有角色填入名稱！"); return; }
   if (!apiKey) { alert("請先設定 OpenAI API Key（側欄最下方）。"); return; }
+  if (!isValidOpenAIKey(apiKey)) { alert(ERR_INVALID_KEY); return; }
 
   // Reset
   messages = [];
