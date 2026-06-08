@@ -223,13 +223,13 @@
         <label>模型</label>
         <select id="model">
           <optgroup label="Anthropic（需 GitHub PAT）">
-            <option value="claude-opus-4-7">claude-opus-4-7</option>
-            <option value="claude-3-5-sonnet">claude-3-5-sonnet</option>
+            <option value="anthropic/claude-opus-4-7">claude-opus-4-7</option>
+            <option value="anthropic/claude-3-5-sonnet">claude-3-5-sonnet</option>
           </optgroup>
           <optgroup label="xAI Grok（需 xai- Key 或 GitHub PAT）">
-            <option value="grok-4">grok-4</option>
-            <option value="grok-3">grok-3</option>
-            <option value="grok-3-mini">grok-3-mini</option>
+            <option value="xai/grok-4">grok-4</option>
+            <option value="xai/grok-3">grok-3</option>
+            <option value="xai/grok-3-mini">grok-3-mini</option>
           </optgroup>
         </select>
       </div>
@@ -324,7 +324,7 @@
 // ─── Constants ────────────────────────────────────────────────────────────────
 const AI_LS_KEY        = "mindmap.ai.settings.v1";
 const DEBATE_KEY       = "ai.debate.v1";
-const GITHUB_MODELS_URL = "https://models.inference.ai.azure.com/chat/completions";
+const GITHUB_MODELS_URL = "https://models.github.ai/inference/chat/completions";
 const XAI_URL           = "https://api.x.ai/v1/chat/completions";
 const ERR_INVALID_KEY =
   "API Key 格式錯誤：請填入 xAI Key（xai- 開頭）或 GitHub PAT（github_pat_ / ghp_ 開頭）。\n\n" +
@@ -626,8 +626,11 @@ function finalizeBubble(div) {
 
 // ─── AI streaming call ────────────────────────────────────────────────────────
 async function callAIStream(apiKey, model, sysPrompt, conversation, onChunk) {
+  const endpoint = apiEndpoint(apiKey);
+  // xAI's own API uses model names without provider prefix (e.g. "grok-3" not "xai/grok-3")
+  const modelId = endpoint === XAI_URL ? model.replace(/^xai\//, "") : model;
   const payload = {
-    model,
+    model: modelId,
     stream: true,
     max_tokens: MAX_RESPONSE_TOKENS,
     messages: [
@@ -635,7 +638,6 @@ async function callAIStream(apiKey, model, sysPrompt, conversation, onChunk) {
       ...conversation,
     ],
   };
-  const endpoint = apiEndpoint(apiKey);
   const res = await fetch(endpoint, {
     method: "POST",
     headers: {
