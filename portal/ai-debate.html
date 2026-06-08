@@ -226,7 +226,8 @@
             <option value="claude-opus-4-7">claude-opus-4-7</option>
             <option value="claude-3-5-sonnet">claude-3-5-sonnet</option>
           </optgroup>
-          <optgroup label="xAI Grok（需 GitHub PAT 或 xai- Key）">
+          <optgroup label="xAI Grok（需 xai- Key 或 GitHub PAT）">
+            <option value="grok-4">grok-4</option>
             <option value="grok-3">grok-3</option>
             <option value="grok-3-mini">grok-3-mini</option>
           </optgroup>
@@ -271,8 +272,7 @@
           <input type="text" id="apiKey" placeholder="xai-... 或 github_pat_..." autocomplete="off" />
         </div>
         <div class="hint">Key 僅存於 localStorage，不會傳送到任何伺服器以外的地方。<br/>
-          支援 <b>xAI API Key</b>（以 <code>xai-</code> 開頭，可在 <a href="https://console.x.ai/" target="_blank" rel="noopener">console.x.ai</a> 取得；適用 Grok 系列）<br/>
-          或 <b>xAI API Key</b>（以 <code>xai-</code> 開頭，可在 <a href="https://console.x.ai/" target="_blank" rel="noopener">console.x.ai</a> 取得；適用 Grok 系列）<br/>
+          支援 <b>xAI API Key</b>（以 <code>xai-</code> 開頭，可在 <a href="https://console.x.ai/" target="_blank" rel="noopener">console.x.ai</a> 取得；適用所有 Grok 系列，包含 grok-4）<br/>
           或 <b>GitHub PAT</b>（以 <code>github_pat_</code> / <code>ghp_</code> 開頭，使用 <a href="https://github.com/marketplace/models" target="_blank" rel="noopener">GitHub Models</a>；建立 PAT 時需勾選 <b>Models → Read</b> 權限，可存取 Claude、Grok 等多種模型）。<br/>
           如果已在編輯器將 Key 設定為 Webhook API Key，可點「從編輯器讀取」。</div>
         <div style="display:flex; gap:6px;">
