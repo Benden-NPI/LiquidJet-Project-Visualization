@@ -196,31 +196,29 @@ const rgbStr = (c) => `rgb(${c[0]},${c[1]},${c[2]})`;
 //  DATA
 // ════════════════════════════════════════════
 // 8 workstation employees. gx,gy = standing tile of the character.
-// Layout: 4 columns × 2 rows along the back of the room — balances the
-// composition against the front-centred meeting room.
 const EMPLOYEES = [
   { name:'MORGAN', role:'Integration Eng.',     roleZh:'整合工程',     gx:0.7, gy:0.9, hair:[0x33,0x55,0xcc], skin:[0xff,0xcc,0x99], shirt:[0x44,0x88,0xff],
     desc:'統籌各製程模組之間的銜接，確保系統整合順暢。' },
-  { name:'EVAN',   role:'Failure Analysis Eng.', roleZh:'失效分析',     gx:2.7, gy:0.9, hair:[0x88,0x44,0x22], skin:[0xff,0xdd,0xaa], shirt:[0xcc,0x55,0x44],
+  { name:'EVAN',   role:'Failure Analysis Eng.', roleZh:'失效分析',     gx:2.6, gy:0.9, hair:[0x88,0x44,0x22], skin:[0xff,0xdd,0xaa], shirt:[0xcc,0x55,0x44],
     desc:'追查不良根因，從失效現象逆推到製程與材料。' },
-  { name:'BRIAN',  role:'Bonding Process Eng.',  roleZh:'接合製程',     gx:4.7, gy:0.9, hair:[0x22,0x22,0x33], skin:[0xee,0xcc,0xbb], shirt:[0x44,0xaa,0x88],
+  { name:'BRIAN',  role:'Bonding Process Eng.',  roleZh:'接合製程',     gx:4.5, gy:0.9, hair:[0x22,0x22,0x33], skin:[0xee,0xcc,0xbb], shirt:[0x44,0xaa,0x88],
     desc:'負責 bonding 製程參數與良率，盯緊介面品質。' },
-  { name:'JACOB',  role:'Mechanical Eng.',       roleZh:'機構工程',     gx:6.7, gy:0.9, hair:[0x44,0x33,0x22], skin:[0xff,0xdd,0xbb], shirt:[0x88,0x88,0x55],
-    desc:'設計治具與機構，讓設備與夾持穩定可靠。' },
   { name:'JOY',    role:'Etching Process Eng.',  roleZh:'蝕刻製程',     gx:0.7, gy:2.7, hair:[0x99,0x22,0x77], skin:[0xff,0xcc,0xaa], shirt:[0xff,0x88,0xcc],
     desc:'掌控 etching 製程窗口與均勻度，雕琢每一條線路。' },
-  { name:'JASON',  role:'Test Eng.',             roleZh:'測試工程',     gx:2.7, gy:2.7, hair:[0x22,0x44,0x66], skin:[0xff,0xcc,0x99], shirt:[0x44,0xcc,0xcc],
+  { name:'JACOB',  role:'Mechanical Eng.',       roleZh:'機構工程',     gx:2.6, gy:2.7, hair:[0x44,0x33,0x22], skin:[0xff,0xdd,0xbb], shirt:[0x88,0x88,0x55],
+    desc:'設計治具與機構，讓設備與夾持穩定可靠。' },
+  { name:'JASON',  role:'Test Eng.',             roleZh:'測試工程',     gx:4.5, gy:2.7, hair:[0x22,0x44,0x66], skin:[0xff,0xcc,0x99], shirt:[0x44,0xcc,0xcc],
     desc:'建立量測與測試流程，把資料變成可信的判斷。' },
-  { name:'MZ',     role:'Quality Eng.',          roleZh:'品質工程',     gx:4.7, gy:2.7, hair:[0x33,0x33,0x33], skin:[0xee,0xcc,0xbb], shirt:[0xaa,0x66,0xff],
+  { name:'MZ',     role:'Quality Eng.',          roleZh:'品質工程',     gx:0.7, gy:4.5, hair:[0x33,0x33,0x33], skin:[0xee,0xcc,0xbb], shirt:[0xaa,0x66,0xff],
     desc:'守住品質底線，管控 CTQ、PFMEA 與反應計畫。' },
-  { name:'LISA',   role:'Planner',               roleZh:'生產規劃',     gx:6.7, gy:2.7, hair:[0xaa,0x66,0x22], skin:[0xff,0xdd,0xaa], shirt:[0xff,0xbb,0x44],
+  { name:'LISA',   role:'Planner',               roleZh:'生產規劃',     gx:2.6, gy:4.5, hair:[0xaa,0x66,0x22], skin:[0xff,0xdd,0xaa], shirt:[0xff,0xbb,0x44],
     desc:'排程與資源規劃，讓 milestone 一個個準時落地。' },
 ];
 
-// Benden — Project Lead — sits at the head of the front-centre meeting table.
+// Benden — Project Lead — sits at the meeting room head seat.
 const LEAD = {
   name:'BENDEN', role:'Project Lead', roleZh:'專案負責人',
-  gx:5.7, gy:5.6, hair:[0x22,0x22,0x22], skin:[0xff,0xcc,0x99], shirt:[0xff,0xe0,0x66],
+  gx:7.9, gy:5.4, hair:[0x22,0x22,0x22], skin:[0xff,0xcc,0x99], shirt:[0xff,0xe0,0x66],
   desc:'LiquidJet 專案負責人，統籌全局、拍板決策。',
 };
 
@@ -248,8 +246,8 @@ function drawFloor() {
     for (let gx = 0; gx < GW; gx++) {
       const A=[isoX(gx,gy),isoY(gx,gy)], B=[isoX(gx+1,gy),isoY(gx+1,gy)];
       const C=[isoX(gx+1,gy+1),isoY(gx+1,gy+1)], D=[isoX(gx,gy+1),isoY(gx,gy+1)];
-      // meeting-room zone (front-centre) gets a distinct rug colour
-      const inMeeting = gx >= 4 && gx < 7 && gy >= 4;
+      // meeting-room zone (right-front) gets a distinct rug colour
+      const inMeeting = gx >= 6 && gy >= 4;
       let base = ((gx+gy)%2===0) ? '#23233e' : '#1c1c34';
       if (inMeeting) base = ((gx+gy)%2===0) ? '#2a1830' : '#241028';
       poly([A,B,C,D], base, '#15152a', 1);
@@ -257,7 +255,7 @@ function drawFloor() {
   }
   // meeting room label on the rug
   ctx.fillStyle = '#aa4488'; ctx.font = '6px "Press Start 2P"'; ctx.textAlign = 'center';
-  const ml = [isoX(5.5, 6.2), isoY(5.5, 6.2)];
+  const ml = [isoX(8,6.1), isoY(8,6.1)];
   ctx.fillText('MEETING ROOM', ml[0], ml[1]);
 }
 
@@ -346,7 +344,7 @@ function drawWorkstation(emp) {
 function drawMeetingTable() {
   const f = FEATURES.debate;
   const hovered = hoverHot && hoverHot.kind==='feature' && hoverHot.label===f.label;
-  const gx=4.5, gy=4.8, w=2.4, d=1.6;
+  const gx=6.6, gy=4.6, w=2.4, d=1.6;
   // chairs around the table
   const chairSpots = [[gx-0.5,gy+0.4],[gx-0.5,gy+1.0],[gx+w+0.0,gy+0.4],[gx+w+0.0,gy+1.0],[gx+0.6,gy+d+0.1],[gx+1.4,gy+d+0.1]];
   chairSpots.forEach(([cgx,cgy])=>drawBox(cgx,cgy,0.55,0.55,16,'#3a2030','#281020','#311828'));
@@ -420,11 +418,10 @@ function render() {
   drawFloor();
   drawWalls();
 
-  // wall features (deepest — draw right after walls).
-  // Spread along the back-left wall to match the 4-column workstation grid.
-  const vizBox = drawWallPanelLeft(1.7, FEATURES.viz.label, FEATURES.viz.color, '🎨');
+  // wall features (deepest — draw right after walls)
+  const vizBox = drawWallPanelLeft(2.0, FEATURES.viz.label, FEATURES.viz.color, '🎨');
   hot.push({ bbox:vizBox, kind:'feature', label:FEATURES.viz.label, ref:FEATURES.viz });
-  const cpBox = drawWallPanelLeft(7.7, FEATURES.cp.label, FEATURES.cp.color, '🛡️');
+  const cpBox = drawWallPanelLeft(6.5, FEATURES.cp.label, FEATURES.cp.color, '🛡️');
   hot.push({ bbox:cpBox, kind:'feature', label:FEATURES.cp.label, ref:FEATURES.cp });
 
   // Yield panel on the back-RIGHT wall (gx=0 edge) — draw inline here
@@ -436,7 +433,7 @@ function render() {
     const bbox = drawWorkstation(emp);
     hot.push({ bbox, kind:'employee', ref:emp });
   }}));
-  ground.push({ depth: 4.5+4.8+1, draw: () => {
+  ground.push({ depth: 6.6+4.6+1, draw: () => {
     const { tableBox, leadBox } = drawMeetingTable();
     hot.push({ bbox:tableBox, kind:'feature', label:FEATURES.debate.label, ref:FEATURES.debate });
     hot.push({ bbox:leadBox, kind:'employee', ref:LEAD });
