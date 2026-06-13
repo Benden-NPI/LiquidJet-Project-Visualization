@@ -7,206 +7,411 @@
 <meta name="description" content="LiquidJet 專案總門戶：Project Visualization 與 Yield 的入口。" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><path d='M32 6 L18 30 L46 30 Z' fill='%23ffffff'/><path d='M14 30 L50 30 L57 50 L40 58 L22 56 L9 46 Z' fill='%237cc4ff'/></svg>" />
 <style>
-  :root {
-    color-scheme: light dark;
-    --bg:#0f1115; --panel:#161a22; --panel2:#1e2330; --border:#2a3142;
-    --text:#e6e9ef; --muted:#8a93a6;
-    --accent:#4f8cff; --accent2:#38d39f; --accent3:#f3b54a;
-  }
-  @media (prefers-color-scheme: light) {
-    :root { --bg:#f6f7fb; --panel:#fff; --panel2:#f0f2f7; --border:#dde2ea; --text:#1c2230; --muted:#5b6478; }
-  }
-  * { box-sizing:border-box; }
-  html, body { margin:0; min-height:100%; background:var(--bg); color:var(--text);
-    font-family:-apple-system,Segoe UI,Roboto,"PingFang TC","Noto Sans TC",sans-serif; line-height:1.55; }
-  body {
-    background:
-      radial-gradient(1200px 500px at 20% -10%, rgba(79,140,255,.18), transparent 60%),
-      radial-gradient(900px 500px at 100% 0%, rgba(56,211,159,.12), transparent 60%),
-      var(--bg);
-  }
-  .wrap { max-width:1080px; margin:0 auto; padding:48px 24px 64px; }
-  header.hero { display:flex; align-items:center; gap:18px; margin-bottom:8px; flex-wrap:wrap; }
-  .logo {
-    width:56px; height:56px; border-radius:14px;
-    background:linear-gradient(135deg, var(--accent), var(--accent2));
-    display:grid; place-items:center; color:#fff; font-weight:700; font-size:22px;
-    box-shadow:0 8px 24px rgba(79,140,255,.35);
-  }
-  h1 { margin:0; font-size:28px; letter-spacing:.3px; }
-  .sub { color:var(--muted); margin-top:6px; font-size:14px; }
-  .badges { display:flex; flex-wrap:wrap; gap:6px; margin-top:14px; }
-  .badge { font-size:11.5px; padding:3px 9px; border-radius:99px;
-    background:var(--panel2); border:1px solid var(--border); color:var(--muted); }
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
-  section.intro { margin:32px 0 28px; padding:18px 22px;
-    background:var(--panel); border:1px solid var(--border); border-radius:14px; }
-  section.intro h2 { margin:0 0 6px; font-size:14px; color:var(--muted); letter-spacing:.6px; text-transform:uppercase; font-weight:600; }
-  section.intro p { margin:0; color:var(--text); font-size:14.5px; }
+* { box-sizing: border-box; margin: 0; padding: 0; image-rendering: pixelated; }
 
-  .grid { display:grid; gap:18px; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); }
-  .card {
-    position:relative; background:var(--panel); border:1px solid var(--border);
-    border-radius:16px; padding:22px 22px 18px; transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease;
-    display:flex; flex-direction:column; gap:14px;
-  }
-  .card:hover { transform:translateY(-2px); border-color:var(--accent); box-shadow:0 10px 30px rgba(0,0,0,.18); }
-  .card .head { display:flex; align-items:center; gap:12px; }
-  .card .ico { width:42px; height:42px; border-radius:10px; display:grid; place-items:center; font-size:20px; color:#fff; flex-shrink:0; }
-  .card.viz .ico { background:linear-gradient(135deg,#4f8cff,#7a5cff); }
-  .card.yield .ico { background:linear-gradient(135deg,#38d39f,#1fb5d6); }
-  .card.cp .ico { background:linear-gradient(135deg,#f3b54a,#e07a3c); }
-  .card.debate .ico { background:linear-gradient(135deg,#f06292,#ab47bc); }
-  .card h3 { margin:0; font-size:17px; }
-  .card .tag { font-size:11px; color:var(--muted); margin-top:2px; }
-  .card .desc { font-size:14px; color:var(--text); opacity:.92; margin:0; }
-  .card .meta { font-size:12px; color:var(--muted); display:flex; flex-wrap:wrap; gap:8px 14px; }
+body {
+  background: #0a0a1a;
+  color: #ccddff;
+  font-family: 'Press Start 2P', monospace;
+  min-height: 100vh;
+}
 
-  .links { display:flex; flex-wrap:wrap; gap:8px; margin-top:auto; padding-top:6px; }
-  .btn {
-    display:inline-flex; align-items:center; gap:6px;
-    font-size:13px; padding:7px 12px; border-radius:8px; text-decoration:none;
-    border:1px solid var(--border); background:var(--panel2); color:var(--text); cursor:pointer;
-    transition:filter .15s, border-color .15s, background .15s;
-  }
-  .btn:hover { border-color:var(--accent); }
-  .btn.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
-  .btn.primary:hover { filter:brightness(1.1); }
-  .btn.ghost { background:transparent; }
-  .btn .arr { opacity:.7; }
+/* scanlines */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent, transparent 2px,
+    rgba(0,0,0,0.13) 2px, rgba(0,0,0,0.13) 4px
+  );
+  pointer-events: none;
+  z-index: 999;
+}
 
-  .ribbon { position:absolute; top:14px; right:14px; font-size:10.5px; padding:2px 8px; border-radius:99px;
-    background:var(--panel2); border:1px solid var(--border); color:var(--muted); }
-  .ribbon.live { color:var(--accent2); border-color:var(--accent2); }
+/* dot grid */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(68,68,170,0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(68,68,170,0.07) 1px, transparent 1px);
+  background-size: 32px 32px;
+  pointer-events: none;
+  z-index: 0;
+}
 
-  footer { margin-top:48px; color:var(--muted); font-size:12px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
-  footer a { color:inherit; }
+.wrap {
+  position: relative;
+  z-index: 1;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 36px 16px 64px;
+}
+
+/* ══ HEADER ══ */
+header.hero {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.px-rule {
+  color: #1a2a5a;
+  font-size: 8px;
+  letter-spacing: 1px;
+  margin-bottom: 16px;
+  user-select: none;
+}
+
+h1.title {
+  color: #ffe066;
+  font-size: clamp(14px, 4vw, 22px);
+  letter-spacing: 3px;
+  text-shadow: 3px 3px 0 #996600, 0 0 24px rgba(255,224,102,0.4);
+  animation: blink 3s step-end infinite;
+  margin-bottom: 10px;
+}
+
+.subtitle {
+  color: #4488ff;
+  font-size: 7px;
+  letter-spacing: 3px;
+  margin-bottom: 20px;
+}
+
+.badges {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.badge {
+  font-size: 6px;
+  padding: 4px 10px;
+  background: #050512;
+  border: 2px solid #1a2050;
+  color: #3a5090;
+}
+
+@keyframes blink { 50% { opacity: 0.55; } }
+@keyframes cursorBlink { 50% { opacity: 0; } }
+
+/* ══ INTRO BOX ══ */
+.intro-box {
+  background: #070718;
+  border: 3px solid #1e2252;
+  box-shadow: 4px 4px 0 #000;
+  padding: 18px 16px;
+  margin: 24px 0 28px;
+  position: relative;
+}
+
+.intro-box::before {
+  content: '▶ ABOUT';
+  position: absolute;
+  top: -10px;
+  left: 14px;
+  background: #0a0a1a;
+  color: #4488ff;
+  font-size: 7px;
+  padding: 0 6px;
+}
+
+.intro-box p {
+  font-size: 7px;
+  line-height: 2.2;
+  color: #7788aa;
+}
+
+.cursor::after {
+  content: '█';
+  animation: cursorBlink 1s step-end infinite;
+  margin-left: 2px;
+  color: #4488ff;
+}
+
+/* ══ GRID ══ */
+.grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+/* ══ CARD ══ */
+.card {
+  background: #070718;
+  border: 3px solid #1e2252;
+  box-shadow: 4px 4px 0 #000;
+  padding: 18px 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  transition: transform 0.06s, box-shadow 0.06s, border-color 0.06s;
+}
+
+.card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 #000;
+}
+
+/* per-theme accent */
+.card.viz   { --accent: #4466ff; --accent-dim: #1a2a6a; --accent-bg: #06081a; }
+.card.yield { --accent: #44cc88; --accent-dim: #1a4a30; --accent-bg: #06120a; }
+.card.cp    { --accent: #ffaa44; --accent-dim: #5a3a10; --accent-bg: #120c04; }
+.card.debate{ --accent: #ff44aa; --accent-dim: #5a1040; --accent-bg: #120410; }
+
+.card:hover { border-color: var(--accent); }
+
+/* pixel corner markers */
+.card::before, .card::after {
+  content: '█';
+  position: absolute;
+  font-size: 8px;
+  line-height: 1;
+  color: var(--accent);
+}
+.card::before { top: -5px; left: -5px; }
+.card::after  { bottom: -5px; right: -5px; }
+
+/* ── card head ── */
+.card-head { display: flex; align-items: flex-start; gap: 12px; }
+
+.card-ico {
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--accent);
+  background: var(--accent-bg);
+  box-shadow: 2px 2px 0 #000;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.card-title {
+  font-size: 9px;
+  color: #ffe066;
+  line-height: 1.7;
+  margin-bottom: 5px;
+}
+
+.card-tag {
+  font-size: 5px;
+  color: var(--accent);
+  line-height: 2;
+  opacity: 0.7;
+}
+
+/* ── card body ── */
+.card-desc {
+  font-size: 6px;
+  color: #6677aa;
+  line-height: 2.2;
+}
+
+.card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.meta-chip {
+  font-size: 5px;
+  padding: 3px 7px;
+  background: #050512;
+  border: 1px solid #151535;
+  color: #334466;
+}
+
+/* ── buttons ── */
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 6px;
+  padding: 8px 11px;
+  text-decoration: none;
+  border: 2px solid;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 #000;
+  transition: transform 0.05s, box-shadow 0.05s;
+}
+
+.btn:hover  { transform: translate(-1px,-1px); box-shadow: 3px 3px 0 #000; }
+.btn:active { transform: translate(1px,1px);   box-shadow: 1px 1px 0 #000; }
+
+.btn.primary {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: #ffe066;
+}
+.btn.primary:hover { filter: brightness(1.25); }
+
+.btn.ghost {
+  background: transparent;
+  border-color: #1e2252;
+  color: #3a5090;
+}
+.btn.ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── live ribbon ── */
+.ribbon {
+  position: absolute;
+  top: 10px; right: 10px;
+  font-size: 5px;
+  padding: 3px 7px;
+  border: 2px solid #44aa44;
+  color: #44ff88;
+  background: #040c04;
+  animation: blink 2s step-end infinite;
+}
+
+/* ══ FOOTER ══ */
+footer {
+  margin-top: 40px;
+  padding-top: 14px;
+  border-top: 4px solid #0e1030;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 6px;
+  color: #1e2a4a;
+}
+
+footer a { color: inherit; text-decoration: none; }
+footer a:hover { color: #4488ff; }
 </style>
 </head>
 <body>
 <div class="wrap">
 
   <header class="hero">
-    <div class="logo" aria-label="LiquidJet iceberg">
-      <svg viewBox="0 0 64 64" width="38" height="38" aria-hidden="true">
-        <path d="M32 8 L18 30 L46 30 Z" fill="#ffffff"/>
-        <path d="M14 30 L50 30 L57 50 L40 58 L22 56 L9 46 Z" fill="rgba(255,255,255,.55)"/>
-      </svg>
-    </div>
-    <div>
-      <h1>LiquidJet</h1>
-      <div class="sub">專案總門戶 · Project Portal</div>
-    </div>
-    <div style="flex:1;"></div>
+    <div class="px-rule">▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓</div>
+    <h1 class="title">★ LIQUIDJET ★</h1>
+    <div class="subtitle">PROJECT PORTAL  ·  BENDEN NPI</div>
     <div class="badges">
-      <span class="badge">Benden NPI</span>
-      <span class="badge">Internal</span>
+      <span class="badge">▶ BENDEN NPI</span>
+      <span class="badge">▶ INTERNAL</span>
     </div>
+    <div class="px-rule" style="margin-top:16px;margin-bottom:0;">▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓</div>
   </header>
 
-  <section class="intro">
-    <h2>About</h2>
-    <p>LiquidJet 是 Benden NPI 的整合性開發專案。此入口聚合下轄子專案的文件、視覺化與工具，方便團隊在單一頁面跳轉、追蹤進度。</p>
-  </section>
+  <div class="intro-box">
+    <p>LiquidJet 是 Benden NPI 的整合性開發專案。此入口聚合下轄子專案的文件、視覺化與工具，方便團隊在單一頁面跳轉、追蹤進度。<span class="cursor"></span></p>
+  </div>
 
   <div class="grid">
 
     <article class="card viz">
-      <span class="ribbon live">● live</span>
-      <div class="head">
-        <div class="ico">🧠</div>
+      <span class="ribbon">● LIVE</span>
+      <div class="card-head">
+        <div class="card-ico">🧠</div>
         <div>
-          <h3>Project Visualization</h3>
-          <div class="tag">Scope · Mindmaps · ADR · Canvas Editor</div>
+          <div class="card-title">PROJECT VIZ</div>
+          <div class="card-tag">SCOPE · MINDMAPS · ADR · EDITOR</div>
         </div>
       </div>
-      <p class="desc">早期專案 scope、腦力激盪與決策紀錄的視覺化工作環境。以 Mermaid mindmap 為主、Draw.io 為輔,Git 版控、CI 自動產 SVG。</p>
-      <div class="meta">
-        <span>📐 Mermaid + Draw.io</span>
-        <span>📝 ADR</span>
-        <span>⚙ GitHub Actions</span>
+      <p class="card-desc">早期專案 scope、腦力激盪與決策紀錄的視覺化工作環境。以 Mermaid mindmap 為主、Draw.io 為輔，Git 版控、CI 自動產 SVG。</p>
+      <div class="card-meta">
+        <span class="meta-chip">📐 MERMAID</span>
+        <span class="meta-chip">📝 ADR</span>
+        <span class="meta-chip">⚙ ACTIONS</span>
       </div>
       <div class="links">
-        <a class="btn primary" href="https://benden-npi.github.io/LiquidJet-Project-Visualization/editor/">🎨 開啟互動編輯器 <span class="arr">↗</span></a>
-        <a class="btn ghost" href="https://github.com/Benden-NPI/LiquidJet-Project-Visualization" target="_blank" rel="noopener">GitHub ↗</a>
+        <a class="btn primary" href="https://benden-npi.github.io/LiquidJet-Project-Visualization/editor/">▶ 開啟編輯器</a>
+        <a class="btn ghost" href="https://github.com/Benden-NPI/LiquidJet-Project-Visualization" target="_blank" rel="noopener">GITHUB ↗</a>
       </div>
     </article>
 
     <article class="card yield">
-      <span class="ribbon live">● live</span>
-      <div class="head">
-        <div class="ico">📈</div>
+      <span class="ribbon">● LIVE</span>
+      <div class="card-head">
+        <div class="card-ico">📈</div>
         <div>
-          <h3>Yield</h3>
-          <div class="tag">Process Yield · Data · Analysis</div>
+          <div class="card-title">YIELD</div>
+          <div class="card-tag">PROCESS · DATA · ANALYSIS</div>
         </div>
       </div>
-      <p class="desc">LiquidJet 製程良率相關的資料、分析與追蹤工具。</p>
-      <div class="meta">
-        <span>📊 Data</span>
-        <span>🔬 Analysis</span>
+      <p class="card-desc">LiquidJet 製程良率相關的資料、分析與追蹤工具。</p>
+      <div class="card-meta">
+        <span class="meta-chip">📊 DATA</span>
+        <span class="meta-chip">🔬 ANALYSIS</span>
       </div>
       <div class="links">
-        <a class="btn primary" href="https://benden-npi.github.io/Yield/">📈 開啟 Yield <span class="arr">↗</span></a>
-        <a class="btn ghost" href="https://github.com/Benden-NPI/Yield" target="_blank" rel="noopener">GitHub ↗</a>
+        <a class="btn primary" href="https://benden-npi.github.io/Yield/">▶ 開啟 YIELD</a>
+        <a class="btn ghost" href="https://github.com/Benden-NPI/Yield" target="_blank" rel="noopener">GITHUB ↗</a>
       </div>
     </article>
 
     <article class="card cp">
-      <span class="ribbon live">● live</span>
-      <div class="head">
-        <div class="ico">🛡️</div>
+      <span class="ribbon">● LIVE</span>
+      <div class="card-head">
+        <div class="card-ico">🛡️</div>
         <div>
-          <h3>Control Plan</h3>
-          <div class="tag">First Principles v2 · CTQ · PFMEA · Milestones</div>
+          <div class="card-title">CONTROL PLAN</div>
+          <div class="card-tag">CTQ · PFMEA · MILESTONES</div>
         </div>
       </div>
-      <p class="desc">把 control plan 鑲嵌進 Yield Process Readiness 看板的 Move-in → Setup → Tuning → Qualify milestone，逐 station 對齊 CTQ、PFMEA cause 與 reaction plan。</p>
-      <div class="meta">
-        <span>🎯 CTQ / X</span>
-        <span>📋 PFMEA</span>
-        <span>🏁 Milestones</span>
+      <p class="card-desc">把 control plan 鑲嵌進 Yield Process Readiness 看板，逐 station 對齊 CTQ、PFMEA cause 與 reaction plan。</p>
+      <div class="card-meta">
+        <span class="meta-chip">🎯 CTQ/X</span>
+        <span class="meta-chip">📋 PFMEA</span>
+        <span class="meta-chip">🏁 MILESTONES</span>
       </div>
       <div class="links">
-        <a class="btn primary" href="scope/control-plan.html">🛡️ 開啟 Control Plan <span class="arr">↗</span></a>
-        <a class="btn ghost" href="https://github.com/Benden-NPI/LiquidJet-Project-Visualization/blob/main/scope/control-plan.md" target="_blank" rel="noopener">GitHub ↗</a>
+        <a class="btn primary" href="scope/control-plan.html">▶ 開啟 CP</a>
+        <a class="btn ghost" href="https://github.com/Benden-NPI/LiquidJet-Project-Visualization/blob/main/scope/control-plan.md" target="_blank" rel="noopener">GITHUB ↗</a>
       </div>
     </article>
 
     <article class="card debate">
-      <span class="ribbon live">● live</span>
-      <div class="head">
-        <div class="ico">💬</div>
+      <span class="ribbon">● LIVE</span>
+      <div class="card-head">
+        <div class="card-ico">💬</div>
         <div>
-          <h3>AI 辯論室</h3>
-          <div class="tag">多角色 · 主題討論 · 串流對話</div>
+          <div class="card-title">AI 辯論室</div>
+          <div class="card-tag">MULTI-ROLE · STREAM · DEBATE</div>
         </div>
       </div>
-      <p class="desc">設定討論主題與回合數，讓 2–4 個具有不同個性與立場的 AI 角色互相辯論，最後由主持人 AI 做結論摘要。支援串流顯示與對話匯出。</p>
-      <div class="meta">
-        <span>🤖 Claude / Grok</span>
-        <span>🎭 多角色</span>
-        <span>📝 可匯出 .md</span>
+      <p class="card-desc">設定討論主題與回合數，讓 2–4 個具有不同個性與立場的 AI 角色互相辯論，最後由主持人 AI 做結論摘要。</p>
+      <div class="card-meta">
+        <span class="meta-chip">🤖 CLAUDE/GROK</span>
+        <span class="meta-chip">🎭 MULTI-ROLE</span>
+        <span class="meta-chip">📝 EXPORT</span>
       </div>
       <div class="links">
-        <a class="btn primary" href="ai-debate.html">💬 開啟辯論室 <span class="arr">↗</span></a>
+        <a class="btn primary" href="ai-debate.html">▶ 開啟辯論室</a>
       </div>
     </article>
 
   </div>
 
   <footer>
-    <span>© Benden NPI · LiquidJet</span>
+    <span>© BENDEN NPI · LIQUIDJET</span>
     <span id="buildInfo">—</span>
   </footer>
 </div>
 
 <script>
-  // Build timestamp is injected by scripts/build-index.mjs at deploy time.
-  // The token below is replaced with a real ISO string during build.
   const ts = "__BUILD_TS__";
   const el = document.getElementById("buildInfo");
-  if (el && !ts.startsWith("__")) el.textContent = "Built " + ts;
+  if (el && !ts.startsWith("__")) el.textContent = "BUILT " + ts;
 </script>
 </body>
 </html>
