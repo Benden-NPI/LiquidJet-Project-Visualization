@@ -408,7 +408,12 @@ function loadState() {
     const s = JSON.parse(localStorage.getItem(DEBATE_KEY) || "{}");
     if (s.topic)     $("topic").value     = s.topic;
     if (s.rounds)    $("rounds").value    = s.rounds;
-    if (s.model)     $("model").value     = s.model;
+    // Only restore the saved model if it still exists as an <option>.
+    // Otherwise the <select> silently becomes value="" and the API rejects
+    // the request with "no_model_name". Fall back to the default selection.
+    if (s.model && [...$("model").options].some(o => o.value === s.model)) {
+      $("model").value = s.model;
+    }
     if (typeof s.doSummary === "boolean") $("doSummary").checked = s.doSummary;
     if (Array.isArray(s.roles) && s.roles.length) {
       roles = s.roles;
@@ -705,6 +710,7 @@ async function runDebate() {
   const apiKey    = getApiKey();
 
   if (!topic) { alert("請填入討論主題！"); return; }
+  if (!model)  { alert("請先選擇模型！"); return; }
   if (roles.some(r => !r.name.trim())) { alert("請為所有角色填入名稱！"); return; }
   if (!apiKey) { alert("請先設定 API Key（側欄最下方）。"); return; }
   if (!isValidApiKey(apiKey)) { alert(ERR_INVALID_KEY); return; }
