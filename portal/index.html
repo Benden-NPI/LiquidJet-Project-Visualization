@@ -822,15 +822,19 @@ function forceDispatch(kind) {
   const pool = EMPLOYEES.filter(e => e.name !== 'BENDEN' && !e.meetingLock);
   if (pool.length < 2) return;
   const a = pick(pool);
-  let b = pick(pool);
-  while (b === a) b = pick(pool);
+  // Pick `b` from the pool minus `a` — guarantees a single-pass selection
+  // even if the pool only has 2 members.
+  const rest = pool.filter(e => e !== a);
+  const b = pick(rest);
   const stay = (kind === 'foosball')
     ? rndInt(ROUTINE.foosballStayMin, ROUTINE.foosballStayMax)
     : rndInt(ROUTINE.stayAtDestMin, ROUTINE.stayAtDestMax);
   [a, b].forEach(e => {
     e.pantryStay   = (kind === 'pantry')   ? stay : 0;
     e.foosballStay = (kind === 'foosball') ? stay : 0;
-    // Reset any pending "think" timer so the routine doesn't interfere.
+    // 0 = "think immediately" — once the dispatch sets state=WALKING,
+    // tickEmployee's AT_DESK branch is skipped, so this just ensures the
+    // routine won't stall the engineer when they later return home.
     e.nextThinkAt = 0;
   });
   // Randomise which side of the table / counter each engineer takes.
