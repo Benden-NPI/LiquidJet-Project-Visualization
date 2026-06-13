@@ -414,7 +414,10 @@ function drawFloor() {
 }
 
 function drawWalls() {
-  const wallH = 96;
+  // Wall is tall enough that the framed panels sit clearly ABOVE the
+  // desks — otherwise the monitors / chairs in front would visually
+  // clip the panel art from the iso angle.
+  const wallH = 140;
   // back-left wall (gy = 0 edge)
   const p1=[isoX(0,0),isoY(0,0)], p2=[isoX(GW,0),isoY(GW,0)];
   poly([p1, p2, [p2[0],p2[1]-wallH], [p1[0],p1[1]-wallH]], '#1a1a30', '#0f0f1e', 1);
@@ -439,7 +442,7 @@ function drawWalls() {
 // ════════════════════════════════════════════
 // A framed panel mounted on the back-left wall (gy=0), centred at grid gx.
 function drawWallPanelLeft(gx, label, color, screenIco) {
-  const wallH = 96, panelH = 52, panelHalf = 0.92;
+  const wallH = 140, panelH = 52, panelHalf = 0.92;
   // back-left wall (gy=0) slopes down toward +gx in iso: rgt.y > lft.y.
   // Build the panel as a parallelogram aligned with that slope so the frame
   // sits flush against the wall.
@@ -576,20 +579,27 @@ function drawMeetingTable() {
 // ════════════════════════════════════════════
 //  DRAW: PANTRY (茶水間) — counter + coffee machine + fridge
 //  A relaxed corner where AI characters chitchat over coffee.
-//  Coffee machine is pushed flush against the left wall (gx≈0) so its
-//  front (right) face — screen + dispenser + drip tray — points into the
-//  room and reads as a coffee machine from the iso angle.
+//  Coffee machine sits at the FRONT-RIGHT end of the counter (the
+//  "最右下" cell) so its front face — screen + dispenser + drip tray —
+//  faces the camera and is never blocked by the chatting employees,
+//  who stand on the LEFT side of the counter.
+//  Returns the coffee machine's screen bbox so the caller can register
+//  it as a click hotspot (强制招喚 two engineers to chat).
 // ════════════════════════════════════════════
 function drawPantry() {
   const gx = 0.4, gy = 5.0, w = 1.9, d = 0.7;
   // counter
   drawBox(gx, gy, w, d, 18, '#a88860', '#704818', '#806030', '#332211');
 
-  // ── coffee machine ─────────────────────────────────────────
-  // Push it left so it sits against the left wall (gx=0 edge).
+  // ── fridge on the LEFT end of the counter ──────────────────
+  drawBox(gx-0.35, gy+0.05, 0.55, 0.55, 36, '#d8d8e6', '#a4a4bc', '#b8b8d0', '#33334a');
+  const fh = isoX(gx+0.2, gy+0.3), fy = isoY(gx+0.2, gy+0.3) - 28;
+  ctx.fillStyle = '#666'; ctx.fillRect(fh-1, fy, 2, 10);
+
+  // ── coffee machine (front-right "最右下" cell) ─────────────
   // Taller body + a recognizable front face (screen, dispenser, drip tray).
-  const cmGx = 0.05, cmGy = gy + 0.05, cmW = 0.45, cmD = 0.5, cmH = 34;
-  drawBox(cmGx, cmGy, cmW, cmD, cmH,
+  const cmGx = gx + w - 0.55, cmGy = gy + 0.05, cmW = 0.45, cmD = 0.5, cmH = 34;
+  const cmBox = drawBox(cmGx, cmGy, cmW, cmD, cmH,
     '#3a3a44',          // top
     '#1f1f28',          // right face (visible from camera) — darker
     '#2a2a34',          // left face (toward camera-left)
@@ -640,16 +650,12 @@ function drawPantry() {
   ctx.fillRect(noz[0]+3, noz[1]-10+puff, 2, 2);
   ctx.fillRect(noz[0],   noz[1]-13+puff, 2, 2);
 
-  // ── fridge on the right end of the counter ─────────────────
-  drawBox(gx+1.15, gy+0.05, 0.55, 0.55, 36, '#d8d8e6', '#a4a4bc', '#b8b8d0', '#33334a');
-  const fh = isoX(gx+1.7, gy+0.3), fy = isoY(gx+1.7, gy+0.3) - 28;
-  ctx.fillStyle = '#666'; ctx.fillRect(fh-1, fy, 2, 10);
-
   // signage
   const tc = [isoX(gx+w/2, gy+d+0.05), isoY(gx+w/2, gy+d+0.05) + 6];
   ctx.textAlign='center';
   ctx.fillStyle = '#88ccff'; ctx.font = '5px "Press Start 2P"';
   ctx.fillText('☕ PANTRY · 茶水間', tc[0], tc[1]);
+  return cmBox;
 }
 
 // ════════════════════════════════════════════
@@ -660,7 +666,7 @@ function drawPantry() {
 function drawFoosball() {
   const gx = 7.2, gy = 5.3, w = 1.4, d = 0.8;
   // green playfield body
-  drawBox(gx, gy, w, d, 18, '#2aa84a', '#117733', '#198840', '#001a08');
+  const tableBox = drawBox(gx, gy, w, d, 18, '#2aa84a', '#117733', '#198840', '#001a08');
   // small legs hint (just darker boxes underneath the corners)
   drawBox(gx, gy, 0.15, 0.15, 18, '#222', '#111', '#1a1a1a');
   drawBox(gx+w-0.15, gy+d-0.15, 0.15, 0.15, 18, '#222', '#111', '#1a1a1a');
@@ -694,6 +700,7 @@ function drawFoosball() {
   ctx.textAlign='center';
   ctx.fillStyle = '#88ff99'; ctx.font = '5px "Press Start 2P"';
   ctx.fillText('⚽ FOOSBALL · 手足球', tc[0], tc[1]);
+  return tableBox;
 }
 
 // ════════════════════════════════════════════
@@ -765,9 +772,15 @@ const ROUTINE = {
 
 // Destinations the routine can pick — coordinates are "standing tiles"
 // (where the character ends up, not the furniture box itself).
+//   pantry:   two spots on the LEFT side of the counter, so the chatting
+//             pair never visually blocks the coffee machine which now sits
+//             at the front-right end of the counter.
+//   foosball: two spots on OPPOSITE long sides of the table (rods run
+//             along the gy axis, so players naturally stand at the +gy
+//             and -gy ends — i.e. across the table from each other).
 const WANDER_SPOTS = {
-  pantry:   [{ gx: 1.3, gy: 5.9 }, { gx: 1.9, gy: 5.9 }],
-  foosball: [{ gx: 7.1, gy: 6.2 }, { gx: 8.3, gy: 6.2 }],
+  pantry:   [{ gx: 0.7, gy: 5.95 }, { gx: 1.3, gy: 5.95 }],
+  foosball: [{ gx: 7.7, gy: 4.5 }, { gx: 7.7, gy: 6.3 }],
 };
 
 // Meeting-table chair tiles (matches drawMeetingTable.chairSpots, offset so
@@ -794,6 +807,36 @@ function sendTo(emp, dx, dy, destKind) {
   emp.dx = dx; emp.dy = dy;
   emp.destKind = destKind;
   emp.state = 'WALKING';
+}
+
+// Force-summon TWO random eligible engineers (not Benden, not locked into
+// a meeting) to the given destination spots. Used by the clickable
+// pantry / foosball hotspots so the user can drive the office vibe.
+// Whoever is picked is yanked out of whatever they were doing — sitting,
+// walking, or already at another destination — and re-routed to the
+// matching pair of spots. Their stay duration is synced so they leave
+// together (same pairing convention as the autonomous routine).
+function forceDispatch(kind) {
+  const spots = WANDER_SPOTS[kind];
+  if (!spots || spots.length < 2) return;
+  const pool = EMPLOYEES.filter(e => e.name !== 'BENDEN' && !e.meetingLock);
+  if (pool.length < 2) return;
+  const a = pick(pool);
+  let b = pick(pool);
+  while (b === a) b = pick(pool);
+  const stay = (kind === 'foosball')
+    ? rndInt(ROUTINE.foosballStayMin, ROUTINE.foosballStayMax)
+    : rndInt(ROUTINE.stayAtDestMin, ROUTINE.stayAtDestMax);
+  [a, b].forEach(e => {
+    e.pantryStay   = (kind === 'pantry')   ? stay : 0;
+    e.foosballStay = (kind === 'foosball') ? stay : 0;
+    // Reset any pending "think" timer so the routine doesn't interfere.
+    e.nextThinkAt = 0;
+  });
+  // Randomise which side of the table / counter each engineer takes.
+  const flip = Math.random() < 0.5 ? 0 : 1;
+  sendTo(a, spots[flip].gx,     spots[flip].gy,     kind);
+  sendTo(b, spots[1-flip].gx,   spots[1-flip].gy,   kind);
 }
 
 function pickDestination(emp) {
@@ -1075,9 +1118,16 @@ function render() {
     const tableBox = drawMeetingTable();
     hot.push({ bbox:tableBox, kind:'feature', label:FEATURES.debate.label, ref:FEATURES.debate });
   }});
-  // pantry (front-left) and foosball (front-RIGHT) — decorative, no hotspots
-  ground.push({ depth: 0.4+5.0+0.5, draw: drawPantry });
-  ground.push({ depth: 7.2+5.3+0.5, draw: drawFoosball });
+  // pantry (front-left) and foosball (front-RIGHT) — clickable hotspots:
+  // tapping either piece 強制招喚 two random engineers over.
+  ground.push({ depth: 0.4+5.0+0.5, draw: () => {
+    const cmBox = drawPantry();
+    if (cmBox) hot.push({ bbox:cmBox, kind:'action', action:'pantry' });
+  }});
+  ground.push({ depth: 7.2+5.3+0.5, draw: () => {
+    const tableBox = drawFoosball();
+    if (tableBox) hot.push({ bbox:tableBox, kind:'action', action:'foosball' });
+  }});
   ground.sort((a,b)=>a.depth-b.depth).forEach(o=>o.draw());
 
   hotspots = hot;
@@ -1087,7 +1137,7 @@ function render() {
 // Yield = framed screen on the back-right wall (gx=0)
 function drawYieldPanel() {
   const f = FEATURES.yield;
-  const wallH = 96, panelH = 50, gy = 2.4, half = 1.0;
+  const wallH = 140, panelH = 50, gy = 2.4, half = 1.0;
   const topY = isoY(0, gy) - wallH + 18;
   const a = [isoX(0, gy-half), isoY(0, gy-half)];
   const b = [isoX(0, gy+half), isoY(0, gy+half)];
@@ -1131,6 +1181,10 @@ canvas.addEventListener('mousemove', e => {
 });
 
 function handleHit(hsp) {
+  if (hsp.kind === 'action') {
+    forceDispatch(hsp.action);
+    return;
+  }
   if (hsp.kind === 'feature') {
     const f = hsp.ref;
     // Meeting table: open the topic-input modal instead of going straight
