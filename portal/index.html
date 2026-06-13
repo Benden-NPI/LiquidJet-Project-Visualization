@@ -2,416 +2,570 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8" />
-<title>LiquidJet · Project Portal</title>
+<title>LiquidJet · Office</title>
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<meta name="description" content="LiquidJet 專案總門戶：Project Visualization 與 Yield 的入口。" />
+<meta name="description" content="LiquidJet 專案總門戶：45° 等角像素辦公室。" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><path d='M32 6 L18 30 L46 30 Z' fill='%23ffffff'/><path d='M14 30 L50 30 L57 50 L40 58 L22 56 L9 46 Z' fill='%237cc4ff'/></svg>" />
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
-* { box-sizing: border-box; margin: 0; padding: 0; image-rendering: pixelated; }
-
+* { box-sizing:border-box; margin:0; padding:0; image-rendering:pixelated; }
+html, body { height:100%; }
 body {
-  background: #0a0a1a;
-  color: #ccddff;
-  font-family: 'Press Start 2P', monospace;
-  min-height: 100vh;
+  background:#0a0a1a;
+  color:#ccddff;
+  font-family:'Press Start 2P', monospace;
+  display:flex; flex-direction:column; align-items:center;
+  min-height:100dvh; overflow-x:hidden;
+  padding:env(safe-area-inset-top,10px) 0 0;
 }
 
 /* scanlines */
 body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent, transparent 2px,
-    rgba(0,0,0,0.13) 2px, rgba(0,0,0,0.13) 4px
-  );
-  pointer-events: none;
-  z-index: 999;
+  content:''; position:fixed; inset:0; z-index:998; pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.13) 2px,rgba(0,0,0,.13) 4px);
 }
 
-/* dot grid */
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(68,68,170,0.07) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(68,68,170,0.07) 1px, transparent 1px);
-  background-size: 32px 32px;
-  pointer-events: none;
-  z-index: 0;
+@keyframes blink { 50% { opacity:.55; } }
+
+#title {
+  color:#ffe066; font-size:11px; letter-spacing:2px; margin:6px 0 4px;
+  text-shadow:2px 2px #996600, 0 0 18px rgba(255,224,102,.4);
+  animation:blink 3s step-end infinite; text-align:center; flex-shrink:0;
+}
+#subtitle { color:#4488ff; font-size:6px; letter-spacing:2px; margin-bottom:8px; flex-shrink:0; }
+
+/* office viewport */
+#stage-wrapper { position:relative; width:min(900px,100vw); flex-shrink:0; }
+#stage {
+  position:absolute; top:0; left:0; width:900px; height:560px;
+  background:#11111f; border:4px solid #2a2a4a;
+  box-shadow:0 0 0 4px #0a0a1a, 0 0 40px #3333aa44;
+  overflow:hidden; transform-origin:top left;
+}
+#scene { position:absolute; inset:0; }
+
+#hint {
+  color:#4a4a6a; font-size:6px; margin-top:6px; text-align:center;
+  animation:blink 1.6s step-end infinite; flex-shrink:0; line-height:1.8;
 }
 
-.wrap {
-  position: relative;
-  z-index: 1;
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 36px 16px 64px;
+/* legend */
+#legend {
+  display:flex; flex-wrap:wrap; gap:6px 10px; justify-content:center;
+  margin:10px auto 4px; max-width:760px; padding:0 12px; flex-shrink:0;
 }
+.leg { display:flex; align-items:center; gap:5px; font-size:5px; color:#5566aa; }
+.leg .sw { width:9px; height:9px; border:1px solid #000; }
 
-/* ══ HEADER ══ */
-header.hero {
-  text-align: center;
-  margin-bottom: 32px;
+/* ── info card (employee) ── */
+#card-overlay {
+  position:fixed; inset:0; background:#00000099; z-index:200;
+  display:none; align-items:center; justify-content:center; padding:16px;
 }
-
-.px-rule {
-  color: #1a2a5a;
-  font-size: 8px;
-  letter-spacing: 1px;
-  margin-bottom: 16px;
-  user-select: none;
+#card-overlay.active { display:flex; }
+#info-card {
+  width:min(360px,94vw); background:#0a0a2a;
+  border:4px solid #8888ff; box-shadow:inset 0 0 0 2px #000, 0 0 24px #4444ff55;
+  position:relative;
 }
-
-h1.title {
-  color: #ffe066;
-  font-size: clamp(14px, 4vw, 22px);
-  letter-spacing: 3px;
-  text-shadow: 3px 3px 0 #996600, 0 0 24px rgba(255,224,102,0.4);
-  animation: blink 3s step-end infinite;
-  margin-bottom: 10px;
+#card-head { background:#1a1a4a; border-bottom:3px solid #8888ff; padding:12px 14px; display:flex; gap:12px; align-items:center; }
+#card-avatar { width:48px; height:48px; image-rendering:pixelated; flex-shrink:0; border:2px solid #000; }
+#card-name { color:#ffe066; font-size:11px; text-shadow:1px 1px #996600; }
+#card-role { color:#88aaff; font-size:7px; margin-top:6px; line-height:1.6; }
+#card-body { padding:14px; }
+#card-desc { color:#aabbdd; font-size:6px; line-height:2.2; }
+#card-tags { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+.card-tag { font-size:5px; padding:4px 7px; background:#050518; border:1px solid #2a2a5a; color:#5577bb; }
+#card-close {
+  position:absolute; top:8px; right:10px; background:none; border:2px solid #ff4444;
+  color:#ff4444; font-family:'Press Start 2P',monospace; font-size:7px; padding:3px 6px; cursor:pointer;
 }
-
-.subtitle {
-  color: #4488ff;
-  font-size: 7px;
-  letter-spacing: 3px;
-  margin-bottom: 20px;
+#card-close:hover { background:#ff444422; }
+#card-actions { margin-top:14px; display:flex; gap:8px; flex-wrap:wrap; }
+.card-btn {
+  font-family:'Press Start 2P',monospace; font-size:6px; padding:8px 11px;
+  background:#1a1a4a; border:2px solid #8888ff; color:#ffe066; cursor:pointer;
+  text-decoration:none; box-shadow:2px 2px 0 #000;
 }
+.card-btn:hover { background:#2a2a6a; }
 
-.badges {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.badge {
-  font-size: 6px;
-  padding: 4px 10px;
-  background: #050512;
-  border: 2px solid #1a2050;
-  color: #3a5090;
-}
-
-@keyframes blink { 50% { opacity: 0.55; } }
-@keyframes cursorBlink { 50% { opacity: 0; } }
-
-/* ══ INTRO BOX ══ */
-.intro-box {
-  background: #070718;
-  border: 3px solid #1e2252;
-  box-shadow: 4px 4px 0 #000;
-  padding: 18px 16px;
-  margin: 24px 0 28px;
-  position: relative;
-}
-
-.intro-box::before {
-  content: '▶ ABOUT';
-  position: absolute;
-  top: -10px;
-  left: 14px;
-  background: #0a0a1a;
-  color: #4488ff;
-  font-size: 7px;
-  padding: 0 6px;
-}
-
-.intro-box p {
-  font-size: 7px;
-  line-height: 2.2;
-  color: #7788aa;
-}
-
-.cursor::after {
-  content: '█';
-  animation: cursorBlink 1s step-end infinite;
-  margin-left: 2px;
-  color: #4488ff;
-}
-
-/* ══ GRID ══ */
-.grid {
-  display: grid;
-  gap: 16px;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-}
-
-/* ══ CARD ══ */
-.card {
-  background: #070718;
-  border: 3px solid #1e2252;
-  box-shadow: 4px 4px 0 #000;
-  padding: 18px 16px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  position: relative;
-  transition: transform 0.06s, box-shadow 0.06s, border-color 0.06s;
-}
-
-.card:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 6px 6px 0 #000;
-}
-
-/* per-theme accent */
-.card.viz   { --accent: #4466ff; --accent-dim: #1a2a6a; --accent-bg: #06081a; }
-.card.yield { --accent: #44cc88; --accent-dim: #1a4a30; --accent-bg: #06120a; }
-.card.cp    { --accent: #ffaa44; --accent-dim: #5a3a10; --accent-bg: #120c04; }
-.card.debate{ --accent: #ff44aa; --accent-dim: #5a1040; --accent-bg: #120410; }
-
-.card:hover { border-color: var(--accent); }
-
-/* pixel corner markers */
-.card::before, .card::after {
-  content: '█';
-  position: absolute;
-  font-size: 8px;
-  line-height: 1;
-  color: var(--accent);
-}
-.card::before { top: -5px; left: -5px; }
-.card::after  { bottom: -5px; right: -5px; }
-
-/* ── card head ── */
-.card-head { display: flex; align-items: flex-start; gap: 12px; }
-
-.card-ico {
-  width: 40px;
-  height: 40px;
-  border: 2px solid var(--accent);
-  background: var(--accent-bg);
-  box-shadow: 2px 2px 0 #000;
-  display: grid;
-  place-items: center;
-  font-size: 18px;
-  flex-shrink: 0;
-}
-
-.card-title {
-  font-size: 9px;
-  color: #ffe066;
-  line-height: 1.7;
-  margin-bottom: 5px;
-}
-
-.card-tag {
-  font-size: 5px;
-  color: var(--accent);
-  line-height: 2;
-  opacity: 0.7;
-}
-
-/* ── card body ── */
-.card-desc {
-  font-size: 6px;
-  color: #6677aa;
-  line-height: 2.2;
-}
-
-.card-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-}
-
-.meta-chip {
-  font-size: 5px;
-  padding: 3px 7px;
-  background: #050512;
-  border: 1px solid #151535;
-  color: #334466;
-}
-
-/* ── buttons ── */
-.links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: auto;
-  padding-top: 4px;
-}
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-family: 'Press Start 2P', monospace;
-  font-size: 6px;
-  padding: 8px 11px;
-  text-decoration: none;
-  border: 2px solid;
-  cursor: pointer;
-  box-shadow: 2px 2px 0 #000;
-  transition: transform 0.05s, box-shadow 0.05s;
-}
-
-.btn:hover  { transform: translate(-1px,-1px); box-shadow: 3px 3px 0 #000; }
-.btn:active { transform: translate(1px,1px);   box-shadow: 1px 1px 0 #000; }
-
-.btn.primary {
-  background: var(--accent-dim);
-  border-color: var(--accent);
-  color: #ffe066;
-}
-.btn.primary:hover { filter: brightness(1.25); }
-
-.btn.ghost {
-  background: transparent;
-  border-color: #1e2252;
-  color: #3a5090;
-}
-.btn.ghost:hover { border-color: var(--accent); color: var(--accent); }
-
-/* ── live ribbon ── */
-.ribbon {
-  position: absolute;
-  top: 10px; right: 10px;
-  font-size: 5px;
-  padding: 3px 7px;
-  border: 2px solid #44aa44;
-  color: #44ff88;
-  background: #040c04;
-  animation: blink 2s step-end infinite;
-}
-
-/* ══ FOOTER ══ */
 footer {
-  margin-top: 40px;
-  padding-top: 14px;
-  border-top: 4px solid #0e1030;
-  display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
-  font-size: 6px;
-  color: #1e2a4a;
+  margin:14px auto 24px; display:flex; gap:18px; flex-wrap:wrap; justify-content:center;
+  font-size:5px; color:#1e2a4a; flex-shrink:0;
 }
-
-footer a { color: inherit; text-decoration: none; }
-footer a:hover { color: #4488ff; }
+footer a { color:inherit; text-decoration:none; }
+footer a:hover { color:#4488ff; }
 </style>
 </head>
 <body>
-<div class="wrap">
 
-  <header class="hero">
-    <div class="px-rule">▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓</div>
-    <h1 class="title">★ LIQUIDJET ★</h1>
-    <div class="subtitle">PROJECT PORTAL  ·  BENDEN NPI</div>
-    <div class="badges">
-      <span class="badge">▶ BENDEN NPI</span>
-      <span class="badge">▶ INTERNAL</span>
-    </div>
-    <div class="px-rule" style="margin-top:16px;margin-bottom:0;">▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓</div>
-  </header>
+<div id="title">★ LIQUIDJET OFFICE ★</div>
+<div id="subtitle">45° ISOMETRIC · BENDEN NPI</div>
 
-  <div class="intro-box">
-    <p>LiquidJet 是 Benden NPI 的整合性開發專案。此入口聚合下轄子專案的文件、視覺化與工具，方便團隊在單一頁面跳轉、追蹤進度。<span class="cursor"></span></p>
+<div id="stage-wrapper">
+  <div id="stage">
+    <canvas id="scene" width="900" height="560"></canvas>
   </div>
-
-  <div class="grid">
-
-    <article class="card viz">
-      <span class="ribbon">● LIVE</span>
-      <div class="card-head">
-        <div class="card-ico">🧠</div>
-        <div>
-          <div class="card-title">PROJECT VIZ</div>
-          <div class="card-tag">SCOPE · MINDMAPS · ADR · EDITOR</div>
-        </div>
-      </div>
-      <p class="card-desc">早期專案 scope、腦力激盪與決策紀錄的視覺化工作環境。以 Mermaid mindmap 為主、Draw.io 為輔，Git 版控、CI 自動產 SVG。</p>
-      <div class="card-meta">
-        <span class="meta-chip">📐 MERMAID</span>
-        <span class="meta-chip">📝 ADR</span>
-        <span class="meta-chip">⚙ ACTIONS</span>
-      </div>
-      <div class="links">
-        <a class="btn primary" href="https://benden-npi.github.io/LiquidJet-Project-Visualization/editor/">▶ 開啟編輯器</a>
-        <a class="btn ghost" href="https://github.com/Benden-NPI/LiquidJet-Project-Visualization" target="_blank" rel="noopener">GITHUB ↗</a>
-      </div>
-    </article>
-
-    <article class="card yield">
-      <span class="ribbon">● LIVE</span>
-      <div class="card-head">
-        <div class="card-ico">📈</div>
-        <div>
-          <div class="card-title">YIELD</div>
-          <div class="card-tag">PROCESS · DATA · ANALYSIS</div>
-        </div>
-      </div>
-      <p class="card-desc">LiquidJet 製程良率相關的資料、分析與追蹤工具。</p>
-      <div class="card-meta">
-        <span class="meta-chip">📊 DATA</span>
-        <span class="meta-chip">🔬 ANALYSIS</span>
-      </div>
-      <div class="links">
-        <a class="btn primary" href="https://benden-npi.github.io/Yield/">▶ 開啟 YIELD</a>
-        <a class="btn ghost" href="https://github.com/Benden-NPI/Yield" target="_blank" rel="noopener">GITHUB ↗</a>
-      </div>
-    </article>
-
-    <article class="card cp">
-      <span class="ribbon">● LIVE</span>
-      <div class="card-head">
-        <div class="card-ico">🛡️</div>
-        <div>
-          <div class="card-title">CONTROL PLAN</div>
-          <div class="card-tag">CTQ · PFMEA · MILESTONES</div>
-        </div>
-      </div>
-      <p class="card-desc">把 control plan 鑲嵌進 Yield Process Readiness 看板，逐 station 對齊 CTQ、PFMEA cause 與 reaction plan。</p>
-      <div class="card-meta">
-        <span class="meta-chip">🎯 CTQ/X</span>
-        <span class="meta-chip">📋 PFMEA</span>
-        <span class="meta-chip">🏁 MILESTONES</span>
-      </div>
-      <div class="links">
-        <a class="btn primary" href="scope/control-plan.html">▶ 開啟 CP</a>
-        <a class="btn ghost" href="https://github.com/Benden-NPI/LiquidJet-Project-Visualization/blob/main/scope/control-plan.md" target="_blank" rel="noopener">GITHUB ↗</a>
-      </div>
-    </article>
-
-    <article class="card debate">
-      <span class="ribbon">● LIVE</span>
-      <div class="card-head">
-        <div class="card-ico">💬</div>
-        <div>
-          <div class="card-title">AI 辯論室</div>
-          <div class="card-tag">MULTI-ROLE · STREAM · DEBATE</div>
-        </div>
-      </div>
-      <p class="card-desc">設定討論主題與回合數，讓 2–4 個具有不同個性與立場的 AI 角色互相辯論，最後由主持人 AI 做結論摘要。</p>
-      <div class="card-meta">
-        <span class="meta-chip">🤖 CLAUDE/GROK</span>
-        <span class="meta-chip">🎭 MULTI-ROLE</span>
-        <span class="meta-chip">📝 EXPORT</span>
-      </div>
-      <div class="links">
-        <a class="btn primary" href="ai-debate.html">▶ 開啟辯論室</a>
-      </div>
-    </article>
-
-  </div>
-
-  <footer>
-    <span>© BENDEN NPI · LIQUIDJET</span>
-    <span id="buildInfo">—</span>
-  </footer>
 </div>
 
+<div id="hint">▼ 點員工看名片 · 點物件進功能 ▼</div>
+
+<div id="legend">
+  <span class="leg"><span class="sw" style="background:#4466ff"></span>🎨 畫板 = PROJECT VIZ</span>
+  <span class="leg"><span class="sw" style="background:#44cc88"></span>📈 數據牆 = YIELD</span>
+  <span class="leg"><span class="sw" style="background:#ffaa44"></span>🛡️ 公告板 = CONTROL PLAN</span>
+  <span class="leg"><span class="sw" style="background:#ff44aa"></span>💬 會議桌 = AI 辯論</span>
+</div>
+
+<!-- employee info card -->
+<div id="card-overlay">
+  <div id="info-card">
+    <div id="card-head">
+      <canvas id="card-avatar" width="48" height="48"></canvas>
+      <div>
+        <div id="card-name">???</div>
+        <div id="card-role">???</div>
+      </div>
+      <button id="card-close">✕</button>
+    </div>
+    <div id="card-body">
+      <div id="card-desc"></div>
+      <div id="card-tags"></div>
+      <div id="card-actions"></div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <a href="https://github.com/Benden-NPI/LiquidJet-Project-Visualization" target="_blank" rel="noopener">© BENDEN NPI · LIQUIDJET</a>
+  <span id="buildInfo">—</span>
+</footer>
+
 <script>
-  const ts = "__BUILD_TS__";
-  const el = document.getElementById("buildInfo");
-  if (el && !ts.startsWith("__")) el.textContent = "BUILT " + ts;
+// ════════════════════════════════════════════
+//  ISO HELPERS
+// ════════════════════════════════════════════
+const canvas = document.getElementById('scene');
+const ctx = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+
+const W = 900, H = 560;
+const TW2 = 32, TH2 = 16;        // half tile width / height
+const GW = 10, GH = 8;           // floor grid size (gx 0..GW, gy 0..GH)
+const ORX = 418, ORY = 160;      // screen origin for grid corner (0,0) — centred
+
+const isoX = (gx, gy) => ORX + (gx - gy) * TW2;
+const isoY = (gx, gy) => ORY + (gx + gy) * TH2;
+
+function poly(pts, fill, stroke, lw) {
+  ctx.beginPath();
+  ctx.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+  ctx.closePath();
+  if (fill)   { ctx.fillStyle = fill; ctx.fill(); }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw || 1; ctx.stroke(); }
+}
+
+// draw an iso box. footprint (gx,gy)->(gx+w,gy+d), height h(px up).
+// returns screen bbox {x,y,w,h} for hit-testing.
+function drawBox(gx, gy, w, d, h, top, right, left, outline) {
+  const A = [isoX(gx, gy),       isoY(gx, gy)];
+  const B = [isoX(gx + w, gy),   isoY(gx + w, gy)];
+  const C = [isoX(gx + w, gy+d), isoY(gx + w, gy+d)];
+  const D = [isoX(gx, gy+d),     isoY(gx, gy+d)];
+  const At = [A[0], A[1]-h], Bt = [B[0], B[1]-h], Ct = [C[0], C[1]-h], Dt = [D[0], D[1]-h];
+  // right face (toward +gx)
+  poly([B, C, Ct, Bt], right, outline, outline?1:0);
+  // left face (toward +gy)
+  poly([D, C, Ct, Dt], left, outline, outline?1:0);
+  // top face
+  poly([At, Bt, Ct, Dt], top, outline, outline?1:0);
+  const xs = [A[0],B[0],C[0],D[0]], ys = [At[1],Bt[1],Ct[1],Dt[1],A[1],C[1]];
+  const minX = Math.min(...xs), maxX = Math.max(...xs);
+  const minY = Math.min(...ys), maxY = Math.max(A[1],B[1],C[1],D[1]);
+  return { x:minX, y:minY, w:maxX-minX, h:maxY-minY };
+}
+
+function shade(rgb, f) {
+  return `rgb(${Math.max(0,Math.round(rgb[0]*f))},${Math.max(0,Math.round(rgb[1]*f))},${Math.max(0,Math.round(rgb[2]*f))})`;
+}
+const rgbStr = (c) => `rgb(${c[0]},${c[1]},${c[2]})`;
+
+// ════════════════════════════════════════════
+//  DATA
+// ════════════════════════════════════════════
+// 8 workstation employees. gx,gy = standing tile of the character.
+const EMPLOYEES = [
+  { name:'MORGAN', role:'Integration Eng.',     roleZh:'整合工程',     gx:0.7, gy:0.9, hair:[0x33,0x55,0xcc], skin:[0xff,0xcc,0x99], shirt:[0x44,0x88,0xff],
+    desc:'統籌各製程模組之間的銜接，確保系統整合順暢。' },
+  { name:'EVAN',   role:'Failure Analysis Eng.', roleZh:'失效分析',     gx:2.6, gy:0.9, hair:[0x88,0x44,0x22], skin:[0xff,0xdd,0xaa], shirt:[0xcc,0x55,0x44],
+    desc:'追查不良根因，從失效現象逆推到製程與材料。' },
+  { name:'BRIAN',  role:'Bonding Process Eng.',  roleZh:'接合製程',     gx:4.5, gy:0.9, hair:[0x22,0x22,0x33], skin:[0xee,0xcc,0xbb], shirt:[0x44,0xaa,0x88],
+    desc:'負責 bonding 製程參數與良率，盯緊介面品質。' },
+  { name:'JOY',    role:'Etching Process Eng.',  roleZh:'蝕刻製程',     gx:0.7, gy:2.7, hair:[0x99,0x22,0x77], skin:[0xff,0xcc,0xaa], shirt:[0xff,0x88,0xcc],
+    desc:'掌控 etching 製程窗口與均勻度，雕琢每一條線路。' },
+  { name:'JACOB',  role:'Mechanical Eng.',       roleZh:'機構工程',     gx:2.6, gy:2.7, hair:[0x44,0x33,0x22], skin:[0xff,0xdd,0xbb], shirt:[0x88,0x88,0x55],
+    desc:'設計治具與機構，讓設備與夾持穩定可靠。' },
+  { name:'JASON',  role:'Test Eng.',             roleZh:'測試工程',     gx:4.5, gy:2.7, hair:[0x22,0x44,0x66], skin:[0xff,0xcc,0x99], shirt:[0x44,0xcc,0xcc],
+    desc:'建立量測與測試流程，把資料變成可信的判斷。' },
+  { name:'MZ',     role:'Quality Eng.',          roleZh:'品質工程',     gx:0.7, gy:4.5, hair:[0x33,0x33,0x33], skin:[0xee,0xcc,0xbb], shirt:[0xaa,0x66,0xff],
+    desc:'守住品質底線，管控 CTQ、PFMEA 與反應計畫。' },
+  { name:'LISA',   role:'Planner',               roleZh:'生產規劃',     gx:2.6, gy:4.5, hair:[0xaa,0x66,0x22], skin:[0xff,0xdd,0xaa], shirt:[0xff,0xbb,0x44],
+    desc:'排程與資源規劃，讓 milestone 一個個準時落地。' },
+];
+
+// Benden — Project Lead — sits at the meeting room head seat.
+const LEAD = {
+  name:'BENDEN', role:'Project Lead', roleZh:'專案負責人',
+  gx:7.9, gy:5.4, hair:[0x22,0x22,0x22], skin:[0xff,0xcc,0x99], shirt:[0xff,0xe0,0x66],
+  desc:'LiquidJet 專案負責人，統籌全局、拍板決策。',
+};
+
+// interactive feature objects
+const FEATURES = {
+  viz:    { label:'PROJECT VIZ',  color:'#4466ff', url:'https://benden-npi.github.io/LiquidJet-Project-Visualization/editor/', newTab:true,
+            desc:'Scope · Mindmaps · ADR · Canvas Editor' },
+  yield:  { label:'YIELD',        color:'#44cc88', url:'https://benden-npi.github.io/Yield/', newTab:true,
+            desc:'製程良率資料、分析與追蹤' },
+  cp:     { label:'CONTROL PLAN', color:'#ffaa44', url:'scope/control-plan.html', newTab:false,
+            desc:'CTQ · PFMEA · Milestones' },
+  debate: { label:'AI 辯論室',    color:'#ff44aa', url:'ai-debate.html', newTab:false,
+            desc:'多角色 AI 在會議室裡互相辯論並結論' },
+};
+
+let time = 0;
+let hotspots = [];     // rebuilt every frame: {bbox, kind, ref}
+let hoverHot = null;
+
+// ════════════════════════════════════════════
+//  DRAW: FLOOR + WALLS
+// ════════════════════════════════════════════
+function drawFloor() {
+  for (let gy = 0; gy < GH; gy++) {
+    for (let gx = 0; gx < GW; gx++) {
+      const A=[isoX(gx,gy),isoY(gx,gy)], B=[isoX(gx+1,gy),isoY(gx+1,gy)];
+      const C=[isoX(gx+1,gy+1),isoY(gx+1,gy+1)], D=[isoX(gx,gy+1),isoY(gx,gy+1)];
+      // meeting-room zone (right-front) gets a distinct rug colour
+      const inMeeting = gx >= 6 && gy >= 4;
+      let base = ((gx+gy)%2===0) ? '#23233e' : '#1c1c34';
+      if (inMeeting) base = ((gx+gy)%2===0) ? '#2a1830' : '#241028';
+      poly([A,B,C,D], base, '#15152a', 1);
+    }
+  }
+  // meeting room label on the rug
+  ctx.fillStyle = '#aa4488'; ctx.font = '6px "Press Start 2P"'; ctx.textAlign = 'center';
+  const ml = [isoX(8,6.1), isoY(8,6.1)];
+  ctx.fillText('MEETING ROOM', ml[0], ml[1]);
+}
+
+function drawWalls() {
+  const wallH = 96;
+  // back-left wall (gy = 0 edge)
+  const p1=[isoX(0,0),isoY(0,0)], p2=[isoX(GW,0),isoY(GW,0)];
+  poly([p1, p2, [p2[0],p2[1]-wallH], [p1[0],p1[1]-wallH]], '#1a1a30', '#0f0f1e', 1);
+  // back-right wall (gx = 0 edge)
+  const q1=[isoX(0,0),isoY(0,0)], q2=[isoX(0,GH),isoY(0,GH)];
+  poly([q1, q2, [q2[0],q2[1]-wallH], [q1[0],q1[1]-wallH]], '#14142a', '#0f0f1e', 1);
+  // skirting highlight
+  poly([[p1[0],p1[1]-wallH],[p2[0],p2[1]-wallH],[p2[0],p2[1]-wallH+3],[p1[0],p1[1]-wallH+3]], '#2a2a4a');
+  poly([[q1[0],q1[1]-wallH],[q2[0],q2[1]-wallH],[q2[0],q2[1]-wallH+3],[q1[0],q1[1]-wallH+3]], '#22223e');
+  // ceiling lights along back-left wall
+  for (let i = 0; i < 3; i++) {
+    const lg = 1.5 + i*3;
+    const lp = [isoX(lg,0), isoY(lg,0)-wallH+14];
+    ctx.fillStyle = '#b8e0ff'; ctx.fillRect(lp[0]-14, lp[1], 28, 5);
+    ctx.save(); ctx.shadowColor='#4499ff'; ctx.shadowBlur=14;
+    ctx.fillRect(lp[0]-14, lp[1], 28, 5); ctx.restore();
+  }
+}
+
+// ════════════════════════════════════════════
+//  DRAW: WALL FEATURES (Viz / Yield / Control Plan)
+// ════════════════════════════════════════════
+// A framed panel mounted on the back-left wall (gy=0), centred at grid gx.
+function drawWallPanelLeft(gx, label, color, screenIco) {
+  const wallH = 96, panelH = 52, panelHalf = 1.05;
+  const cBot = [isoX(gx, 0), isoY(gx, 0)];
+  const topY = cBot[1] - wallH + 16;
+  const lft = [isoX(gx-panelHalf,0), isoY(gx-panelHalf,0)];
+  const rgt = [isoX(gx+panelHalf,0), isoY(gx+panelHalf,0)];
+  const pts = [
+    [lft[0], topY], [rgt[0], topY],
+    [rgt[0], topY+panelH], [lft[0], topY+panelH],
+  ];
+  const hovered = hoverHot && hoverHot.kind==='feature' && hoverHot.label===label;
+  poly(pts, '#06060f', hovered?color:'#000', hovered?3:2);
+  // inner glow fill
+  poly([[pts[0][0]+4,pts[0][1]+4],[pts[1][0]-4,pts[1][1]+4],[pts[2][0]-4,pts[2][1]-4],[pts[3][0]+4,pts[3][1]-4]],
+       hovered ? color+'33' : '#0a0a18');
+  // icon + label
+  ctx.textAlign='center';
+  ctx.font='16px "Press Start 2P"';
+  ctx.fillText(screenIco, (lft[0]+rgt[0])/2, topY+26);
+  ctx.fillStyle = hovered ? '#ffe066' : color;
+  ctx.font='5px "Press Start 2P"';
+  ctx.fillText(label, (lft[0]+rgt[0])/2, topY+panelH-6);
+  return { x:pts[0][0], y:pts[0][1], w:pts[1][0]-pts[0][0], h:panelH };
+}
+
+// ════════════════════════════════════════════
+//  DRAW: WORKSTATION (desk + monitor + chair + char)
+// ════════════════════════════════════════════
+function drawWorkstation(emp) {
+  const { gx, gy } = emp;
+  // desk top (a low box)
+  const deskBox = drawBox(gx-0.15, gy-1.05, 1.5, 0.9, 26, '#6a4824', '#4a3018', '#5a3d1e', '#2a1c0e');
+  // monitor on the desk (against the back)
+  const mx = gx+0.35, my = gy-0.95;
+  drawBox(mx, my, 0.55, 0.12, 50, '#222', '#181818', '#1c1c1c');
+  // screen glow
+  const sb = isoX(mx, my), sy = isoY(mx, my) - 50;
+  const g = 60 + Math.floor(Math.sin(time*0.06 + gx)*30);
+  ctx.fillStyle = `rgb(0,${g},${Math.floor(g*0.7)})`;
+  ctx.fillRect(sb-1, sy+6, 26, 22);
+  ctx.fillStyle = 'rgba(0,255,150,0.5)';
+  for (let i=0;i<4;i++){ const lw = 5+((time*2+i*7)%20); ctx.fillRect(sb+1, sy+9+i*4, lw, 2); }
+  // coffee mug
+  ctx.fillStyle=rgbStr(emp.shirt); ctx.fillRect(sb+30, sy+24, 7, 9);
+  // chair (small box in front)
+  drawBox(gx+0.05, gy+0.15, 0.7, 0.7, 14, '#33334a', '#22223a', '#2a2a42');
+  // character (standing just in front of the desk)
+  const cx = isoX(gx+0.4, gy+0.6), cy = isoY(gx+0.4, gy+0.6);
+  const bbox = drawChar(cx, cy, emp, true);
+  // nameplate
+  drawNameplate(cx, cy, emp);
+  return bbox;
+}
+
+// ════════════════════════════════════════════
+//  DRAW: MEETING TABLE (AI Debate) + Benden + chairs
+// ════════════════════════════════════════════
+function drawMeetingTable() {
+  const f = FEATURES.debate;
+  const hovered = hoverHot && hoverHot.kind==='feature' && hoverHot.label===f.label;
+  const gx=6.6, gy=4.6, w=2.4, d=1.6;
+  // chairs around the table
+  const chairSpots = [[gx-0.5,gy+0.4],[gx-0.5,gy+1.0],[gx+w+0.0,gy+0.4],[gx+w+0.0,gy+1.0],[gx+0.6,gy+d+0.1],[gx+1.4,gy+d+0.1]];
+  chairSpots.forEach(([cgx,cgy])=>drawBox(cgx,cgy,0.55,0.55,16,'#3a2030','#281020','#311828'));
+  // table
+  const box = drawBox(gx, gy, w, d, 30,
+    hovered ? '#ff66bb' : '#7a3a5a',
+    hovered ? '#aa3070' : '#4a2036',
+    hovered ? '#cc4488' : '#5a2842',
+    hovered ? '#ffaadd' : '#2a1020');
+  // table-top label
+  const tc = [isoX(gx+w/2, gy+d/2), isoY(gx+w/2, gy+d/2) - 30];
+  ctx.textAlign='center';
+  ctx.font='14px "Press Start 2P"'; ctx.fillText('💬', tc[0], tc[1]-2);
+  ctx.fillStyle = hovered ? '#ffe066' : '#ffccee';
+  ctx.font='5px "Press Start 2P"'; ctx.fillText('AI 辯論', tc[0], tc[1]+12);
+  // Benden at head seat
+  const bx = isoX(LEAD.gx, LEAD.gy), by = isoY(LEAD.gx, LEAD.gy);
+  const bbbox = drawChar(bx, by, LEAD, true);
+  drawNameplate(bx, by, LEAD, '#ffe066');
+  return { tableBox: box, leadBox: bbbox };
+}
+
+// ════════════════════════════════════════════
+//  DRAW: PIXEL CHARACTER
+// ════════════════════════════════════════════
+function drawChar(cx, cy, emp, idle) {
+  cx = Math.round(cx); cy = Math.round(cy);
+  const bob = idle ? Math.sin(time*0.05 + cx)*1.5 : 0;
+  const py = Math.round(cy + bob);
+  // shadow
+  ctx.fillStyle='rgba(0,0,0,0.3)'; ctx.beginPath();
+  ctx.ellipse(cx, cy+4, 12, 5, 0, 0, Math.PI*2); ctx.fill();
+  // hair
+  ctx.fillStyle=rgbStr(emp.hair); ctx.fillRect(cx-8, py-46, 16, 8);
+  // face
+  ctx.fillStyle=rgbStr(emp.skin); ctx.fillRect(cx-7, py-40, 14, 12);
+  // eyes
+  ctx.fillStyle='#111'; ctx.fillRect(cx-4, py-37, 2, 3); ctx.fillRect(cx+2, py-37, 2, 3);
+  // mouth
+  ctx.fillStyle='#aa6655'; ctx.fillRect(cx-2, py-31, 4, 2);
+  // body / shirt
+  ctx.fillStyle=rgbStr(emp.shirt); ctx.fillRect(cx-8, py-28, 16, 18);
+  // arms
+  ctx.fillStyle=shade(emp.shirt,0.8);
+  ctx.fillRect(cx-11, py-26, 4, 12); ctx.fillRect(cx+7, py-26, 4, 12);
+  // legs
+  ctx.fillStyle='#33334a'; ctx.fillRect(cx-6, py-10, 5, 10); ctx.fillRect(cx+1, py-10, 5, 10);
+  // shoes
+  ctx.fillStyle='#1a1a1a'; ctx.fillRect(cx-7, py-1, 6, 3); ctx.fillRect(cx+1, py-1, 6, 3);
+  return { x:cx-13, y:py-48, w:26, h:52 };
+}
+
+function drawNameplate(cx, cy, emp, color) {
+  cx = Math.round(cx);
+  const top = Math.round(cy) - 64;
+  const w = Math.max(38, emp.name.length*7 + 12);
+  ctx.fillStyle='rgba(0,0,20,0.85)'; ctx.fillRect(cx-w/2, top, w, 13);
+  ctx.strokeStyle = color || '#4466aa'; ctx.lineWidth=1; ctx.strokeRect(cx-w/2, top, w, 13);
+  ctx.fillStyle = color || '#aabbee'; ctx.font='5px "Press Start 2P"'; ctx.textAlign='center';
+  ctx.fillText(emp.name, cx, top+9);
+}
+
+// ════════════════════════════════════════════
+//  RENDER LOOP
+// ════════════════════════════════════════════
+function render() {
+  time++;
+  ctx.clearRect(0, 0, W, H);
+  const hot = [];
+
+  drawFloor();
+  drawWalls();
+
+  // wall features (deepest — draw right after walls)
+  const vizBox = drawWallPanelLeft(2.0, FEATURES.viz.label, FEATURES.viz.color, '🎨');
+  hot.push({ bbox:vizBox, kind:'feature', label:FEATURES.viz.label, ref:FEATURES.viz });
+  const cpBox = drawWallPanelLeft(6.5, FEATURES.cp.label, FEATURES.cp.color, '🛡️');
+  hot.push({ bbox:cpBox, kind:'feature', label:FEATURES.cp.label, ref:FEATURES.cp });
+
+  // Yield panel on the back-RIGHT wall (gx=0 edge) — draw inline here
+  hot.push(drawYieldPanel());
+
+  // ground objects sorted back-to-front by depth (gx+gy)
+  const ground = [];
+  EMPLOYEES.forEach(emp => ground.push({ depth: emp.gx+emp.gy, draw: () => {
+    const bbox = drawWorkstation(emp);
+    hot.push({ bbox, kind:'employee', ref:emp });
+  }}));
+  ground.push({ depth: 6.6+4.6+1, draw: () => {
+    const { tableBox, leadBox } = drawMeetingTable();
+    hot.push({ bbox:tableBox, kind:'feature', label:FEATURES.debate.label, ref:FEATURES.debate });
+    hot.push({ bbox:leadBox, kind:'employee', ref:LEAD });
+  }});
+  ground.sort((a,b)=>a.depth-b.depth).forEach(o=>o.draw());
+
+  hotspots = hot;
+  requestAnimationFrame(render);
+}
+
+// Yield = framed screen on the back-right wall (gx=0)
+function drawYieldPanel() {
+  const f = FEATURES.yield;
+  const wallH = 96, panelH = 50, gy = 2.4, half = 1.0;
+  const topY = isoY(0, gy) - wallH + 18;
+  const a = [isoX(0, gy-half), isoY(0, gy-half)];
+  const b = [isoX(0, gy+half), isoY(0, gy+half)];
+  const pts = [[a[0],topY],[b[0],topY+ (b[1]-a[1]) ],[b[0],topY+panelH+(b[1]-a[1])],[a[0],topY+panelH]];
+  const hovered = hoverHot && hoverHot.kind==='feature' && hoverHot.label===f.label;
+  poly(pts, '#06120a', hovered?f.color:'#000', hovered?3:2);
+  // a tiny bar chart
+  const bx = (a[0]+b[0])/2, by = topY + 14 + (b[1]-a[1])/2;
+  ctx.fillStyle = hovered ? f.color : '#2a6a44';
+  [10,18,13,22,16].forEach((bh,i)=>ctx.fillRect(bx-22+i*9, by+18-bh, 6, bh));
+  ctx.fillStyle = hovered ? '#ffe066' : f.color;
+  ctx.font='5px "Press Start 2P"'; ctx.textAlign='center';
+  ctx.fillText('📈 YIELD', bx, by-6);
+  const minX=Math.min(a[0],b[0]), maxX=Math.max(a[0],b[0]);
+  return { bbox:{x:minX,y:topY,w:maxX-minX,h:panelH+(b[1]-a[1])}, kind:'feature', label:f.label, ref:f };
+}
+
+requestAnimationFrame(render);
+
+// ════════════════════════════════════════════
+//  INTERACTION
+// ════════════════════════════════════════════
+function hitTest(mx, my) {
+  // prefer employees / table (front) over wall panels: iterate reversed
+  for (let i = hotspots.length-1; i >= 0; i--) {
+    const hsp = hotspots[i], b = hsp.bbox;
+    if (mx>=b.x && mx<=b.x+b.w && my>=b.y && my<=b.y+b.h) return hsp;
+  }
+  return null;
+}
+
+function toScene(e) {
+  const r = canvas.getBoundingClientRect();
+  return { mx:(e.clientX-r.left)*(W/r.width), my:(e.clientY-r.top)*(H/r.height) };
+}
+
+canvas.addEventListener('mousemove', e => {
+  const { mx, my } = toScene(e);
+  hoverHot = hitTest(mx, my);
+  canvas.style.cursor = hoverHot ? 'pointer' : 'default';
+});
+
+canvas.addEventListener('click', e => {
+  const { mx, my } = toScene(e);
+  const hsp = hitTest(mx, my);
+  if (!hsp) return;
+  if (hsp.kind === 'feature') {
+    const f = hsp.ref;
+    if (f.newTab) window.open(f.url, '_blank', 'noopener');
+    else window.location.href = f.url;
+  } else if (hsp.kind === 'employee') {
+    openCard(hsp.ref);
+  }
+});
+
+// touch support
+canvas.addEventListener('touchstart', e => {
+  const t = e.touches[0]; if (!t) return;
+  const { mx, my } = toScene(t);
+  const hsp = hitTest(mx, my);
+  if (!hsp) return;
+  e.preventDefault();
+  if (hsp.kind === 'feature') {
+    const f = hsp.ref;
+    if (f.newTab) window.open(f.url, '_blank', 'noopener'); else window.location.href = f.url;
+  } else openCard(hsp.ref);
+}, { passive:false });
+
+// ── employee card ──
+const cardOverlay = document.getElementById('card-overlay');
+function drawCardAvatar(emp) {
+  const ac = document.getElementById('card-avatar');
+  const a = ac.getContext('2d'); a.imageSmoothingEnabled=false; a.clearRect(0,0,48,48);
+  a.fillStyle=rgbStr(emp.hair); a.fillRect(10,4,28,12);
+  a.fillStyle=rgbStr(emp.skin); a.fillRect(12,12,24,20);
+  a.fillStyle='#111'; a.fillRect(17,19,4,4); a.fillRect(28,19,4,4);
+  a.fillStyle='#aa6655'; a.fillRect(20,28,8,3);
+  a.fillStyle=rgbStr(emp.shirt); a.fillRect(8,32,32,16);
+}
+function openCard(emp) {
+  drawCardAvatar(emp);
+  document.getElementById('card-name').textContent = emp.name;
+  document.getElementById('card-role').textContent = `[ ${emp.role} ]  ${emp.roleZh}`;
+  document.getElementById('card-desc').textContent = emp.desc || '';
+  const tags = document.getElementById('card-tags');
+  tags.innerHTML='';
+  [emp.role, emp.roleZh].forEach(t=>{ const s=document.createElement('span'); s.className='card-tag'; s.textContent='▶ '+t; tags.appendChild(s); });
+  const actions = document.getElementById('card-actions');
+  actions.innerHTML='';
+  if (emp.name === 'BENDEN') {
+    const a = document.createElement('a');
+    a.className='card-btn'; a.href=FEATURES.debate.url; a.textContent='💬 進入 AI 辯論室';
+    actions.appendChild(a);
+  }
+  cardOverlay.classList.add('active');
+}
+document.getElementById('card-close').addEventListener('click', ()=>cardOverlay.classList.remove('active'));
+cardOverlay.addEventListener('click', e => { if (e.target === cardOverlay) cardOverlay.classList.remove('active'); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') cardOverlay.classList.remove('active'); });
+
+// ── build info ──
+const ts = "__BUILD_TS__";
+const bi = document.getElementById('buildInfo');
+if (bi && !ts.startsWith('__')) bi.textContent = 'BUILT ' + ts;
+
+// ════════════════════════════════════════════
+//  RESPONSIVE SCALE
+// ════════════════════════════════════════════
+function scaleStage() {
+  const wrapper = document.getElementById('stage-wrapper');
+  const stage = document.getElementById('stage');
+  const scale = Math.min(window.innerWidth / 900, 1);
+  stage.style.transform = `scale(${scale})`;
+  wrapper.style.width = Math.min(window.innerWidth, 900) + 'px';
+  wrapper.style.height = (560 * scale) + 'px';
+}
+scaleStage();
+window.addEventListener('resize', scaleStage);
 </script>
 </body>
 </html>
