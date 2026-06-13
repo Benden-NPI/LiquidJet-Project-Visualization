@@ -116,6 +116,8 @@ footer a:hover { color:#4488ff; }
   <span class="leg"><span class="sw" style="background:#44cc88"></span>📈 數據牆 = YIELD</span>
   <span class="leg"><span class="sw" style="background:#ffaa44"></span>🛡️ 公告板 = CONTROL PLAN</span>
   <span class="leg"><span class="sw" style="background:#ff44aa"></span>💬 會議桌 = AI 辯論</span>
+  <span class="leg"><span class="sw" style="background:#88ccff"></span>☕ 茶水間 = AI 閒聊</span>
+  <span class="leg"><span class="sw" style="background:#2aa84a"></span>⚽ 手足球 = AI 放鬆</span>
 </div>
 
 <!-- employee info card -->
@@ -215,14 +217,11 @@ const EMPLOYEES = [
     desc:'守住品質底線，管控 CTQ、PFMEA 與反應計畫。' },
   { name:'LISA',   role:'Planner',               roleZh:'生產規劃',     gx:6.7, gy:2.7, hair:[0xaa,0x66,0x22], skin:[0xff,0xdd,0xaa], shirt:[0xff,0xbb,0x44],
     desc:'排程與資源規劃，讓 milestone 一個個準時落地。' },
+  // Benden — Project Lead — also has his own desk on the right side of the room.
+  // He only walks over to the meeting table when a debate is convened.
+  { name:'BENDEN', role:'Project Lead',          roleZh:'專案負責人',   gx:8.3, gy:1.8, hair:[0x22,0x22,0x22], skin:[0xff,0xcc,0x99], shirt:[0xff,0xe0,0x66],
+    desc:'LiquidJet 專案負責人，統籌全局、拍板決策。' },
 ];
-
-// Benden — Project Lead — sits at the head of the front-centre meeting table.
-const LEAD = {
-  name:'BENDEN', role:'Project Lead', roleZh:'專案負責人',
-  gx:5.7, gy:5.6, hair:[0x22,0x22,0x22], skin:[0xff,0xcc,0x99], shirt:[0xff,0xe0,0x66],
-  desc:'LiquidJet 專案負責人，統籌全局、拍板決策。',
-};
 
 // interactive feature objects
 const FEATURES = {
@@ -318,36 +317,42 @@ function drawWorkstation(emp) {
   const { gx, gy } = emp;
   // desk top (a low box)
   const deskBox = drawBox(gx-0.15, gy-1.05, 1.5, 0.9, 26, '#6a4824', '#4a3018', '#5a3d1e', '#2a1c0e');
-  // monitor on the desk (against the back)
-  const mx = gx+0.35, my = gy-0.95;
-  drawBox(mx, my, 0.55, 0.12, 50, '#222', '#181818', '#1c1c1c');
-  // screen glow
-  const sb = isoX(mx, my), sy = isoY(mx, my) - 50;
+  // monitor — landscape (wider & lower) so notes stay legible and the back row
+  // employees aren't hidden behind tall pillars.
+  const monW = 0.95, monD = 0.12, monH = 22;
+  const mx = gx+0.15, my = gy-0.95;
+  drawBox(mx, my, monW, monD, monH, '#222', '#181818', '#1c1c1c');
+  // small monitor stand (visible just below the panel)
+  drawBox(mx+0.35, my+0.02, 0.25, 0.08, 4, '#1a1a1a', '#0e0e0e', '#141414');
+  // screen glow on the visible right face of the landscape panel
+  const sb = isoX(mx, my), sy = isoY(mx, my) - monH;
   const g = 60 + Math.floor(Math.sin(time*0.06 + gx)*30);
   ctx.fillStyle = `rgb(0,${g},${Math.floor(g*0.7)})`;
-  ctx.fillRect(sb-1, sy+6, 26, 22);
+  ctx.fillRect(sb+1, sy+3, 38, 14);
   ctx.fillStyle = 'rgba(0,255,150,0.5)';
-  for (let i=0;i<4;i++){ const lw = 5+((time*2+i*7)%20); ctx.fillRect(sb+1, sy+9+i*4, lw, 2); }
-  // coffee mug
-  ctx.fillStyle=rgbStr(emp.shirt); ctx.fillRect(sb+30, sy+24, 7, 9);
+  for (let i=0;i<3;i++){ const lw = 6+((time*2+i*7)%28); ctx.fillRect(sb+3, sy+5+i*4, lw, 2); }
+  // coffee mug — sits on the desk beside the monitor
+  ctx.fillStyle=rgbStr(emp.shirt); ctx.fillRect(sb+44, sy+10, 7, 9);
   // chair (small box in front)
   drawBox(gx+0.05, gy+0.15, 0.7, 0.7, 14, '#33334a', '#22223a', '#2a2a42');
   // character (standing just in front of the desk)
   const cx = isoX(gx+0.4, gy+0.6), cy = isoY(gx+0.4, gy+0.6);
   const bbox = drawChar(cx, cy, emp, true);
-  // nameplate
-  drawNameplate(cx, cy, emp);
+  // nameplate — highlight Benden in gold like he was at the head of the table
+  drawNameplate(cx, cy, emp, emp.name === 'BENDEN' ? '#ffe066' : undefined);
   return bbox;
 }
 
 // ════════════════════════════════════════════
-//  DRAW: MEETING TABLE (AI Debate) + Benden + chairs
+//  DRAW: MEETING TABLE (AI Debate) + empty chairs
+//  Meeting room stays empty by default — employees walk over only when
+//  a debate is convened.
 // ════════════════════════════════════════════
 function drawMeetingTable() {
   const f = FEATURES.debate;
   const hovered = hoverHot && hoverHot.kind==='feature' && hoverHot.label===f.label;
   const gx=4.5, gy=4.8, w=2.4, d=1.6;
-  // chairs around the table
+  // chairs around the table (always empty)
   const chairSpots = [[gx-0.5,gy+0.4],[gx-0.5,gy+1.0],[gx+w+0.0,gy+0.4],[gx+w+0.0,gy+1.0],[gx+0.6,gy+d+0.1],[gx+1.4,gy+d+0.1]];
   chairSpots.forEach(([cgx,cgy])=>drawBox(cgx,cgy,0.55,0.55,16,'#3a2030','#281020','#311828'));
   // table
@@ -362,11 +367,79 @@ function drawMeetingTable() {
   ctx.font='14px "Press Start 2P"'; ctx.fillText('💬', tc[0], tc[1]-2);
   ctx.fillStyle = hovered ? '#ffe066' : '#ffccee';
   ctx.font='5px "Press Start 2P"'; ctx.fillText('AI 辯論', tc[0], tc[1]+12);
-  // Benden at head seat
-  const bx = isoX(LEAD.gx, LEAD.gy), by = isoY(LEAD.gx, LEAD.gy);
-  const bbbox = drawChar(bx, by, LEAD, true);
-  drawNameplate(bx, by, LEAD, '#ffe066');
-  return { tableBox: box, leadBox: bbbox };
+  return box;
+}
+
+// ════════════════════════════════════════════
+//  DRAW: PANTRY (茶水間) — counter + coffee machine + fridge
+//  A relaxed corner where AI characters can chitchat between tasks.
+// ════════════════════════════════════════════
+function drawPantry() {
+  const gx = 0.4, gy = 5.0, w = 1.9, d = 0.7;
+  // counter
+  drawBox(gx, gy, w, d, 18, '#a88860', '#704818', '#806030', '#332211');
+  // coffee machine on the left
+  drawBox(gx+0.15, gy+0.1, 0.45, 0.4, 22, '#3a3a44', '#1a1a22', '#2a2a32', '#0a0a10');
+  // brew button (red dot)
+  const cb = isoX(gx+0.4, gy+0.15), cy = isoY(gx+0.4, gy+0.15) - 30;
+  ctx.fillStyle = '#ff3344'; ctx.fillRect(cb-1, cy, 2, 2);
+  // steam puff (animated)
+  const puff = Math.sin(time*0.04) * 1.5;
+  ctx.fillStyle = 'rgba(220,230,255,0.45)';
+  ctx.fillRect(cb-3, cy-8+puff, 2, 2);
+  ctx.fillRect(cb+1, cy-12+puff, 2, 2);
+  // fridge on the right
+  drawBox(gx+1.15, gy+0.05, 0.55, 0.55, 36, '#d8d8e6', '#a4a4bc', '#b8b8d0', '#33334a');
+  // fridge handle
+  const fh = isoX(gx+1.7, gy+0.3), fy = isoY(gx+1.7, gy+0.3) - 28;
+  ctx.fillStyle = '#666'; ctx.fillRect(fh-1, fy, 2, 10);
+  // signage
+  const tc = [isoX(gx+w/2, gy+d+0.05), isoY(gx+w/2, gy+d+0.05) + 6];
+  ctx.textAlign='center';
+  ctx.fillStyle = '#88ccff'; ctx.font = '5px "Press Start 2P"';
+  ctx.fillText('☕ PANTRY · 茶水間', tc[0], tc[1]);
+}
+
+// ════════════════════════════════════════════
+//  DRAW: FOOSBALL TABLE (手足球檯) — AI 放鬆區
+// ════════════════════════════════════════════
+function drawFoosball() {
+  const gx = 2.6, gy = 5.3, w = 1.4, d = 0.8;
+  // green playfield body
+  drawBox(gx, gy, w, d, 18, '#2aa84a', '#117733', '#198840', '#001a08');
+  // small legs hint (just darker boxes underneath the corners)
+  drawBox(gx, gy, 0.15, 0.15, 18, '#222', '#111', '#1a1a1a');
+  drawBox(gx+w-0.15, gy+d-0.15, 0.15, 0.15, 18, '#222', '#111', '#1a1a1a');
+  // rods + players (drawn on top face)
+  const tl = [isoX(gx, gy), isoY(gx, gy) - 18];
+  const tr = [isoX(gx+w, gy), isoY(gx+w, gy) - 18];
+  const bl = [isoX(gx, gy+d), isoY(gx, gy+d) - 18];
+  // 4 rods crossing the field — interpolate along the top face
+  for (let i = 1; i <= 4; i++) {
+    const t = i / 5;
+    const a = [tl[0] + (tr[0]-tl[0])*t, tl[1] + (tr[1]-tl[1])*t];
+    const b = [bl[0] + (tr[0]-tl[0])*t, bl[1] + (tr[1]-tl[1])*t];
+    ctx.strokeStyle = '#dddddd'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+    // 3 player figurines per rod
+    ctx.fillStyle = (i % 2 === 0) ? '#ff4444' : '#3366ff';
+    for (let k = 1; k <= 3; k++) {
+      const u = k / 4;
+      const px = a[0] + (b[0]-a[0])*u;
+      const py = a[1] + (b[1]-a[1])*u;
+      ctx.fillRect(px-2, py-3, 4, 5);
+    }
+  }
+  // ball (animated bouncing left/right)
+  const ballT = (Math.sin(time*0.05) + 1) / 2;
+  const bx = tl[0] + (tr[0]-tl[0]) * (0.2 + 0.6*ballT) + (bl[0]-tl[0]) * 0.5;
+  const by = tl[1] + (tr[1]-tl[1]) * (0.2 + 0.6*ballT) + (bl[1]-tl[1]) * 0.5;
+  ctx.fillStyle = '#ffffaa'; ctx.fillRect(bx-1, by-1, 2, 2);
+  // signage
+  const tc = [isoX(gx+w/2, gy+d+0.05), isoY(gx+w/2, gy+d+0.05) + 6];
+  ctx.textAlign='center';
+  ctx.fillStyle = '#88ff99'; ctx.font = '5px "Press Start 2P"';
+  ctx.fillText('⚽ FOOSBALL · 手足球', tc[0], tc[1]);
 }
 
 // ════════════════════════════════════════════
@@ -437,10 +510,12 @@ function render() {
     hot.push({ bbox, kind:'employee', ref:emp });
   }}));
   ground.push({ depth: 4.5+4.8+1, draw: () => {
-    const { tableBox, leadBox } = drawMeetingTable();
+    const tableBox = drawMeetingTable();
     hot.push({ bbox:tableBox, kind:'feature', label:FEATURES.debate.label, ref:FEATURES.debate });
-    hot.push({ bbox:leadBox, kind:'employee', ref:LEAD });
   }});
+  // pantry (front-left) and foosball (front-centre-left) — decorative, no hotspots
+  ground.push({ depth: 0.4+5.0+0.5, draw: drawPantry });
+  ground.push({ depth: 2.6+5.3+0.5, draw: drawFoosball });
   ground.sort((a,b)=>a.depth-b.depth).forEach(o=>o.draw());
 
   hotspots = hot;
