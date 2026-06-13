@@ -221,18 +221,23 @@
       </div>
       <div class="field">
         <label>模型</label>
-        <select id="model">
-          <optgroup label="Anthropic（需 GitHub PAT）">
-            <option value="claude-opus-4-8">claude-opus-4-8</option>
-            <option value="claude-sonnet-4-6">claude-sonnet-4-6</option>
-            <option value="claude-haiku-4-5-20251001">claude-haiku-4-5</option>
-          </optgroup>
-          <optgroup label="xAI Grok（需 xai- Key 或 GitHub PAT）">
-            <option value="grok-4">grok-4</option>
-            <option value="grok-3">grok-3</option>
-            <option value="grok-3-mini">grok-3-mini</option>
-          </optgroup>
-        </select>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <select id="model" style="flex:1;">
+            <optgroup label="Anthropic（需 GitHub PAT）">
+              <option value="claude-opus-4-7">claude-opus-4-7</option>
+              <option value="claude-opus-4-6" selected>claude-opus-4-6</option>
+              <option value="claude-sonnet-4-6">claude-sonnet-4-6</option>
+              <option value="claude-sonnet-4-5">claude-sonnet-4-5</option>
+              <option value="claude-haiku-4-5">claude-haiku-4-5</option>
+            </optgroup>
+            <optgroup label="xAI Grok（需 xai- Key 或 GitHub PAT）">
+              <option value="grok-4">grok-4</option>
+              <option value="grok-3">grok-3</option>
+              <option value="grok-3-mini">grok-3-mini</option>
+            </optgroup>
+          </select>
+          <button class="btn" id="btnLoadModels" title="用 PAT 查詢 GitHub Models 可用清單" style="padding:6px 8px;font-size:11px;white-space:nowrap;">🔄 載入</button>
+        </div>
       </div>
     </div>
 
@@ -482,6 +487,51 @@ $("btnLoadFromEditor").onclick = () => {
       setStatus("error", "編輯器尚未儲存 API Key");
     }
   } catch { setStatus("error", "讀取失敗"); }
+};
+
+// ─── Load GitHub Models catalog ───────────────────────────────────────────────
+$("btnLoadModels").onclick = async () => {
+  const key = getApiKey();
+  if (!key || !(key.startsWith("github_pat_") || key.startsWith("ghp_"))) {
+    setStatus("error", "需要 GitHub PAT（github_pat_ / ghp_ 開頭）才能載入模型清單");
+    return;
+  }
+  setStatus("running", "查詢 GitHub Models 清單...");
+  $("btnLoadModels").disabled = true;
+  try {
+    const res = await fetch("https://models.inference.ai.azure.com/models", {
+      headers: { "authorization": "Bearer " + key, "accept": "application/json" },
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const list = await res.json();
+    // list is an array of model objects with .id and .publisher_metadata?.publisher
+    const sel = $("model");
+    const prev = sel.value;
+    sel.innerHTML = "";
+    const groups = {};
+    for (const m of (Array.isArray(list) ? list : (list.data ?? []))) {
+      const id = m.id || m.name;
+      const publisher = m.publisher_metadata?.publisher || m.publisher || "Other";
+      if (!groups[publisher]) {
+        const og = document.createElement("optgroup");
+        og.label = publisher;
+        groups[publisher] = og;
+        sel.appendChild(og);
+      }
+      const opt = document.createElement("option");
+      opt.value = id;
+      opt.textContent = id;
+      if (id === prev) opt.selected = true;
+      groups[publisher].appendChild(opt);
+    }
+    if (!sel.value && sel.options.length) sel.options[0].selected = true;
+    setStatus("done", `已載入 ${sel.options.length} 個可用模型`);
+    saveState();
+  } catch (e) {
+    setStatus("error", "載入失敗：" + e.message);
+  } finally {
+    $("btnLoadModels").disabled = false;
+  }
 };
 
 // ─── Status helpers ───────────────────────────────────────────────────────────
