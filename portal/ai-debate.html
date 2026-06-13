@@ -523,13 +523,22 @@ async function loadGitHubModels(key, { silent = false } = {}) {
     } else {
       group.label = `GitHub Models（${models.length} 個）`;
       for (const m of models) {
-        const id = m.id || m.name;
-        if (!id) continue;
+        // The catalog's `id` is an azureml asset URI
+        // (azureml://registries/.../models/<NAME>/versions/N) which the
+        // /chat/completions endpoint rejects. The inference name it actually
+        // accepts is the short `name`; fall back to extracting <NAME> from the
+        // URI, then to the raw id as a last resort.
+        const inferName =
+          m.name ||
+          (typeof m.id === "string" && m.id.match(/\/models\/([^/]+)\//)?.[1]) ||
+          m.id;
+        if (!inferName) continue;
         const opt = document.createElement("option");
-        opt.value = id;
+        opt.value = inferName;
         const pub = m.publisher_metadata?.publisher || m.publisher;
-        opt.textContent = pub ? `${id} · ${pub}` : id;
-        if (id === prev) opt.selected = true;
+        const label = m.friendly_name || inferName;
+        opt.textContent = pub ? `${label} · ${pub}` : label;
+        if (inferName === prev) opt.selected = true;
         group.appendChild(opt);
       }
     }
