@@ -714,8 +714,30 @@ function pickDestination(emp) {
     return { dx: s.gx, dy: s.gy, kind: 'pantry' };
   }
   if (r < 0.70) {
-    const s = pick(WANDER_SPOTS.foosball);
-    return { dx: s.gx, dy: s.gy, kind: 'foosball' };
+    // Foosball needs TWO players — find an eligible partner and dispatch
+    // them to the other foosball spot at the same time. If no partner is
+    // available, fall through to colleague chat so the table isn't
+    // occupied by a lonely player.
+    const partner = EMPLOYEES.find(e =>
+      e !== emp
+      && e.name !== 'BENDEN'
+      && e.state === 'AT_DESK'
+      && !e.meetingLock
+      && time >= (e.nextThinkAt || 0) - 60 * 30  // not currently mid-decision/cooldown
+    );
+    if (partner && countAway() + 2 <= ROUTINE.maxAway) {
+      const spots = WANDER_SPOTS.foosball;
+      const myIdx = Math.floor(Math.random() * spots.length);
+      const partnerIdx = (myIdx + 1) % spots.length;
+      // Sync stay-duration so both leave together (otherwise one would
+      // walk off and the table would briefly look like a 1-player game).
+      const stay = rndInt(ROUTINE.stayAtDestMin, ROUTINE.stayAtDestMax);
+      emp.foosballStay = stay;
+      partner.foosballStay = stay;
+      sendTo(partner, spots[partnerIdx].gx, spots[partnerIdx].gy, 'foosball');
+      return { dx: spots[myIdx].gx, dy: spots[myIdx].gy, kind: 'foosball' };
+    }
+    // No partner free — fall through to a colleague chat instead.
   }
   // Chat with a random colleague — stand in front of their desk.
   const others = EMPLOYEES.filter(e => e !== emp && e.name !== 'BENDEN');
@@ -736,7 +758,13 @@ function tickEmployee(emp) {
         emp.nextThinkAt = time + rndInt(ROUTINE.idleAtDeskMin, ROUTINE.idleAtDeskMax);
       } else {
         emp.state = 'AT_DEST';
-        emp.stayUntil = time + rndInt(ROUTINE.stayAtDestMin, ROUTINE.stayAtDestMax);
+        // Foosball pairs share a stay duration so both players leave
+        // together (set by pickDestination); otherwise pick at random.
+        const stay = (emp.destKind === 'foosball' && emp.foosballStay)
+          ? emp.foosballStay
+          : rndInt(ROUTINE.stayAtDestMin, ROUTINE.stayAtDestMax);
+        emp.foosballStay = 0;
+        emp.stayUntil = time + stay;
       }
       return;
     }
