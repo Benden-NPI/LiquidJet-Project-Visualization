@@ -96,6 +96,98 @@ footer {
 }
 footer a { color:inherit; text-decoration:none; }
 footer a:hover { color:#4488ff; }
+
+/* ── meeting room (topic input) ── */
+#meeting-overlay {
+  position:fixed; inset:0; background:#00000099; z-index:210;
+  display:none; align-items:center; justify-content:center; padding:16px;
+}
+#meeting-overlay.active { display:flex; }
+#meeting-card {
+  width:min(440px,94vw); background:#0a0a2a;
+  border:4px solid #ff66bb; box-shadow:inset 0 0 0 2px #000, 0 0 24px #ff44aa55;
+  position:relative;
+}
+#meeting-head {
+  background:#3a1430; border-bottom:3px solid #ff66bb; padding:12px 14px;
+  display:flex; justify-content:space-between; align-items:center;
+  color:#ffccee; font-size:9px; letter-spacing:1px;
+}
+#meeting-close {
+  background:none; border:2px solid #ff4488; color:#ff66aa;
+  font-family:'Press Start 2P',monospace; font-size:7px; padding:3px 6px; cursor:pointer;
+}
+#meeting-close:hover { background:#ff44881a; }
+#meeting-body { padding:14px; display:flex; flex-direction:column; gap:10px; }
+#meeting-prompt { color:#ffe066; font-size:7px; line-height:1.8; }
+#meeting-topic {
+  width:100%; min-height:60px; padding:8px; resize:vertical;
+  background:#050518; border:2px solid #2a2a5a; color:#ddeeff;
+  font-family:'Press Start 2P',monospace; font-size:7px; line-height:1.8;
+}
+#meeting-topic:focus { border-color:#ff66bb; outline:none; }
+#meeting-routing { color:#88aaff; font-size:5px; line-height:1.8; }
+#meeting-actions { display:flex; gap:8px; justify-content:flex-end; }
+
+/* ── RPG 1-on-1 dialog overlay ── */
+#rpg-overlay {
+  position:fixed; inset:0; z-index:220;
+  display:none; flex-direction:column; justify-content:flex-end;
+  background:#000;
+}
+#rpg-overlay.active { display:flex; }
+#rpg-bg {
+  position:absolute; inset:0;
+  background:
+    repeating-linear-gradient(0deg, #181830 0 16px, #14142a 16px 32px),
+    radial-gradient(ellipse at center, #2a1a3a 0%, #0a0a1a 70%);
+  background-blend-mode: multiply;
+}
+#rpg-bg::after {
+  content:''; position:absolute; inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.18) 2px,rgba(0,0,0,.18) 4px);
+  pointer-events:none;
+}
+#rpg-portraits {
+  position:absolute; left:0; right:0; bottom:200px;
+  display:flex; justify-content:space-between; padding:0 8vw; pointer-events:none;
+}
+.rpg-portrait { display:flex; flex-direction:column; align-items:center; gap:8px; }
+.rpg-face {
+  width:160px; height:160px; image-rendering:pixelated;
+  background:#0a0a1a; border:4px solid #8888ff;
+  box-shadow:inset 0 0 0 2px #000, 0 0 16px #4444ff66;
+}
+#rpg-right .rpg-face { border-color:#ff8866; box-shadow:inset 0 0 0 2px #000, 0 0 16px #ff664466; }
+.rpg-pname {
+  font-family:'Press Start 2P',monospace; font-size:10px;
+  color:#ffe066; text-shadow:1px 1px #996600; padding:4px 8px;
+  background:#0a0a1a; border:2px solid #8888ff;
+}
+#rpg-right .rpg-pname { border-color:#ff8866; }
+#rpg-box {
+  position:relative; z-index:2; margin:0 4vw 24px;
+  background:#0a0a2a; border:4px solid #ffffff;
+  box-shadow:inset 0 0 0 2px #000, 0 0 24px #4444ff66;
+  padding:18px 22px; min-height:140px; cursor:pointer;
+}
+#rpg-speaker {
+  display:inline-block;
+  font-family:'Press Start 2P',monospace; font-size:10px;
+  color:#ffe066; text-shadow:1px 1px #996600;
+  background:#1a1a4a; border:2px solid #ffffff;
+  padding:4px 10px; margin-bottom:10px;
+}
+#rpg-text {
+  font-family:'Press Start 2P',monospace; font-size:11px;
+  color:#ffffff; line-height:2.0; min-height:64px;
+  text-shadow:1px 1px #000;
+}
+#rpg-hint {
+  position:absolute; right:14px; bottom:8px;
+  font-family:'Press Start 2P',monospace; font-size:5px; color:#88aacc;
+  animation:blink 1.2s step-end infinite;
+}
 </style>
 </head>
 <body>
@@ -138,6 +230,45 @@ footer a:hover { color:#4488ff; }
     </div>
   </div>
 </div>
+
+<!-- meeting room: Benden enters a topic before the debate begins -->
+<div id="meeting-overlay">
+  <div id="meeting-card">
+    <div id="meeting-head">
+      <span>💬 進入會議室</span>
+      <button id="meeting-close">✕</button>
+    </div>
+    <div id="meeting-body">
+      <div id="meeting-prompt">BENDEN：今天我們要討論什麼？</div>
+      <textarea id="meeting-topic" rows="3" placeholder="例如：bonding 良率掉了 5%，原因是什麼？"></textarea>
+      <div id="meeting-routing">輸入後系統會自動指派相關工程師到會議桌。</div>
+      <div id="meeting-actions">
+        <button class="card-btn" id="meeting-start">▶ 開始會議</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 1-on-1 RPG-style dialog overlay (FF/Pokémon textbox style) -->
+<div id="rpg-overlay">
+  <div id="rpg-bg"></div>
+  <div id="rpg-portraits">
+    <div class="rpg-portrait" id="rpg-left">
+      <canvas class="rpg-face" width="96" height="96"></canvas>
+      <div class="rpg-pname">BENDEN</div>
+    </div>
+    <div class="rpg-portrait" id="rpg-right">
+      <canvas class="rpg-face" width="96" height="96"></canvas>
+      <div class="rpg-pname">???</div>
+    </div>
+  </div>
+  <div id="rpg-box">
+    <div id="rpg-speaker">???</div>
+    <div id="rpg-text"></div>
+    <div id="rpg-hint">▶ 點對話框或按 SPACE 繼續 · ESC 離開</div>
+  </div>
+</div>
+
 
 <footer>
   <a href="https://github.com/Benden-NPI/LiquidJet-Project-Visualization" target="_blank" rel="noopener">© BENDEN NPI · LIQUIDJET</a>
@@ -223,6 +354,22 @@ const EMPLOYEES = [
     desc:'LiquidJet 專案負責人，統籌全局、拍板決策。' },
 ];
 
+// Per-employee "home" (seat) and runtime state for the wander AI.
+// homeX / homeY = original desk anchor (immutable).
+// cx / cy = live world-grid position (mutated by the routine each tick).
+// state: 'AT_DESK' | 'WALKING' | 'AT_DEST'
+// destKind: 'pantry' | 'foosball' | 'colleague' | 'meeting' | 'desk' | null
+EMPLOYEES.forEach(e => {
+  e.homeX = e.gx; e.homeY = e.gy;
+  e.cx = e.gx;    e.cy = e.gy;
+  e.dx = e.gx;    e.dy = e.gy;
+  e.state = 'AT_DESK';
+  e.destKind = null;
+  e.stayUntil = 0;
+  e.nextThinkAt = 0;
+  e.meetingLock = false;   // when true, routine scheduler ignores this employee
+});
+
 // interactive feature objects
 const FEATURES = {
   viz:    { label:'PROJECT VIZ',  color:'#4466ff', url:'https://benden-npi.github.io/LiquidJet-Project-Visualization/editor/', newTab:true,
@@ -287,36 +434,47 @@ function drawWalls() {
 // A framed panel mounted on the back-left wall (gy=0), centred at grid gx.
 function drawWallPanelLeft(gx, label, color, screenIco) {
   const wallH = 96, panelH = 52, panelHalf = 1.05;
-  const cBot = [isoX(gx, 0), isoY(gx, 0)];
-  const topY = cBot[1] - wallH + 16;
+  // back-left wall (gy=0) slopes down toward +gx in iso: rgt.y > lft.y.
+  // Build the panel as a parallelogram aligned with that slope so the frame
+  // sits flush against the wall.
   const lft = [isoX(gx-panelHalf,0), isoY(gx-panelHalf,0)];
   const rgt = [isoX(gx+panelHalf,0), isoY(gx+panelHalf,0)];
+  const slope = rgt[1] - lft[1];
+  const topYL = lft[1] - wallH + 16;
+  const topYR = topYL + slope;
   const pts = [
-    [lft[0], topY], [rgt[0], topY],
-    [rgt[0], topY+panelH], [lft[0], topY+panelH],
+    [lft[0], topYL],         [rgt[0], topYR],
+    [rgt[0], topYR + panelH], [lft[0], topYL + panelH],
   ];
   const hovered = hoverHot && hoverHot.kind==='feature' && hoverHot.label===label;
   poly(pts, '#06060f', hovered?color:'#000', hovered?3:2);
-  // inner glow fill
+  // inner glow fill (inset parallelogram)
   poly([[pts[0][0]+4,pts[0][1]+4],[pts[1][0]-4,pts[1][1]+4],[pts[2][0]-4,pts[2][1]-4],[pts[3][0]+4,pts[3][1]-4]],
        hovered ? color+'33' : '#0a0a18');
-  // icon + label
+  // icon + label — centred horizontally; Y follows wall midline
+  const cxMid = (lft[0]+rgt[0])/2;
+  const midTop = (topYL + topYR) / 2;
   ctx.textAlign='center';
   ctx.font='16px "Press Start 2P"';
-  ctx.fillText(screenIco, (lft[0]+rgt[0])/2, topY+26);
+  ctx.fillText(screenIco, cxMid, midTop + 26);
   ctx.fillStyle = hovered ? '#ffe066' : color;
   ctx.font='5px "Press Start 2P"';
-  ctx.fillText(label, (lft[0]+rgt[0])/2, topY+panelH-6);
-  return { x:pts[0][0], y:pts[0][1], w:pts[1][0]-pts[0][0], h:panelH };
+  ctx.fillText(label, cxMid, midTop + panelH - 6);
+  // hit-test bbox covers the full slanted parallelogram
+  const minY = Math.min(pts[0][1], pts[1][1]);
+  const maxY = Math.max(pts[2][1], pts[3][1]);
+  return { x:lft[0], y:minY, w:rgt[0]-lft[0], h:maxY-minY };
 }
 
 // ════════════════════════════════════════════
-//  DRAW: WORKSTATION (desk + monitor + chair + char)
+//  DRAW: WORKSTATION (desk + monitor + chair)
+//  Drawn at the employee's HOME desk anchor. The character itself is
+//  drawn separately (drawEmployeeChar) because it may have walked off.
 // ════════════════════════════════════════════
 function drawWorkstation(emp) {
-  const { gx, gy } = emp;
+  const gx = emp.homeX, gy = emp.homeY;
   // desk top (a low box)
-  const deskBox = drawBox(gx-0.15, gy-1.05, 1.5, 0.9, 26, '#6a4824', '#4a3018', '#5a3d1e', '#2a1c0e');
+  drawBox(gx-0.15, gy-1.05, 1.5, 0.9, 26, '#6a4824', '#4a3018', '#5a3d1e', '#2a1c0e');
   // monitor — landscape (wider & lower) so notes stay legible and the back row
   // employees aren't hidden behind tall pillars.
   const monW = 0.95, monD = 0.12, monH = 22;
@@ -335,10 +493,15 @@ function drawWorkstation(emp) {
   ctx.fillStyle=rgbStr(emp.shirt); ctx.fillRect(sb+44, sy+10, 7, 9);
   // chair (small box in front)
   drawBox(gx+0.05, gy+0.15, 0.7, 0.7, 14, '#33334a', '#22223a', '#2a2a42');
-  // character (standing just in front of the desk)
+}
+
+// Draw the employee's character at their CURRENT world tile (emp.cx/cy).
+// Returns the screen bbox used for click hit-testing.
+function drawEmployeeChar(emp) {
+  const gx = emp.cx, gy = emp.cy;
   const cx = isoX(gx+0.4, gy+0.6), cy = isoY(gx+0.4, gy+0.6);
-  const bbox = drawChar(cx, cy, emp, true);
-  // nameplate — highlight Benden in gold like he was at the head of the table
+  const idle = (emp.state !== 'WALKING');
+  const bbox = drawChar(cx, cy, emp, idle);
   drawNameplate(cx, cy, emp, emp.name === 'BENDEN' ? '#ffe066' : undefined);
   return bbox;
 }
@@ -483,10 +646,243 @@ function drawNameplate(cx, cy, emp, color) {
 }
 
 // ════════════════════════════════════════════
-//  RENDER LOOP
+//  ROUTINE AI — wander / pantry / foosball / colleague chats
 // ════════════════════════════════════════════
+// All durations are measured in render frames (≈60 fps).
+const ROUTINE = {
+  // After arriving home, wait this long before considering leaving again.
+  idleAtDeskMin:   60 * 60,   // 60 s
+  idleAtDeskMax:   60 * 180,  // 180 s (≈3 min)
+  // Stay at a destination this long before walking back.
+  stayAtDestMin:   60 * 6,
+  stayAtDestMax:   60 * 14,
+  // Per-frame chance to actually leave once eligible (low → calmer office).
+  leaveChance:     0.012,
+  // Grid units travelled per frame while WALKING.
+  walkSpeed:       0.035,
+  // At most this many engineers may be away from their desk at the same
+  // time, so the office never looks evacuated.
+  maxAway:         3,
+  // Benden patrols rarely — and never goes to the foosball table.
+  bendenLeaveScale: 0.35,
+};
+
+// Destinations the routine can pick — coordinates are "standing tiles"
+// (where the character ends up, not the furniture box itself).
+const WANDER_SPOTS = {
+  pantry:   [{ gx: 1.3, gy: 5.9 }, { gx: 1.9, gy: 5.9 }],
+  foosball: [{ gx: 2.5, gy: 6.2 }, { gx: 3.7, gy: 6.2 }],
+};
+
+// Meeting-table chair tiles (matches drawMeetingTable.chairSpots, offset so
+// the character stands at the chair rather than overlapping the box).
+const MEETING_CHAIRS = [
+  { gx: 3.7, gy: 5.2 }, // head — reserved for Benden
+  { gx: 3.7, gy: 5.9 },
+  { gx: 7.0, gy: 5.2 },
+  { gx: 7.0, gy: 5.9 },
+  { gx: 5.1, gy: 6.5 },
+  { gx: 5.9, gy: 6.5 },
+];
+
+function rndInt(min, max) { return Math.floor(min + Math.random() * (max - min + 1)); }
+function pick(arr)        { return arr[Math.floor(Math.random()*arr.length)]; }
+
+function countAway() {
+  let n = 0;
+  for (const e of EMPLOYEES) if (e.state !== 'AT_DESK' && !e.meetingLock) n++;
+  return n;
+}
+
+function sendTo(emp, dx, dy, destKind) {
+  emp.dx = dx; emp.dy = dy;
+  emp.destKind = destKind;
+  emp.state = 'WALKING';
+}
+
+function pickDestination(emp) {
+  // Choose a random destination kind weighted by typical engineer habits.
+  const r = Math.random();
+  if (emp.name === 'BENDEN') {
+    // Benden patrols: walk past a random colleague's desk, then back.
+    const others = EMPLOYEES.filter(e => e.name !== 'BENDEN');
+    const target = pick(others);
+    return { dx: target.homeX + 1.2, dy: target.homeY + 0.6, kind: 'colleague' };
+  }
+  if (r < 0.45) {
+    const s = pick(WANDER_SPOTS.pantry);
+    return { dx: s.gx, dy: s.gy, kind: 'pantry' };
+  }
+  if (r < 0.70) {
+    const s = pick(WANDER_SPOTS.foosball);
+    return { dx: s.gx, dy: s.gy, kind: 'foosball' };
+  }
+  // Chat with a random colleague — stand in front of their desk.
+  const others = EMPLOYEES.filter(e => e !== emp && e.name !== 'BENDEN');
+  const target = pick(others);
+  return { dx: target.homeX + 1.1, dy: target.homeY + 0.6, kind: 'colleague' };
+}
+
+function tickEmployee(emp) {
+  if (emp.meetingLock) return; // meeting/RPG flow owns this character right now.
+
+  if (emp.state === 'WALKING') {
+    const dx = emp.dx - emp.cx, dy = emp.dy - emp.cy;
+    const dist = Math.hypot(dx, dy);
+    if (dist < ROUTINE.walkSpeed * 1.5) {
+      emp.cx = emp.dx; emp.cy = emp.dy;
+      if (emp.destKind === 'desk') {
+        emp.state = 'AT_DESK';
+        emp.nextThinkAt = time + rndInt(ROUTINE.idleAtDeskMin, ROUTINE.idleAtDeskMax);
+      } else {
+        emp.state = 'AT_DEST';
+        emp.stayUntil = time + rndInt(ROUTINE.stayAtDestMin, ROUTINE.stayAtDestMax);
+      }
+      return;
+    }
+    const step = ROUTINE.walkSpeed / dist;
+    emp.cx += dx * step;
+    emp.cy += dy * step;
+    return;
+  }
+
+  if (emp.state === 'AT_DEST') {
+    if (time >= emp.stayUntil) {
+      // Head home.
+      sendTo(emp, emp.homeX, emp.homeY, 'desk');
+    }
+    return;
+  }
+
+  // AT_DESK — decide whether to leave.
+  if (time < emp.nextThinkAt) return;
+  if (countAway() >= ROUTINE.maxAway) {
+    emp.nextThinkAt = time + 60 * 5; // try again in 5 s
+    return;
+  }
+  let chance = ROUTINE.leaveChance;
+  if (emp.name === 'BENDEN') chance *= ROUTINE.bendenLeaveScale;
+  if (Math.random() < chance) {
+    const d = pickDestination(emp);
+    sendTo(emp, d.dx, d.dy, d.kind);
+  } else {
+    // Re-roll soon rather than every frame.
+    emp.nextThinkAt = time + 30;
+  }
+}
+
+function tickRoutine() {
+  // Pause routine while any modal (info card / meeting / RPG) is open so
+  // the conversation focus isn't broken by background movement noise.
+  if (modalIsOpen()) return;
+  for (const e of EMPLOYEES) tickEmployee(e);
+}
+
+function modalIsOpen() {
+  return document.getElementById('card-overlay').classList.contains('active')
+      || document.getElementById('meeting-overlay').classList.contains('active')
+      || document.getElementById('rpg-overlay').classList.contains('active');
+}
+
+// ════════════════════════════════════════════
+//  DATA: 1-on-1 dialog scripts (Benden ↔ engineer)
+//  Each line: { who: 'BENDEN' | <empName>, text: '...' }
+// ════════════════════════════════════════════
+const EMP_DIALOGS = {
+  MORGAN: [
+    { who:'BENDEN', text:'Morgan，最近模組之間的接口還順嗎？' },
+    { who:'MORGAN', text:'大致上 OK，但 bonding 跟 etching 的訊號介面我想再對一次。' },
+    { who:'BENDEN', text:'好，下次站立會議排進去；需要我跟誰打招呼？' },
+    { who:'MORGAN', text:'你幫我喬 Brian 跟 Joy 一起對，他們兩個一進來就能收斂。' },
+    { who:'BENDEN', text:'沒問題，先把介面 spec 條列出來，我來下會議邀請。' },
+  ],
+  EVAN: [
+    { who:'BENDEN', text:'Evan，那批不良的 FA 進度怎麼樣？' },
+    { who:'EVAN',   text:'追到 bonding 介面有微裂，跟製程窗口的上緣有關。' },
+    { who:'BENDEN', text:'真的假的，那需要 Brian 一起 review。' },
+    { who:'EVAN',   text:'我已經把 SEM 截圖整理好，待會我們三個拉一下。' },
+    { who:'BENDEN', text:'好，先把 root cause 鎖住再來談 reaction plan。' },
+  ],
+  BRIAN: [
+    { who:'BENDEN', text:'Brian，bonding 良率這禮拜抓得起來嗎？' },
+    { who:'BRIAN',  text:'壓力跟溫度視窗有再窄一點，下個 run 我會盯著。' },
+    { who:'BENDEN', text:'機台有需要再借時段嗎？' },
+    { who:'BRIAN',  text:'再給我兩個 slot 我就能收斂；Jacob 那邊治具也升級了。' },
+    { who:'BENDEN', text:'OK，我跟 Lisa 喬一下排程。' },
+  ],
+  JACOB: [
+    { who:'BENDEN', text:'Jacob，新治具上線之後夾持還穩嗎？' },
+    { who:'JACOB',  text:'重複定位有壓下來，但邊角還有一點偏，再迭代一版。' },
+    { who:'BENDEN', text:'需要量測支援的話跟 Jason 講一聲。' },
+    { who:'JACOB',  text:'我已經跟他約好，等下午一起跑 Gage R&R。' },
+    { who:'BENDEN', text:'讚，數據出來幫我同步一下。' },
+  ],
+  JOY: [
+    { who:'BENDEN', text:'Joy，蝕刻均勻度有比較穩了嗎？' },
+    { who:'JOY',    text:'中心對邊緣縮到 ±3%，但長時間漂移還在調。' },
+    { who:'BENDEN', text:'有沒有需要 MZ 一起把 CTQ 重新對齊？' },
+    { who:'JOY',    text:'好啊，順便把反應計畫的觸發門檻重新校。' },
+    { who:'BENDEN', text:'我安排一個 30 分鐘的小會。' },
+  ],
+  JASON: [
+    { who:'BENDEN', text:'Jason，測試 flow 跑下來，瓶頸在哪？' },
+    { who:'JASON',  text:'功能測 OK，可靠度那段時間吃比較重。' },
+    { who:'BENDEN', text:'有沒有可以平行化的點？' },
+    { who:'JASON',  text:'可以拆成兩台同時跑，但需要 Jacob 幫我加一組 fixture。' },
+    { who:'BENDEN', text:'我去跟他講，你先把測試矩陣丟給我。' },
+  ],
+  MZ: [
+    { who:'BENDEN', text:'MZ，PFMEA 這版更新到哪了？' },
+    { who:'MZ',     text:'高風險項目已經跟 Evan 對過，反應計畫週末前出。' },
+    { who:'BENDEN', text:'CTQ 有沒有要往前推的？' },
+    { who:'MZ',     text:'有，我想把 bonding 介面的 CTQ 提到 P1，數字我有撐。' },
+    { who:'BENDEN', text:'我同意，會議我們一起跟客戶過一遍。' },
+  ],
+  LISA: [
+    { who:'BENDEN', text:'Lisa，下一個 milestone 還守得住嗎？' },
+    { who:'LISA',   text:'守得住，但 bonding 機台時段是瓶頸。' },
+    { who:'BENDEN', text:'我這邊看能不能借隔壁線的 slot。' },
+    { who:'LISA',   text:'拜託拜託，借到我就能把 buffer 留給 FA。' },
+    { who:'BENDEN', text:'OK，今天稍晚我給你答案。' },
+  ],
+  BENDEN: [
+    { who:'BENDEN', text:'（自言自語）今天先把幾個 risk 過一遍好了……' },
+    { who:'BENDEN', text:'良率、bonding、排程，這三條線都要追。' },
+    { who:'BENDEN', text:'晚點開一場小會把大家拉進來討論。' },
+  ],
+};
+
+// ════════════════════════════════════════════
+//  DATA: TOPIC → roles routing
+//  When Benden enters a meeting topic, we pick a "lead" + collaborators
+//  based on keyword hits. Always includes Benden at the head of the table.
+// ════════════════════════════════════════════
+const TOPIC_ROUTES = [
+  { keys:['良率','yield'],                lead:'MZ',     collab:['JASON','EVAN'] },
+  { keys:['失效','不良','FA','fa'],       lead:'EVAN',   collab:['MZ','BRIAN'] },
+  { keys:['蝕刻','etch'],                 lead:'JOY',    collab:['BRIAN','JACOB'] },
+  { keys:['接合','bond'],                 lead:'BRIAN',  collab:['JOY','JACOB'] },
+  { keys:['治具','機構','mechanical'],    lead:'JACOB',  collab:['BRIAN'] },
+  { keys:['測試','量測','test'],          lead:'JASON',  collab:['MZ'] },
+  { keys:['排程','進度','planner','schedule'], lead:'LISA', collab:['MORGAN'] },
+  { keys:['整合','系統','integration'],   lead:'MORGAN', collab:['BRIAN','JOY'] },
+];
+
+function routeTopic(topic) {
+  const t = (topic || '').toLowerCase();
+  for (const r of TOPIC_ROUTES) {
+    if (r.keys.some(k => t.includes(k.toLowerCase()))) {
+      return { lead: r.lead, collab: r.collab };
+    }
+  }
+  // Generic fallback — the front four members.
+  return { lead: 'MZ', collab: ['MORGAN','EVAN','BRIAN'] };
+}
+
+
 function render() {
   time++;
+  tickRoutine();
   ctx.clearRect(0, 0, W, H);
   const hot = [];
 
@@ -505,10 +901,21 @@ function render() {
 
   // ground objects sorted back-to-front by depth (gx+gy)
   const ground = [];
-  EMPLOYEES.forEach(emp => ground.push({ depth: emp.gx+emp.gy, draw: () => {
-    const bbox = drawWorkstation(emp);
-    hot.push({ bbox, kind:'employee', ref:emp });
-  }}));
+  // Desks always live at the home anchor — they shouldn't shuffle even
+  // when the occupant has walked away.
+  EMPLOYEES.forEach(emp => ground.push({
+    depth: emp.homeX + emp.homeY,
+    draw: () => drawWorkstation(emp),
+  }));
+  // Characters are drawn at their LIVE position so depth-sort works as they
+  // wander past chairs, the meeting table, pantry, etc.
+  EMPLOYEES.forEach(emp => ground.push({
+    depth: emp.cx + emp.cy + 0.55,
+    draw: () => {
+      const bbox = drawEmployeeChar(emp);
+      hot.push({ bbox, kind:'employee', ref:emp });
+    },
+  }));
   ground.push({ depth: 4.5+4.8+1, draw: () => {
     const tableBox = drawMeetingTable();
     hot.push({ bbox:tableBox, kind:'feature', label:FEATURES.debate.label, ref:FEATURES.debate });
@@ -568,17 +975,26 @@ canvas.addEventListener('mousemove', e => {
   canvas.style.cursor = hoverHot ? 'pointer' : 'default';
 });
 
-canvas.addEventListener('click', e => {
-  const { mx, my } = toScene(e);
-  const hsp = hitTest(mx, my);
-  if (!hsp) return;
+function handleHit(hsp) {
   if (hsp.kind === 'feature') {
     const f = hsp.ref;
+    // Meeting table: open the topic-input modal instead of going straight
+    // to the debate page — Benden decides what the room is about first.
+    if (f === FEATURES.debate) {
+      openMeeting();
+      return;
+    }
     if (f.newTab) window.open(f.url, '_blank', 'noopener');
     else window.location.href = f.url;
   } else if (hsp.kind === 'employee') {
     openCard(hsp.ref);
   }
+}
+
+canvas.addEventListener('click', e => {
+  const { mx, my } = toScene(e);
+  const hsp = hitTest(mx, my);
+  if (hsp) handleHit(hsp);
 });
 
 // touch support
@@ -588,10 +1004,7 @@ canvas.addEventListener('touchstart', e => {
   const hsp = hitTest(mx, my);
   if (!hsp) return;
   e.preventDefault();
-  if (hsp.kind === 'feature') {
-    const f = hsp.ref;
-    if (f.newTab) window.open(f.url, '_blank', 'noopener'); else window.location.href = f.url;
-  } else openCard(hsp.ref);
+  handleHit(hsp);
 }, { passive:false });
 
 // ── employee card ──
@@ -615,6 +1028,16 @@ function openCard(emp) {
   [emp.role, emp.roleZh].forEach(t=>{ const s=document.createElement('span'); s.className='card-tag'; s.textContent='▶ '+t; tags.appendChild(s); });
   const actions = document.getElementById('card-actions');
   actions.innerHTML='';
+  // Everyone has a 1-on-1 dialog — even Benden (self-monologue).
+  const talk = document.createElement('button');
+  talk.className='card-btn'; talk.type='button';
+  talk.textContent = (emp.name === 'BENDEN') ? '💭 內心 OS' : '💬 1-on-1 對話';
+  talk.addEventListener('click', () => {
+    cardOverlay.classList.remove('active');
+    openRpg(emp);
+  });
+  actions.appendChild(talk);
+  // Benden also gets a direct entry to the AI debate room (preserved).
   if (emp.name === 'BENDEN') {
     const a = document.createElement('a');
     a.className='card-btn'; a.href=FEATURES.debate.url; a.textContent='💬 進入 AI 辯論室';
@@ -624,7 +1047,140 @@ function openCard(emp) {
 }
 document.getElementById('card-close').addEventListener('click', ()=>cardOverlay.classList.remove('active'));
 cardOverlay.addEventListener('click', e => { if (e.target === cardOverlay) cardOverlay.classList.remove('active'); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') cardOverlay.classList.remove('active'); });
+
+// ── meeting room (topic input) ──
+const meetingOverlay = document.getElementById('meeting-overlay');
+function openMeeting() {
+  document.getElementById('meeting-topic').value = '';
+  meetingOverlay.classList.add('active');
+  setTimeout(() => document.getElementById('meeting-topic').focus(), 50);
+}
+function closeMeeting() { meetingOverlay.classList.remove('active'); }
+document.getElementById('meeting-close').addEventListener('click', closeMeeting);
+meetingOverlay.addEventListener('click', e => { if (e.target === meetingOverlay) closeMeeting(); });
+
+document.getElementById('meeting-start').addEventListener('click', () => {
+  const topic = document.getElementById('meeting-topic').value.trim();
+  if (!topic) { document.getElementById('meeting-topic').focus(); return; }
+  const route = routeTopic(topic);
+  // Build participant list: Benden (head) + lead + collaborators, de-duped.
+  const order = ['BENDEN', route.lead, ...route.collab];
+  const seen = new Set();
+  const participants = [];
+  for (const n of order) {
+    if (!seen.has(n) && EMPLOYEES.some(e => e.name === n)) {
+      seen.add(n); participants.push(n);
+    }
+  }
+  // Walk participants to the meeting-room chairs. They keep meetingLock=true
+  // until the page is reloaded (we navigate away anyway).
+  participants.forEach((name, i) => {
+    const emp = EMPLOYEES.find(e => e.name === name);
+    if (!emp) return;
+    const seat = MEETING_CHAIRS[i] || MEETING_CHAIRS[MEETING_CHAIRS.length-1];
+    emp.meetingLock = true;
+    emp.dx = seat.gx; emp.dy = seat.gy;
+    emp.destKind = 'meeting';
+    emp.state = 'WALKING';
+  });
+  closeMeeting();
+  // Give the eye ~1.2 s to register that people are heading over, then jump
+  // into the debate page with the topic + roles pre-filled.
+  const url = FEATURES.debate.url
+    + '?topic=' + encodeURIComponent(topic)
+    + '&roles=' + encodeURIComponent(participants.join(','));
+  setTimeout(() => { window.location.href = url; }, 1200);
+});
+
+// ── RPG 1-on-1 dialog overlay ──
+const rpgOverlay = document.getElementById('rpg-overlay');
+let rpgScript = [];
+let rpgIndex  = 0;
+let rpgTyping = false;
+let rpgFullText = '';
+let rpgTimer = null;
+
+function drawBigAvatar(canvasEl, emp) {
+  const a = canvasEl.getContext('2d');
+  a.imageSmoothingEnabled = false;
+  a.clearRect(0, 0, 96, 96);
+  // Scaled-up version of drawCardAvatar (2x).
+  a.fillStyle = rgbStr(emp.hair); a.fillRect(20, 8, 56, 24);
+  a.fillStyle = rgbStr(emp.skin); a.fillRect(24, 24, 48, 40);
+  a.fillStyle = '#111';            a.fillRect(34, 38, 8, 8); a.fillRect(56, 38, 8, 8);
+  a.fillStyle = '#aa6655';         a.fillRect(40, 56, 16, 6);
+  a.fillStyle = rgbStr(emp.shirt); a.fillRect(16, 64, 64, 32);
+}
+
+function openRpg(emp) {
+  const script = EMP_DIALOGS[emp.name] || [
+    { who:'BENDEN', text:`嗨 ${emp.name}，最近怎麼樣？` },
+    { who:emp.name, text:'還行，就在處理手上的工作。' },
+    { who:'BENDEN', text:'有需要支援的隨時跟我說。' },
+  ];
+  rpgScript = script;
+  rpgIndex = 0;
+  // Portraits — Benden left, the other engineer right.
+  const benden = EMPLOYEES.find(e => e.name === 'BENDEN');
+  drawBigAvatar(document.querySelector('#rpg-left  .rpg-face'), benden);
+  document.querySelector('#rpg-left  .rpg-pname').textContent = 'BENDEN';
+  drawBigAvatar(document.querySelector('#rpg-right .rpg-face'), emp);
+  document.querySelector('#rpg-right .rpg-pname').textContent = emp.name;
+  rpgOverlay.classList.add('active');
+  rpgShowLine();
+}
+
+function rpgShowLine() {
+  if (rpgIndex >= rpgScript.length) { closeRpg(); return; }
+  const line = rpgScript[rpgIndex];
+  document.getElementById('rpg-speaker').textContent = line.who;
+  rpgFullText = line.text;
+  const el = document.getElementById('rpg-text');
+  el.textContent = '';
+  rpgTyping = true;
+  let i = 0;
+  if (rpgTimer) clearInterval(rpgTimer);
+  rpgTimer = setInterval(() => {
+    i++;
+    el.textContent = rpgFullText.slice(0, i);
+    if (i >= rpgFullText.length) {
+      clearInterval(rpgTimer); rpgTimer = null; rpgTyping = false;
+    }
+  }, 35);
+}
+
+function rpgAdvance() {
+  if (rpgTyping) {
+    // Finish typing immediately on the first click.
+    if (rpgTimer) { clearInterval(rpgTimer); rpgTimer = null; }
+    document.getElementById('rpg-text').textContent = rpgFullText;
+    rpgTyping = false;
+    return;
+  }
+  rpgIndex++;
+  rpgShowLine();
+}
+
+function closeRpg() {
+  if (rpgTimer) { clearInterval(rpgTimer); rpgTimer = null; }
+  rpgTyping = false;
+  rpgOverlay.classList.remove('active');
+}
+
+document.getElementById('rpg-box').addEventListener('click', rpgAdvance);
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    cardOverlay.classList.remove('active');
+    closeMeeting();
+    closeRpg();
+    return;
+  }
+  if (rpgOverlay.classList.contains('active') && (e.key === ' ' || e.key === 'Enter')) {
+    e.preventDefault();
+    rpgAdvance();
+  }
+});
 
 // ── build info ──
 const ts = "__BUILD_TS__";

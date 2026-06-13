@@ -1013,6 +1013,52 @@ function buildMarkdown(topic) {
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 loadState();
+
+// Allow the office portal (or any deep link) to seed the topic and roster via
+// query string, e.g. `?topic=...&roles=BRIAN,EVAN,MZ`. We map the canonical
+// engineer names to the same persona descriptions used by the office app so
+// the debate participants line up with whoever just walked into the meeting
+// room. Existing user-saved topic/roles are overridden on purpose: the URL
+// is the explicit user intent for this visit.
+(() => {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const topic  = params.get("topic");
+    const rolesParam = params.get("roles");
+    if (topic) {
+      $("topic").value = topic;
+    }
+    if (rolesParam) {
+      const OFFICE_ROLE_LIB = {
+        BENDEN: { name: "BENDEN · 專案負責人",
+          desc: "你是 LiquidJet 專案負責人 Benden，主持會議、彙整觀點、追求可行的下一步行動。語氣果斷、直白。" },
+        MORGAN: { name: "MORGAN · 整合工程",
+          desc: "你是整合工程師 Morgan，關注模組之間的銜接與系統一致性，從跨領域角度看問題。" },
+        EVAN:   { name: "EVAN · 失效分析",
+          desc: "你是失效分析工程師 Evan，擅長從不良現象逆推根因，重視證據與資料。" },
+        BRIAN:  { name: "BRIAN · 接合製程",
+          desc: "你是 bonding 製程工程師 Brian，盯緊製程窗口、介面品質與良率。" },
+        JACOB:  { name: "JACOB · 機構工程",
+          desc: "你是機構工程師 Jacob，從治具、夾持、機構公差的角度提出建議。" },
+        JOY:    { name: "JOY · 蝕刻製程",
+          desc: "你是 etching 製程工程師 Joy，掌控蝕刻參數與均勻度，重視 process window。" },
+        JASON:  { name: "JASON · 測試工程",
+          desc: "你是測試工程師 Jason，負責量測與驗證流程，重視資料可信度。" },
+        MZ:     { name: "MZ · 品質工程",
+          desc: "你是品保工程師 MZ，守住 CTQ、PFMEA 與反應計畫，傾向保守且嚴謹。" },
+        LISA:   { name: "LISA · 生產規劃",
+          desc: "你是生產規劃 Lisa，從時程、資源與里程碑的角度切入。" },
+      };
+      const wanted = rolesParam.split(",").map(s => s.trim()).filter(Boolean);
+      const mapped = wanted
+        .map(n => OFFICE_ROLE_LIB[n.toUpperCase()])
+        .filter(Boolean)
+        .slice(0, MAX_ROLES);
+      if (mapped.length) roles = mapped;
+    }
+  } catch {}
+})();
+
 loadApiKeyInput();
 renderRoles();
 renderMessages();
