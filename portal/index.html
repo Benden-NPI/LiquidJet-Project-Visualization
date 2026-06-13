@@ -207,6 +207,8 @@ footer a:hover { color:#4488ff; }
   <span class="leg"><span class="sw" style="background:#4466ff"></span>🎨 畫板 = PROJECT VIZ</span>
   <span class="leg"><span class="sw" style="background:#44cc88"></span>📈 數據牆 = YIELD</span>
   <span class="leg"><span class="sw" style="background:#ffaa44"></span>🛡️ 公告板 = CONTROL PLAN</span>
+  <span class="leg"><span class="sw" style="background:#66ddee"></span>📐 牆面 = FLATNESS SUMMARY</span>
+  <span class="leg"><span class="sw" style="background:#ffcc66"></span>📏 牆面 = STRETCH</span>
   <span class="leg"><span class="sw" style="background:#ff44aa"></span>💬 會議桌 = AI 辯論</span>
   <span class="leg"><span class="sw" style="background:#88ccff"></span>☕ 茶水間 = AI 閒聊</span>
   <span class="leg"><span class="sw" style="background:#2aa84a"></span>⚽ 手足球 = AI 放鬆</span>
@@ -378,6 +380,10 @@ const FEATURES = {
             desc:'製程良率資料、分析與追蹤' },
   cp:     { label:'CONTROL PLAN', color:'#ffaa44', url:'scope/control-plan.html', newTab:false,
             desc:'CTQ · PFMEA · Milestones' },
+  flat:   { label:'FLATNESS SUMMARY', color:'#66ddee', url:'https://benden-npi.github.io/Yield/#/flatness-summary', newTab:true,
+            desc:'Cold-plate flatness 趨勢、Cpk 與 GR&R 摘要' },
+  stretch:{ label:'STRETCH',       color:'#ffcc66', url:'https://benden-npi.github.io/Yield/#/stretch', newTab:true,
+            desc:'Stretch goal · 衝刺指標 · 進度看板' },
   debate: { label:'AI 辯論室',    color:'#ff44aa', url:'ai-debate.html', newTab:false,
             desc:'多角色 AI 在會議室裡互相辯論並結論' },
 };
@@ -433,7 +439,7 @@ function drawWalls() {
 // ════════════════════════════════════════════
 // A framed panel mounted on the back-left wall (gy=0), centred at grid gx.
 function drawWallPanelLeft(gx, label, color, screenIco) {
-  const wallH = 96, panelH = 52, panelHalf = 1.05;
+  const wallH = 96, panelH = 52, panelHalf = 0.92;
   // back-left wall (gy=0) slopes down toward +gx in iso: rgt.y > lft.y.
   // Build the panel as a parallelogram aligned with that slope so the frame
   // sits flush against the wall.
@@ -503,7 +509,41 @@ function drawEmployeeChar(emp) {
   const idle = (emp.state !== 'WALKING');
   const bbox = drawChar(cx, cy, emp, idle);
   drawNameplate(cx, cy, emp, emp.name === 'BENDEN' ? '#ffe066' : undefined);
+  // Coffee-chat bubble: when an engineer is parked at the pantry, float a
+  // tiny "閒聊" speech bubble above their head. The pair scheduler
+  // guarantees there are always two of them, so the bubble reads as a
+  // conversation rather than someone talking to themselves.
+  if (emp.state === 'AT_DEST' && emp.destKind === 'pantry') {
+    drawChatBubble(cx, cy, '閒聊');
+  }
   return bbox;
+}
+
+// Tiny pixel speech bubble — drawn just above the nameplate.
+function drawChatBubble(cx, cy, text) {
+  cx = Math.round(cx);
+  const baseY = Math.round(cy) - 76;             // sits just above nameplate
+  const bob = Math.sin(time*0.08 + cx)*1;        // subtle float
+  const w = Math.max(26, text.length * 7 + 10);
+  const h = 12;
+  const x = cx - w/2, y = baseY + bob;
+  // bubble body
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(x, y, w, h);
+  ctx.strokeStyle = '#222'; ctx.lineWidth = 1;
+  ctx.strokeRect(x+0.5, y+0.5, w-1, h-1);
+  // little tail pointing down at the character
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(cx-2, y+h, 4, 2);
+  ctx.fillRect(cx-1, y+h+2, 2, 2);
+  ctx.fillStyle = '#222';
+  ctx.fillRect(cx-3, y+h, 1, 1);
+  ctx.fillRect(cx+2, y+h, 1, 1);
+  // text
+  ctx.fillStyle = '#222';
+  ctx.font = '5px "Press Start 2P"';
+  ctx.textAlign = 'center';
+  ctx.fillText(text, cx, y + 8);
 }
 
 // ════════════════════════════════════════════
@@ -535,27 +575,76 @@ function drawMeetingTable() {
 
 // ════════════════════════════════════════════
 //  DRAW: PANTRY (茶水間) — counter + coffee machine + fridge
-//  A relaxed corner where AI characters can chitchat between tasks.
+//  A relaxed corner where AI characters chitchat over coffee.
+//  Coffee machine is pushed flush against the left wall (gx≈0) so its
+//  front (right) face — screen + dispenser + drip tray — points into the
+//  room and reads as a coffee machine from the iso angle.
 // ════════════════════════════════════════════
 function drawPantry() {
   const gx = 0.4, gy = 5.0, w = 1.9, d = 0.7;
   // counter
   drawBox(gx, gy, w, d, 18, '#a88860', '#704818', '#806030', '#332211');
-  // coffee machine on the left
-  drawBox(gx+0.15, gy+0.1, 0.45, 0.4, 22, '#3a3a44', '#1a1a22', '#2a2a32', '#0a0a10');
-  // brew button (red dot)
-  const cb = isoX(gx+0.4, gy+0.15), cy = isoY(gx+0.4, gy+0.15) - 30;
-  ctx.fillStyle = '#ff3344'; ctx.fillRect(cb-1, cy, 2, 2);
-  // steam puff (animated)
+
+  // ── coffee machine ─────────────────────────────────────────
+  // Push it left so it sits against the left wall (gx=0 edge).
+  // Taller body + a recognizable front face (screen, dispenser, drip tray).
+  const cmGx = 0.05, cmGy = gy + 0.05, cmW = 0.45, cmD = 0.5, cmH = 34;
+  drawBox(cmGx, cmGy, cmW, cmD, cmH,
+    '#3a3a44',          // top
+    '#1f1f28',          // right face (visible from camera) — darker
+    '#2a2a34',          // left face (toward camera-left)
+    '#0a0a10');
+  // Front (right) face of the machine — paint UI details directly on it.
+  // The right face quad in iso coords:
+  const fA = [isoX(cmGx+cmW, cmGy),       isoY(cmGx+cmW, cmGy)       - cmH];     // top-front-left
+  const fB = [isoX(cmGx+cmW, cmGy+cmD),   isoY(cmGx+cmW, cmGy+cmD)   - cmH];     // top-front-right
+  const fC = [isoX(cmGx+cmW, cmGy+cmD),   isoY(cmGx+cmW, cmGy+cmD)];             // bot-front-right
+  const fD = [isoX(cmGx+cmW, cmGy),       isoY(cmGx+cmW, cmGy)];                 // bot-front-left
+  // Display screen (upper third of front face) — small amber LCD.
+  const scrTop = [
+    [fA[0] + (fD[0]-fA[0])*0.18, fA[1] + (fD[1]-fA[1])*0.18],
+    [fB[0] + (fC[0]-fB[0])*0.18, fB[1] + (fC[1]-fB[1])*0.18],
+  ];
+  const scrBot = [
+    [fA[0] + (fD[0]-fA[0])*0.42, fA[1] + (fD[1]-fA[1])*0.42],
+    [fB[0] + (fC[0]-fB[0])*0.42, fB[1] + (fC[1]-fB[1])*0.42],
+  ];
+  poly([scrTop[0], scrTop[1], scrBot[1], scrBot[0]], '#3a2a08', '#000', 1);
+  const blink = (Math.floor(time*0.05) % 2 === 0) ? '#ffcc44' : '#cc8822';
+  ctx.fillStyle = blink;
+  ctx.fillRect(scrTop[0][0]+2, scrTop[0][1]+2, 4, 2);
+  ctx.fillRect(scrTop[0][0]+8, scrTop[0][1]+2, 6, 2);
+  // Brew button (red dot) on the right of the screen row.
+  ctx.fillStyle = '#ff3344';
+  ctx.fillRect(scrTop[1][0]-3, scrTop[1][1]+3, 2, 2);
+  // Dispenser nozzle — small box jutting out from middle of front face.
+  const noz = [
+    fA[0] + (fD[0]-fA[0])*0.55 + 2,
+    fA[1] + (fD[1]-fA[1])*0.55,
+  ];
+  ctx.fillStyle = '#222'; ctx.fillRect(noz[0], noz[1]-1, 5, 4);
+  ctx.fillStyle = '#111'; ctx.fillRect(noz[0]+1, noz[1]+3, 3, 2);
+  // Cup sitting under the dispenser (so it reads "coffee machine").
+  const cupX = noz[0] + 1, cupY = noz[1] + 6;
+  ctx.fillStyle = '#e8e8f0'; ctx.fillRect(cupX-1, cupY, 5, 4);
+  ctx.fillStyle = '#5a3010'; ctx.fillRect(cupX,   cupY+1, 3, 1);
+  // Drip tray (a thin dark stripe along the bottom of the front face).
+  poly([
+    [fD[0], fD[1]-3], [fC[0], fC[1]-3],
+    [fC[0], fC[1]],   [fD[0], fD[1]],
+  ], '#15151c', '#000', 1);
+  // Steam puffs rising from the dispenser.
   const puff = Math.sin(time*0.04) * 1.5;
   ctx.fillStyle = 'rgba(220,230,255,0.45)';
-  ctx.fillRect(cb-3, cy-8+puff, 2, 2);
-  ctx.fillRect(cb+1, cy-12+puff, 2, 2);
-  // fridge on the right
+  ctx.fillRect(noz[0]+1, noz[1]-6+puff, 2, 2);
+  ctx.fillRect(noz[0]+3, noz[1]-10+puff, 2, 2);
+  ctx.fillRect(noz[0],   noz[1]-13+puff, 2, 2);
+
+  // ── fridge on the right end of the counter ─────────────────
   drawBox(gx+1.15, gy+0.05, 0.55, 0.55, 36, '#d8d8e6', '#a4a4bc', '#b8b8d0', '#33334a');
-  // fridge handle
   const fh = isoX(gx+1.7, gy+0.3), fy = isoY(gx+1.7, gy+0.3) - 28;
   ctx.fillStyle = '#666'; ctx.fillRect(fh-1, fy, 2, 10);
+
   // signage
   const tc = [isoX(gx+w/2, gy+d+0.05), isoY(gx+w/2, gy+d+0.05) + 6];
   ctx.textAlign='center';
@@ -565,9 +654,11 @@ function drawPantry() {
 
 // ════════════════════════════════════════════
 //  DRAW: FOOSBALL TABLE (手足球檯) — AI 放鬆區
+//  Lives in the front-RIGHT corner so it doesn't collide with the
+//  meeting-room chair on the left side of the meeting table.
 // ════════════════════════════════════════════
 function drawFoosball() {
-  const gx = 2.6, gy = 5.3, w = 1.4, d = 0.8;
+  const gx = 7.2, gy = 5.3, w = 1.4, d = 0.8;
   // green playfield body
   drawBox(gx, gy, w, d, 18, '#2aa84a', '#117733', '#198840', '#001a08');
   // small legs hint (just darker boxes underneath the corners)
@@ -656,6 +747,11 @@ const ROUTINE = {
   // Stay at a destination this long before walking back.
   stayAtDestMin:   60 * 6,
   stayAtDestMax:   60 * 14,
+  // Foosball gets its own (much longer) stay range — this is the "AI 放鬆"
+  // zone, not a blood-sweat office. Two engineers per match, ~45-90 s
+  // together at the table so a full game is visible.
+  foosballStayMin: 60 * 45,
+  foosballStayMax: 60 * 90,
   // Per-frame chance to actually leave once eligible (low → calmer office).
   leaveChance:     0.012,
   // Grid units travelled per frame while WALKING.
@@ -671,7 +767,7 @@ const ROUTINE = {
 // (where the character ends up, not the furniture box itself).
 const WANDER_SPOTS = {
   pantry:   [{ gx: 1.3, gy: 5.9 }, { gx: 1.9, gy: 5.9 }],
-  foosball: [{ gx: 2.5, gy: 6.2 }, { gx: 3.7, gy: 6.2 }],
+  foosball: [{ gx: 7.1, gy: 6.2 }, { gx: 8.3, gy: 6.2 }],
 };
 
 // Meeting-table chair tiles (matches drawMeetingTable.chairSpots, offset so
@@ -710,10 +806,29 @@ function pickDestination(emp) {
     return { dx: target.homeX + 1.2, dy: target.homeY + 0.6, kind: 'colleague' };
   }
   if (r < 0.45) {
-    const s = pick(WANDER_SPOTS.pantry);
-    return { dx: s.gx, dy: s.gy, kind: 'pantry' };
-  }
-  if (r < 0.70) {
+    // Pantry chat needs TWO people to make the speech bubble believable.
+    // Pair-dispatch logic mirrors the foosball flow below; if no partner
+    // is free we fall through to a colleague chat instead of putting one
+    // lonely engineer at the coffee machine.
+    const partner = EMPLOYEES.find(e =>
+      e !== emp
+      && e.name !== 'BENDEN'
+      && e.state === 'AT_DESK'
+      && !e.meetingLock
+      && time >= (e.nextThinkAt || 0) - 60 * 30
+    );
+    if (partner && countAway() + 2 <= ROUTINE.maxAway) {
+      const spots = WANDER_SPOTS.pantry;
+      const myIdx = Math.floor(Math.random() * spots.length);
+      const partnerIdx = (myIdx + 1) % spots.length;
+      const stay = rndInt(ROUTINE.stayAtDestMin, ROUTINE.stayAtDestMax);
+      emp.pantryStay = stay;
+      partner.pantryStay = stay;
+      sendTo(partner, spots[partnerIdx].gx, spots[partnerIdx].gy, 'pantry');
+      return { dx: spots[myIdx].gx, dy: spots[myIdx].gy, kind: 'pantry' };
+    }
+    // No partner free — fall through to a colleague chat.
+  } else if (r < 0.70) {
     // Foosball needs TWO players — find an eligible partner and dispatch
     // them to the other foosball spot at the same time. If no partner is
     // available, fall through to colleague chat so the table isn't
@@ -731,7 +846,8 @@ function pickDestination(emp) {
       const partnerIdx = (myIdx + 1) % spots.length;
       // Sync stay-duration so both leave together (otherwise one would
       // walk off and the table would briefly look like a 1-player game).
-      const stay = rndInt(ROUTINE.stayAtDestMin, ROUTINE.stayAtDestMax);
+      // Use the dedicated foosball range — a full match takes a while.
+      const stay = rndInt(ROUTINE.foosballStayMin, ROUTINE.foosballStayMax);
       emp.foosballStay = stay;
       partner.foosballStay = stay;
       sendTo(partner, spots[partnerIdx].gx, spots[partnerIdx].gy, 'foosball');
@@ -758,12 +874,18 @@ function tickEmployee(emp) {
         emp.nextThinkAt = time + rndInt(ROUTINE.idleAtDeskMin, ROUTINE.idleAtDeskMax);
       } else {
         emp.state = 'AT_DEST';
-        // Foosball pairs share a stay duration so both players leave
+        // Foosball / pantry pairs share a stay duration so both leave
         // together (set by pickDestination); otherwise pick at random.
-        const stay = (emp.destKind === 'foosball' && emp.foosballStay)
-          ? emp.foosballStay
-          : rndInt(ROUTINE.stayAtDestMin, ROUTINE.stayAtDestMax);
+        let stay;
+        if (emp.destKind === 'foosball' && emp.foosballStay) {
+          stay = emp.foosballStay;
+        } else if (emp.destKind === 'pantry' && emp.pantryStay) {
+          stay = emp.pantryStay;
+        } else {
+          stay = rndInt(ROUTINE.stayAtDestMin, ROUTINE.stayAtDestMax);
+        }
         emp.foosballStay = 0;
+        emp.pantryStay = 0;
         emp.stayUntil = time + stay;
       }
       return;
@@ -918,9 +1040,14 @@ function render() {
   drawWalls();
 
   // wall features (deepest — draw right after walls).
-  // Spread along the back-left wall to match the 4-column workstation grid.
+  // Four framed panels along the back-left wall, spaced between the 4-column
+  // workstation grid so they sit above the gaps between desks.
   const vizBox = drawWallPanelLeft(1.7, FEATURES.viz.label, FEATURES.viz.color, '🎨');
   hot.push({ bbox:vizBox, kind:'feature', label:FEATURES.viz.label, ref:FEATURES.viz });
+  const flatBox = drawWallPanelLeft(3.7, FEATURES.flat.label, FEATURES.flat.color, '📐');
+  hot.push({ bbox:flatBox, kind:'feature', label:FEATURES.flat.label, ref:FEATURES.flat });
+  const stretchBox = drawWallPanelLeft(5.7, FEATURES.stretch.label, FEATURES.stretch.color, '📏');
+  hot.push({ bbox:stretchBox, kind:'feature', label:FEATURES.stretch.label, ref:FEATURES.stretch });
   const cpBox = drawWallPanelLeft(7.7, FEATURES.cp.label, FEATURES.cp.color, '🛡️');
   hot.push({ bbox:cpBox, kind:'feature', label:FEATURES.cp.label, ref:FEATURES.cp });
 
@@ -948,9 +1075,9 @@ function render() {
     const tableBox = drawMeetingTable();
     hot.push({ bbox:tableBox, kind:'feature', label:FEATURES.debate.label, ref:FEATURES.debate });
   }});
-  // pantry (front-left) and foosball (front-centre-left) — decorative, no hotspots
+  // pantry (front-left) and foosball (front-RIGHT) — decorative, no hotspots
   ground.push({ depth: 0.4+5.0+0.5, draw: drawPantry });
-  ground.push({ depth: 2.6+5.3+0.5, draw: drawFoosball });
+  ground.push({ depth: 7.2+5.3+0.5, draw: drawFoosball });
   ground.sort((a,b)=>a.depth-b.depth).forEach(o=>o.draw());
 
   hotspots = hot;
