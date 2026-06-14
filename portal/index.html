@@ -349,13 +349,18 @@ const GW = 10, GH = 8;           // floor grid size (gx 0..GW, gy 0..GH)
 const ORX = 418, ORY = 160;      // screen origin for grid corner (0,0) — centred
 const WALL_HEIGHT = 114;
 // ── Draggable furniture positions (persisted across sessions) ──────────────
+// Margin (grid units) kept between any furniture edge and the floor boundary.
+const FURNITURE_BOUNDARY_MARGIN = 2;
+
+// Load + validate saved positions; fall back to defaults for any non-finite value.
 const DRAG_POSITIONS = (() => {
+  const fin = (v, def) => (typeof v === 'number' && isFinite(v)) ? v : def;
   let saved = {};
   try { saved = JSON.parse(localStorage.getItem('liquidjet.furniture.v1') || '{}'); } catch(e){}
   return {
-    coffee:   { gx: saved.coffee?.gx   ?? 0.45, gy: saved.coffee?.gy   ?? 5.08 },
-    meeting:  { gx: saved.meeting?.gx  ?? 4.5,  gy: saved.meeting?.gy  ?? 4.8  },
-    foosball: { gx: saved.foosball?.gx ?? 7.2,  gy: saved.foosball?.gy ?? 5.3  },
+    coffee:   { gx: fin(saved.coffee?.gx,   0.45), gy: fin(saved.coffee?.gy,   5.08) },
+    meeting:  { gx: fin(saved.meeting?.gx,  4.5),  gy: fin(saved.meeting?.gy,  4.8)  },
+    foosball: { gx: fin(saved.foosball?.gx, 7.2),  gy: fin(saved.foosball?.gy, 5.3)  },
   };
 })();
 function saveFurniture() {
@@ -1266,12 +1271,19 @@ function hotToDragItem(hsp) {
   return null;
 }
 
+// Apply drag delta to the active drag item, clamping to the floor boundary.
+function applyDragDelta(mx, my) {
+  const { dgx, dgy } = screenToGrid(mx - dragStart.mx, my - dragStart.my);
+  const maxGx = GW - FURNITURE_BOUNDARY_MARGIN;
+  const maxGy = GH - FURNITURE_BOUNDARY_MARGIN;
+  DRAG_POSITIONS[dragItem].gx = Math.max(0, Math.min(maxGx, dragStart.gx0 + dgx));
+  DRAG_POSITIONS[dragItem].gy = Math.max(0, Math.min(maxGy, dragStart.gy0 + dgy));
+}
+
 canvas.addEventListener('mousemove', e => {
   const { mx, my } = toScene(e);
   if (dragItem) {
-    const { dgx, dgy } = screenToGrid(mx - dragStart.mx, my - dragStart.my);
-    DRAG_POSITIONS[dragItem].gx = Math.max(0, Math.min(GW - 2, dragStart.gx0 + dgx));
-    DRAG_POSITIONS[dragItem].gy = Math.max(0, Math.min(GH - 2, dragStart.gy0 + dgy));
+    applyDragDelta(mx, my);
     dragMoved = true;
     canvas.style.cursor = 'grabbing';
     return;
@@ -1351,20 +1363,20 @@ canvas.addEventListener('touchmove', e => {
   e.preventDefault();
   const t = e.touches[0]; if (!t) return;
   const { mx, my } = toScene(t);
-  const { dgx, dgy } = screenToGrid(mx - dragStart.mx, my - dragStart.my);
-  DRAG_POSITIONS[dragItem].gx = Math.max(0, Math.min(GW - 2, dragStart.gx0 + dgx));
-  DRAG_POSITIONS[dragItem].gy = Math.max(0, Math.min(GH - 2, dragStart.gy0 + dgy));
+  applyDragDelta(mx, my);
   dragMoved = true;
 }, { passive:false });
 
-canvas.addEventListener('touchend', () => {
+canvas.addEventListener('touchend', e => {
   if (!dragItem) return;
   if (dragMoved) {
     saveFurniture();
     dragMoved = false;
   } else {
-    // Tap without movement — trigger the normal action.
-    const hsp = hitTest(dragStart.mx, dragStart.my);
+    // Tap without movement — use the final touch position for the hit test.
+    const t = e.changedTouches[0];
+    const { mx, my } = t ? toScene(t) : dragStart;
+    const hsp = hitTest(mx, my);
     if (hsp) handleHit(hsp);
   }
   dragItem  = null;
