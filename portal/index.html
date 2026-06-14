@@ -345,8 +345,8 @@ ctx.imageSmoothingEnabled = false;
 
 const W = 900, H = 560;
 const TW2 = 32, TH2 = 16;        // half tile width / height
-const GW = 10, GH = 8;           // floor grid size (gx 0..GW, gy 0..GH)
-const ORX = 418, ORY = 160;      // screen origin for grid corner (0,0) — centred
+const GW = 12, GH = 8;           // floor grid size (gx 0..GW, gy 0..GH)
+const ORX = 386, ORY = 160;      // screen origin for grid corner (0,0) — centred
 const WALL_HEIGHT = 114;
 // ── Draggable furniture positions (persisted across sessions) ──────────────
 // Margin (grid units) kept between any furniture edge and the floor boundary.
@@ -439,11 +439,12 @@ const EMPLOYEES = [
     desc:'守住品質底線，管控 CTQ、PFMEA 與反應計畫。' },
   { name:'LISA',   role:'Planner',               roleZh:'生產規劃',     gx:7.7, gy:2.9, hair:[0xaa,0x66,0x22], skin:[0xff,0xdd,0xaa], shirt:[0xff,0xbb,0x44],
     desc:'排程與資源規劃，讓 milestone 一個個準時落地。' },
-  { name:'RISK',   role:'Risk Analysis Eng.',    roleZh:'風險分析',     gx:8.9, gy:3.4, hair:[0x55,0x44,0x88], skin:[0xf2,0xcf,0xa5], shirt:[0xff,0x77,0x66],
+  // Risk — 5th column of the staggered FRONT row.
+  { name:'RISK',   role:'Risk Analysis Eng.',    roleZh:'風險分析',     gx:9.7, gy:2.9, hair:[0x55,0x44,0x88], skin:[0xf2,0xcf,0xa5], shirt:[0xff,0x77,0x66],
     desc:'辨識風險、分級衝擊與機率，提出可執行的緩解與監控方案。' },
-  // Benden — Project Lead — also has his own desk on the right side of the room.
+  // Benden — Project Lead — 5th column of the BACK row, aligned with the others.
   // He only walks over to the meeting table when a debate is convened.
-  { name:'BENDEN', role:'Project Lead',          roleZh:'專案負責人',   gx:8.3, gy:1.8, hair:[0x22,0x22,0x22], skin:[0xff,0xcc,0x99], shirt:[0xff,0xe0,0x66],
+  { name:'BENDEN', role:'Project Lead',          roleZh:'專案負責人',   gx:8.7, gy:0.9, hair:[0x22,0x22,0x22], skin:[0xff,0xcc,0x99], shirt:[0xff,0xe0,0x66],
     desc:'LiquidJet 專案負責人，統籌全局、拍板決策。' },
 ];
 
@@ -516,7 +517,7 @@ function drawWalls() {
   poly([[p1[0],p1[1]-wallH],[p2[0],p2[1]-wallH],[p2[0],p2[1]-wallH+3],[p1[0],p1[1]-wallH+3]], '#2a2a4a');
   poly([[q1[0],q1[1]-wallH],[q2[0],q2[1]-wallH],[q2[0],q2[1]-wallH+3],[q1[0],q1[1]-wallH+3]], '#22223e');
   // ceiling lights along back-left wall
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 4; i++) {
     const lg = 1.5 + i*3;
     const lp = [isoX(lg,0), isoY(lg,0)-wallH+14];
     ctx.fillStyle = '#b8e0ff'; ctx.fillRect(lp[0]-14, lp[1], 28, 5);
