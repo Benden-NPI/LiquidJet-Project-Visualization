@@ -568,63 +568,71 @@ function drawWallPanelLeft(gx, label, color, screenIco) {
 function drawWorkstation(emp) {
   const gx = emp.homeX, gy = emp.homeY;
   const deskH = 26;
-  // desk
-  drawBox(gx-0.08, gy-0.94, 1.25, 0.72, deskH, '#6a4824', '#4a3018', '#5a3d1e', '#2a1c0e');
+  drawBox(gx-0.08, gy-0.94, 1.25, 0.72, deskH, '#6a4824','#4a3018','#5a3d1e','#2a1c0e');
 
-  // Monitor — drawn at screen coords anchored to the desk top surface so it
-  // actually sits ON the desk rather than embedding into it from the floor.
-  const mGx = gx + 0.38, mGy = gy - 0.88;
-  const mbX = isoX(mGx, mGy);                   // monitor base X on screen
-  const mbY = isoY(mGx, mGy) - deskH;           // desk top surface Y → monitor base
-  const mW = 46, mH = 24;                        // widescreen 16:8.5 landscape
-  const fl = mbX - mW / 2;                       // frame left
-  const ft = mbY - mH;                           // frame top
-  // bezel
-  ctx.fillStyle = '#1e1e1e'; ctx.fillRect(fl - 2, ft - 2, mW + 4, mH + 5);
-  // screen background
-  ctx.fillStyle = '#020a02'; ctx.fillRect(fl, ft, mW, mH);
-  // Matrix rain — columns of falling green drops, slow cascade
-  const rainCols = 7;
-  const colW = Math.floor((mW - 4) / rainCols);
-  for (let c = 0; c < rainCols; c++) {
-    const cx = fl + 2 + c * colW;
-    // each column has its own speed & phase so they stagger naturally
-    const speed = 0.18 + (c * 0.04 + gx * 0.03) % 0.14;
-    const cycleH = mH + 6;
-    const headY = ((time * speed + c * 11 + gx * 5) % cycleH) - 4;
-    // trail: dots above the head, fading out
-    for (let t = 0; t < 9; t++) {
-      const dy = headY - t * 3;
-      if (dy < 1 || dy > mH - 2) continue;
-      const alpha = Math.max(0, 1 - t / 8);
-      const bright = Math.floor(200 * alpha);
-      ctx.fillStyle = `rgba(0,${bright},${Math.floor(bright * 0.25)},${alpha.toFixed(2)})`;
-      ctx.fillRect(cx, ft + dy, colW - 1, 2);
+  // Laptop — low-profile to avoid blocking employees in the row behind
+  const lpW=0.68, lpD=0.36, lpH=5;
+  const lpGx=gx+0.08, lpGy=gy-0.78;
+  // Base (keyboard deck): thin dark slab on desk surface
+  drawBox(lpGx-lpW/2, lpGy-lpD/2, lpW, lpD, lpH, '#3a3a3a','#1e1e1e','#282828','#0a0a0a');
+
+  // Power LED on front face of base (blinks green)
+  const fL=[isoX(lpGx-lpW/2, lpGy+lpD/2), isoY(lpGx-lpW/2, lpGy+lpD/2)-deskH];
+  const fR=[isoX(lpGx+lpW/2, lpGy+lpD/2), isoY(lpGx+lpW/2, lpGy+lpD/2)-deskH];
+  const ledX=(fL[0]+fR[0])/2+8, ledY=(fL[1]+fR[1])/2-3;
+  ctx.fillStyle=Math.floor(time/30)%2?'#00ff88':'#00aa55';
+  ctx.fillRect(ledX, ledY, 2, 2);
+
+  // Screen lid — parallelogram, hinge at back edge of base (away from viewer)
+  const backGy=lpGy-lpD/2;
+  const hL=[isoX(lpGx-lpW/2, backGy), isoY(lpGx-lpW/2, backGy)-deskH-lpH];
+  const hR=[isoX(lpGx+lpW/2, backGy), isoY(lpGx+lpW/2, backGy)-deskH-lpH];
+  const lidH=18;
+  const tL=[hL[0]+5, hL[1]-lidH];
+  const tR=[hR[0]+5, hR[1]-lidH];
+  // Lid bezel
+  poly([hL, hR, tR, tL], '#1c1c1c', '#080808', 1);
+  // Screen surface (inset slightly from bezel)
+  const sc=[[hL[0]+2,hL[1]-1],[hR[0]-2,hR[1]-1],[tR[0]-2,tR[1]+2],[tL[0]+2,tL[1]+2]];
+  poly(sc, '#020a02');
+
+  // Matrix rain — clipped to screen parallelogram
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(sc[0][0], sc[0][1]);
+  sc.forEach(p=>ctx.lineTo(p[0],p[1]));
+  ctx.closePath();
+  ctx.clip();
+  const scLeft=Math.min(sc[0][0],sc[3][0])+1;
+  const scTop=Math.min(sc[2][1],sc[3][1])+1;
+  const scRight=Math.max(sc[1][0],sc[2][0])-1;
+  const scBot=Math.max(sc[0][1],sc[1][1])-1;
+  const scW=scRight-scLeft, scH=Math.max(1,scBot-scTop);
+  const rainCols=5;
+  const rColW=Math.max(2, Math.floor(scW/rainCols));
+  for(let c=0;c<rainCols;c++){
+    const rx=scLeft+c*rColW;
+    const speed=0.16+(c*0.05+gx*0.03)%0.15;
+    const headY=((time*speed+c*9+gx*5)%(scH+6))-4;
+    for(let t=0;t<7;t++){
+      const dy=headY-t*3;
+      if(dy<0||dy>scH) continue;
+      const alpha=Math.max(0,1-t/6);
+      const bright=Math.floor(180*alpha);
+      ctx.fillStyle=`rgba(0,${bright},${Math.floor(bright*0.25)},${alpha.toFixed(2)})`;
+      ctx.fillRect(rx, scTop+dy, rColW-1, 2);
     }
-    // head: bright near-white green
-    if (headY >= 1 && headY <= mH - 2) {
-      ctx.fillStyle = '#aaffbb';
-      ctx.fillRect(cx, ft + headY, colW - 1, 2);
-    }
+    if(headY>=0&&headY<=scH){ctx.fillStyle='#aaffbb';ctx.fillRect(rx,scTop+headY,rColW-1,2);}
   }
-  // stand stem + foot
-  ctx.fillStyle = '#1a1a1a';
-  ctx.fillRect(mbX - 3, mbY - 6, 6, 8);
-  ctx.fillRect(mbX - 10, mbY - 1, 20, 4);
+  ctx.restore();
 
-  // keyboard on desk surface (slightly in front of monitor)
-  const kbX = isoX(gx + 0.25, gy - 0.52), kbY = isoY(gx + 0.25, gy - 0.52) - deskH;
-  ctx.fillStyle = '#2a2a2a'; ctx.fillRect(kbX - 15, kbY - 5, 30, 8);
-  for (let k = 0; k < 7; k++) ctx.fillStyle = k % 2 === 0 ? '#1a1a1a' : '#222',
-    ctx.fillRect(kbX - 13 + k * 4, kbY - 4, 3, 5);
+  // Coffee mug on desk beside laptop
+  const mgX=isoX(gx+0.95,gy-0.62), mgY=isoY(gx+0.95,gy-0.62)-deskH;
+  ctx.fillStyle=rgbStr(emp.shirt); ctx.fillRect(mgX-3,mgY-10,8,10);
+  ctx.fillStyle='#3a2800';        ctx.fillRect(mgX-2,mgY-9,6,7);
 
-  // coffee mug right of monitor on desk
-  const mgX = isoX(gx + 0.95, gy - 0.62), mgY = isoY(gx + 0.95, gy - 0.62) - deskH;
-  ctx.fillStyle = rgbStr(emp.shirt); ctx.fillRect(mgX - 3, mgY - 10, 8, 10);
-  ctx.fillStyle = '#3a2800';        ctx.fillRect(mgX - 2, mgY - 9,  6,  7);
-
-  // chair
-  drawBox(gx + 0.11, gy + 0.22, 0.62, 0.62, 12, '#33334a', '#22223a', '#2a2a42');
+  // Chair
+  drawBox(gx+0.11, gy+0.22, 0.62, 0.62, 12, '#33334a','#22223a','#2a2a42');
 }
 
 // Draw the employee's character at their CURRENT world tile (emp.cx/cy).
@@ -708,14 +716,13 @@ function drawPantry() {
   const gx = DRAG_POSITIONS.coffee.gx, gy = DRAG_POSITIONS.coffee.gy;
   const hovered = hoverHot && hoverHot.kind === 'leisure' && hoverHot.ref === 'coffee';
 
-  // 賀眾牌 slim floor-standing water cooler
-  // Slim footprint (0.50×0.50) — taller than wide
+  // 賀眾牌 slim floor-standing water cooler (0.50×0.50 footprint)
   const W = 0.50, D = 0.50;
   const bgx = gx - 0.25, bgy = gy - 0.25;
 
   // Lower storage cabinet (silver-grey)
   const loH = 24;
-  const baseBox = drawBox(bgx, bgy, W, D, loH,
+  drawBox(bgx, bgy, W, D, loH,
     hovered ? '#d4dce2' : '#bcc8d0',
     hovered ? '#8898a8' : '#788898',
     hovered ? '#98a8b8' : '#8898a8',
@@ -724,76 +731,60 @@ function drawPantry() {
   // Upper dispenser body — slightly inset, white-grey, taller
   const hiH = 30;
   const totH = loH + hiH;
-  drawBox(bgx + 0.05, bgy + 0.05, W - 0.10, D - 0.10, totH,
+  drawBox(bgx+0.05, bgy+0.05, W-0.10, D-0.10, totH,
     hovered ? '#f0f6fa' : '#dceaf2',
     hovered ? '#b0c8dc' : '#a0b8cc',
     hovered ? '#c4d8ec' : '#b4c8dc',
     '#182028');
 
-  // ── details on the visible front face (+gy direction) ──────────────
-  // Compute front-face base midpoint so taps/bottle are centred on the face
-  const fL = [isoX(bgx,     bgy + D), isoY(bgx,     bgy + D)];
-  const fR = [isoX(bgx + W, bgy + D), isoY(bgx + W, bgy + D)];
-  const fx  = (fL[0] + fR[0]) / 2;
-  const fby = (fL[1] + fR[1]) / 2;   // vertical base level
+  // Front face midpoint (centred on visible +gy face)
+  const fL=[isoX(bgx,   bgy+D), isoY(bgx,   bgy+D)];
+  const fR=[isoX(bgx+W, bgy+D), isoY(bgx+W, bgy+D)];
+  const fx=(fL[0]+fR[0])/2;
+  const fby=(fL[1]+fR[1])/2;
 
-  // Tap faceplate (recessed dark panel)
-  const tapY = fby - loH - 6;
-  ctx.fillStyle = hovered ? '#3a5060' : '#28404e';
-  ctx.fillRect(fx - 11, tapY, 22, 12);
+  // Tap faceplate
+  const tapY=fby-loH-6;
+  ctx.fillStyle=hovered?'#3a5060':'#28404e';
+  ctx.fillRect(fx-11, tapY, 22, 12);
 
-  // Hot tap button (red square)
-  ctx.fillStyle = hovered ? '#ff6050' : '#cc3322';
-  ctx.fillRect(fx - 9, tapY + 3, 7, 7);
-  // Hot LED (blinks slowly)
-  ctx.fillStyle = (Math.floor(time / 42) % 2) ? '#ff3300' : '#770000';
-  ctx.fillRect(fx - 8, tapY + 1, 2, 2);
+  // Hot tap + LED
+  ctx.fillStyle=hovered?'#ff6050':'#cc3322';
+  ctx.fillRect(fx-9, tapY+3, 7, 7);
+  ctx.fillStyle=(Math.floor(time/42)%2)?'#ff3300':'#770000';
+  ctx.fillRect(fx-8, tapY+1, 2, 2);
 
-  // Cold tap button (blue square)
-  ctx.fillStyle = hovered ? '#4499ff' : '#2255cc';
-  ctx.fillRect(fx + 2, tapY + 3, 7, 7);
-  // Cold LED (steady blue)
-  ctx.fillStyle = '#33aaff';
-  ctx.fillRect(fx + 3, tapY + 1, 2, 2);
+  // Cold tap + LED
+  ctx.fillStyle=hovered?'#4499ff':'#2255cc';
+  ctx.fillRect(fx+2, tapY+3, 7, 7);
+  ctx.fillStyle='#33aaff';
+  ctx.fillRect(fx+3, tapY+1, 2, 2);
 
-  // Drip tray
-  ctx.fillStyle = '#3a4a58';
-  ctx.fillRect(fx - 12, tapY + 12, 24, 3);
-  // Water droplet shimmer in tray
-  ctx.fillStyle = '#88ccee';
-  ctx.fillRect(fx - 1, tapY + 13, 2, 2);
+  // Drip tray + shimmer
+  ctx.fillStyle='#3a4a58'; ctx.fillRect(fx-12, tapY+12, 24, 3);
+  ctx.fillStyle='#88ccee'; ctx.fillRect(fx-1,  tapY+13, 2,  2);
 
-  // Cup well (dark recess below tray)
-  ctx.fillStyle = '#0e1c26';
-  ctx.fillRect(fx - 8, tapY + 15, 16, 5);
+  // Cup well
+  ctx.fillStyle='#0e1c26'; ctx.fillRect(fx-8, tapY+15, 16, 5);
 
-  // ── Water bottle (inverted 5-gallon on top of body) ────────────────
-  const bottleBaseY = fby - totH;
-  const shimmer = Math.floor(148 + Math.sin(time * 0.024) * 24);
-  // Bottle barrel (translucent blue)
-  ctx.fillStyle = `rgba(32, 88, ${shimmer}, 0.82)`;
-  ctx.fillRect(fx - 9, bottleBaseY - 18, 18, 18);
-  // Inner water reflection
-  ctx.fillStyle = 'rgba(170, 225, 255, 0.32)';
-  ctx.fillRect(fx - 7, bottleBaseY - 16, 5, 12);
-  // Label band (horizontal white stripe)
-  ctx.fillStyle = 'rgba(255,255,255,0.26)';
-  ctx.fillRect(fx - 8, bottleBaseY - 13, 16, 5);
-  // Brand mark (tiny logo pixels)
-  ctx.fillStyle = 'rgba(0,50,110,0.65)';
-  ctx.fillRect(fx - 2, bottleBaseY - 12, 4, 3);
-  // Bottle neck (narrow connector down into dispenser)
-  ctx.fillStyle = 'rgba(38, 96, 180, 0.88)';
-  ctx.fillRect(fx - 5, bottleBaseY, 10, 6);
-  // Bottle dome / cap
-  ctx.fillStyle = '#e4f0f8';
-  ctx.fillRect(fx - 5, bottleBaseY - 21, 10, 4);
-  // Cap highlight
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(fx - 4, bottleBaseY - 21, 3, 2);
+  // Inverted 5-gallon bottle on top of cooler body
+  const bottleBaseY=fby-totH;
+  const shimmer=Math.floor(148+Math.sin(time*0.024)*24);
+  ctx.fillStyle=`rgba(32,88,${shimmer},0.82)`;
+  ctx.fillRect(fx-9, bottleBaseY-18, 18, 18);
+  ctx.fillStyle='rgba(170,225,255,0.32)';
+  ctx.fillRect(fx-7, bottleBaseY-16, 5, 12);
+  ctx.fillStyle='rgba(255,255,255,0.26)';
+  ctx.fillRect(fx-8, bottleBaseY-13, 16, 5);
+  ctx.fillStyle='rgba(0,50,110,0.65)';
+  ctx.fillRect(fx-2, bottleBaseY-12, 4, 3);
+  ctx.fillStyle='rgba(38,96,180,0.88)';
+  ctx.fillRect(fx-5, bottleBaseY, 10, 6);
+  ctx.fillStyle='#e4f0f8'; ctx.fillRect(fx-5, bottleBaseY-21, 10, 4);
+  ctx.fillStyle='#ffffff'; ctx.fillRect(fx-4, bottleBaseY-21, 3,  2);
 
-  const hitY = bottleBaseY - 22;
-  return { x: fL[0] - 4, y: hitY, w: fR[0] - fL[0] + 8, h: fby - hitY + 4 };
+  const hitY=bottleBaseY-22;
+  return { x:fL[0]-4, y:hitY, w:fR[0]-fL[0]+8, h:fby-hitY+4 };
 }
 
 // ════════════════════════════════════════════
@@ -1266,14 +1257,14 @@ function render() {
   requestAnimationFrame(render);
 }
 
-// Yield = framed screen on the back-right wall (gx=0)
+// Yield = framed line-chart panel on the back-right wall (gx=0)
 function drawYieldPanel() {
   const f = FEATURES.yield;
   const wallH = WALL_HEIGHT, panelH = 56, gy = 2.4, half = 1.05;
   const topY = isoY(0, gy) - wallH + 14;
   const a = [isoX(0, gy-half), isoY(0, gy-half)];  // right edge (smaller gy)
   const b = [isoX(0, gy+half), isoY(0, gy+half)];  // left edge  (larger gy)
-  // Panel parallelogram that follows the wall iso angle exactly
+  // Panel parallelogram aligned with the wall's iso slope
   const pts = [
     [a[0], topY],
     [b[0], topY + (b[1]-a[1])],
@@ -1283,31 +1274,32 @@ function drawYieldPanel() {
   const hovered = hoverHot && hoverHot.kind==='feature' && hoverHot.label===f.label;
   poly(pts, '#050d05', hovered ? f.color : '#152515', hovered ? 3 : 2);
 
-  // Map (u,v) normalised coords → screen coords on the panel surface.
-  // u=0 → right(a) side, u=1 → left(b) side; v=0 → top, v=1 → bottom.
+  // Surface coordinate mapping: u=0→right(a), u=1→left(b); v=0→top, v=1→bottom
   const pp = (u, v) => [
     pts[0][0] + u*(pts[1][0]-pts[0][0]) + v*(pts[3][0]-pts[0][0]),
     pts[0][1] + u*(pts[1][1]-pts[0][1]) + v*(pts[3][1]-pts[0][1]),
   ];
 
-  // Yield trend data — upward with realistic dips
+  // Yield trend data — realistically bumpy but clearly rising
   const data = [0.30, 0.38, 0.34, 0.46, 0.42, 0.54, 0.50, 0.64, 0.62, 0.77];
   const n = data.length;
   const mx0=0.07, mx1=0.93, my0=0.24, my1=0.87;
 
-  // Chart points mapped to parallelogram surface
+  // Reversed u: data[0] (low) at left (u=mx1), data[n-1] (high) at right (u=mx0)
+  // → chart reads left-to-right as upward trend
   const cpts = data.map((val, i) => {
-    const u = mx0 + (i/(n-1)) * (mx1-mx0);
+    const u = mx1 - (i/(n-1)) * (mx1-mx0);
     const v = my0 + (1-val) * (my1-my0);
     return pp(u, v);
   });
 
-  // Area fill under the line
-  const bl = pp(mx0, my1), br = pp(mx1, my1);
+  // Area fill below line
+  const botLeft = pp(mx1, my1);
+  const botRight = pp(mx0, my1);
   ctx.beginPath();
-  ctx.moveTo(bl[0], bl[1]);
+  ctx.moveTo(botLeft[0], botLeft[1]);
   cpts.forEach(p => ctx.lineTo(p[0], p[1]));
-  ctx.lineTo(br[0], br[1]);
+  ctx.lineTo(botRight[0], botRight[1]);
   ctx.closePath();
   ctx.fillStyle = hovered ? 'rgba(68,255,140,0.18)' : 'rgba(38,170,75,0.16)';
   ctx.fill();
@@ -1319,7 +1311,7 @@ function drawYieldPanel() {
   ctx.strokeStyle = hovered ? '#88ffaa' : '#44cc66';
   ctx.lineWidth = 1.5;
   ctx.stroke();
-  ctx.lineWidth = 1;  // reset
+  ctx.lineWidth = 1;
 
   // Data dots
   cpts.forEach((p, i) => {
@@ -1327,21 +1319,19 @@ function drawYieldPanel() {
     ctx.fillRect(p[0]-1.5, p[1]-1.5, 3, 3);
   });
 
-  // Animated upward lightning bolt above the highest (latest) data point
+  // Animated lightning bolt above highest (rightmost) point
   const peak = cpts[n-1];
-  const boltOn = Math.floor(time / 16) % 4 !== 0;  // brief flash-off
+  const boltOn = Math.floor(time / 16) % 4 !== 0;
   if (boltOn) {
     const bx = peak[0], by = peak[1] - 4;
-    // Pixel lightning bolt going upward (zigzag)
     const bolt = [[2,0],[3,0],[4,0],[1,2],[2,2],[3,2],[2,4],[3,4],[1,6],[2,6]];
     ctx.fillStyle = hovered ? '#ffff88' : '#aaff44';
     bolt.forEach(([dx,dy]) => ctx.fillRect(bx-2+dx, by-10+dy, 1, 1));
-    // Glow halo
     ctx.fillStyle = `rgba(140,255,60,${0.22 + 0.14*Math.sin(time*0.11)})`;
     ctx.fillRect(bx-4, by-12, 12, 12);
   }
 
-  // Label at the top of the panel, centred along the wall surface
+  // Label centred along top of panel surface
   const lp = pp(0.5, 0.10);
   ctx.fillStyle = hovered ? '#ffe066' : f.color;
   ctx.font = '5px "Press Start 2P"'; ctx.textAlign = 'center';
