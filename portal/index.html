@@ -348,19 +348,28 @@ const TW2 = 32, TH2 = 16;        // half tile width / height
 const GW = 10, GH = 8;           // floor grid size (gx 0..GW, gy 0..GH)
 const ORX = 418, ORY = 160;      // screen origin for grid corner (0,0) — centred
 const WALL_HEIGHT = 114;
-const FOOSBALL_TABLE = { gx: 7.2, gy: 5.3, w: 1.4, d: 0.8, h: 18 };
-const FOOSBALL_BASE_DEPTH = FOOSBALL_TABLE.gx + FOOSBALL_TABLE.gy + 0.5;
-const EMPLOYEE_DEPTH_OFFSET = 0.55;
-const FOOSBALL_STANDING_RIGHT_X = FOOSBALL_TABLE.gx + FOOSBALL_TABLE.w * 0.54;
-const FOOSBALL_STANDING_BACK_Y = FOOSBALL_TABLE.gy - 0.3;
-const FOOSBALL_STANDING_FRONT_Y = FOOSBALL_TABLE.gy + 1.1;
-const FOOSBALL_OCCLUSION = {
-  minX: FOOSBALL_TABLE.gx + 0.45,
-  maxX: FOOSBALL_TABLE.gx + FOOSBALL_TABLE.w + 0.7,
-  minY: FOOSBALL_TABLE.gy - 0.55,
-  maxY: FOOSBALL_TABLE.gy + 0.05,
-  depthInset: 0.12,
+// ── Draggable furniture positions (persisted across sessions) ──────────────
+const DRAG_POSITIONS = (() => {
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem('liquidjet.furniture.v1') || '{}'); } catch(e){}
+  return {
+    coffee:   { gx: saved.coffee?.gx   ?? 0.45, gy: saved.coffee?.gy   ?? 5.08 },
+    meeting:  { gx: saved.meeting?.gx  ?? 4.5,  gy: saved.meeting?.gy  ?? 4.8  },
+    foosball: { gx: saved.foosball?.gx ?? 7.2,  gy: saved.foosball?.gy ?? 5.3  },
+  };
+})();
+function saveFurniture() {
+  localStorage.setItem('liquidjet.furniture.v1', JSON.stringify(DRAG_POSITIONS));
+}
+
+// gx/gy are live getters so all existing code reading FOOSBALL_TABLE.gx/gy
+// automatically reflects the current dragged position.
+const FOOSBALL_TABLE = {
+  get gx() { return DRAG_POSITIONS.foosball.gx; },
+  get gy() { return DRAG_POSITIONS.foosball.gy; },
+  w: 1.4, d: 0.8, h: 18,
 };
+const EMPLOYEE_DEPTH_OFFSET = 0.55;
 
 const isoX = (gx, gy) => ORX + (gx - gy) * TW2;
 const isoY = (gx, gy) => ORY + (gx + gy) * TH2;
@@ -629,7 +638,7 @@ function drawChatBubble(cx, cy, text) {
 function drawMeetingTable() {
   const f = FEATURES.debate;
   const hovered = hoverHot && hoverHot.kind==='feature' && hoverHot.label===f.label;
-  const gx=4.5, gy=4.8, w=2.4, d=1.6;
+  const gx = DRAG_POSITIONS.meeting.gx, gy = DRAG_POSITIONS.meeting.gy, w=2.4, d=1.6;
   // chairs around the table (always empty)
   const chairSpots = [[gx-0.5,gy+0.4],[gx-0.5,gy+1.0],[gx+w+0.0,gy+0.4],[gx+w+0.0,gy+1.0],[gx+0.6,gy+d+0.1],[gx+1.4,gy+d+0.1]];
   chairSpots.forEach(([cgx,cgy])=>drawBox(cgx,cgy,0.55,0.55,16,'#3a2030','#281020','#311828'));
@@ -656,7 +665,7 @@ function drawMeetingTable() {
 //  room and reads as a coffee machine from the iso angle.
 // ════════════════════════════════════════════
 function drawPantry() {
-  const gx = 0.45, gy = 5.08, w = 0.95, d = 0.6;
+  const gx = DRAG_POSITIONS.coffee.gx, gy = DRAG_POSITIONS.coffee.gy, w = 0.95, d = 0.6;
   const hovered = hoverHot && hoverHot.kind === 'leisure' && hoverHot.ref === 'coffee';
   // small table
   drawBox(gx, gy, w, d, 14, '#a88860', '#704818', '#806030', '#332211');
@@ -665,7 +674,7 @@ function drawPantry() {
   // Push it into the front-left corner so it sits against the left wall and
   // the visually lower/front edge of the pantry counter in the isometric view.
   // Taller body + a recognizable front face (screen, dispenser, drip tray).
-  const cmGx = 0.02, cmGy = gy + d - 0.5, cmW = 0.45, cmD = 0.5, cmH = 34;
+  const cmGx = gx - 0.43, cmGy = gy + d - 0.5, cmW = 0.45, cmD = 0.5, cmH = 34;
   const machineBox = drawBox(cmGx, cmGy, cmW, cmD, cmH,
     hovered ? '#52607a' : '#3a3a44', // top
     hovered ? '#2c3d58' : '#1f1f28', // right face (visible from camera)
@@ -845,37 +854,45 @@ const ROUTINE = {
 // Destinations the routine can pick — coordinates are "standing tiles"
 // (where the character ends up, not the furniture box itself).
 const WANDER_SPOTS = {
-  pantry:   [{ gx: 1.3, gy: 5.9 }, { gx: 1.9, gy: 5.9 }],
-  foosball: [
-    { gx: FOOSBALL_STANDING_RIGHT_X, gy: FOOSBALL_STANDING_BACK_Y },
-    { gx: FOOSBALL_STANDING_RIGHT_X, gy: FOOSBALL_STANDING_FRONT_Y },
-  ],
+  get pantry() {
+    const { gx, gy } = DRAG_POSITIONS.coffee;
+    return [{ gx: gx + 0.85, gy: gy + 0.82 }, { gx: gx + 1.45, gy: gy + 0.82 }];
+  },
+  get foosball() {
+    return [
+      { gx: FOOSBALL_TABLE.gx + FOOSBALL_TABLE.w * 0.54, gy: FOOSBALL_TABLE.gy - 0.3 },
+      { gx: FOOSBALL_TABLE.gx + FOOSBALL_TABLE.w * 0.54, gy: FOOSBALL_TABLE.gy + 1.1 },
+    ];
+  },
 };
 
 function employeeDepth(emp) {
   let depth = emp.cx + emp.cy + EMPLOYEE_DEPTH_OFFSET;
+  const ft = DRAG_POSITIONS.foosball;
   const nearFoosballBackside =
-    emp.cx >= FOOSBALL_OCCLUSION.minX &&
-    emp.cx <= FOOSBALL_OCCLUSION.maxX &&
-    emp.cy >= FOOSBALL_OCCLUSION.minY &&
-    emp.cy <= FOOSBALL_OCCLUSION.maxY;
+    emp.cx >= ft.gx + 0.45 &&
+    emp.cx <= ft.gx + FOOSBALL_TABLE.w + 0.7 &&
+    emp.cy >= ft.gy - 0.55 &&
+    emp.cy <= ft.gy + 0.05;
   if (nearFoosballBackside) {
-    // Pull depth slightly backward so the table face covers part of the body.
-    depth = Math.min(depth, FOOSBALL_BASE_DEPTH - FOOSBALL_OCCLUSION.depthInset);
+    depth = Math.min(depth, ft.gx + ft.gy + 0.5 - 0.12);
   }
   return depth;
 }
 
-// Meeting-table chair tiles (matches drawMeetingTable.chairSpots, offset so
-// the character stands at the chair rather than overlapping the box).
-const MEETING_CHAIRS = [
-  { gx: 3.7, gy: 5.2 }, // head — reserved for Benden
-  { gx: 3.7, gy: 5.9 },
-  { gx: 7.0, gy: 5.2 },
-  { gx: 7.0, gy: 5.9 },
-  { gx: 5.1, gy: 6.5 },
-  { gx: 5.9, gy: 6.5 },
-];
+// Meeting-table chair tiles — offsets are relative to the meeting-table origin
+// so the chairs always travel with the table when it is dragged.
+function getMeetingChairs() {
+  const { gx, gy } = DRAG_POSITIONS.meeting;
+  return [
+    { gx: gx - 0.8, gy: gy + 0.4 }, // head — reserved for Benden
+    { gx: gx - 0.8, gy: gy + 1.1 },
+    { gx: gx + 2.5, gy: gy + 0.4 },
+    { gx: gx + 2.5, gy: gy + 1.1 },
+    { gx: gx + 0.6, gy: gy + 1.7 },
+    { gx: gx + 1.4, gy: gy + 1.7 },
+  ];
+}
 
 function rndInt(min, max) { return Math.floor(min + Math.random() * (max - min + 1)); }
 function pick(arr)        { return arr[Math.floor(Math.random()*arr.length)]; }
@@ -1169,15 +1186,15 @@ function render() {
       hot.push({ bbox, kind:'employee', ref:emp });
     },
   }));
-  ground.push({ depth: 4.5+4.8+1, draw: () => {
+  ground.push({ depth: DRAG_POSITIONS.meeting.gx + DRAG_POSITIONS.meeting.gy + 1, draw: () => {
     const tableBox = drawMeetingTable();
     hot.push({ bbox:tableBox, kind:'feature', label:FEATURES.debate.label, ref:FEATURES.debate });
   }});
-  ground.push({ depth: 0.4+5.0+0.5, draw: () => {
+  ground.push({ depth: DRAG_POSITIONS.coffee.gx + DRAG_POSITIONS.coffee.gy + 0.5, draw: () => {
     const pantryBox = drawPantry();
     hot.push({ bbox:pantryBox, kind:'leisure', ref:'coffee' });
   }});
-  ground.push({ depth: FOOSBALL_BASE_DEPTH, draw: () => {
+  ground.push({ depth: DRAG_POSITIONS.foosball.gx + DRAG_POSITIONS.foosball.gy + 0.5, draw: () => {
     const foosballBox = drawFoosball();
     hot.push({ bbox:foosballBox, kind:'leisure', ref:'foosball' });
   }});
@@ -1227,10 +1244,63 @@ function toScene(e) {
   return { mx:(e.clientX-r.left)*(W/r.width), my:(e.clientY-r.top)*(H/r.height) };
 }
 
+// ── Drag state ──────────────────────────────────────────────────────────────
+let dragItem  = null;   // 'coffee' | 'meeting' | 'foosball' | null
+let dragStart = null;   // { mx, my, gx0, gy0 }
+let dragMoved = false;  // true once the pointer has moved during a drag
+
+// Inverse isometric transform: screen delta → grid delta
+function screenToGrid(dsx, dsy) {
+  return {
+    dgx: (dsx / TW2 + dsy / TH2) / 2,
+    dgy: (dsy / TH2 - dsx / TW2) / 2,
+  };
+}
+
+// Map a hotspot to the draggable furniture key (or null).
+function hotToDragItem(hsp) {
+  if (!hsp) return null;
+  if (hsp.kind === 'leisure' && hsp.ref === 'coffee')    return 'coffee';
+  if (hsp.kind === 'leisure' && hsp.ref === 'foosball')  return 'foosball';
+  if (hsp.kind === 'feature' && hsp.ref === FEATURES.debate) return 'meeting';
+  return null;
+}
+
 canvas.addEventListener('mousemove', e => {
   const { mx, my } = toScene(e);
+  if (dragItem) {
+    const { dgx, dgy } = screenToGrid(mx - dragStart.mx, my - dragStart.my);
+    DRAG_POSITIONS[dragItem].gx = Math.max(0, Math.min(GW - 2, dragStart.gx0 + dgx));
+    DRAG_POSITIONS[dragItem].gy = Math.max(0, Math.min(GH - 2, dragStart.gy0 + dgy));
+    dragMoved = true;
+    canvas.style.cursor = 'grabbing';
+    return;
+  }
   hoverHot = hitTest(mx, my);
-  canvas.style.cursor = hoverHot ? 'pointer' : 'default';
+  const draggable = hotToDragItem(hoverHot) !== null;
+  canvas.style.cursor = draggable ? 'grab' : (hoverHot ? 'pointer' : 'default');
+});
+
+canvas.addEventListener('mousedown', e => {
+  if (e.button !== 0) return;
+  const { mx, my } = toScene(e);
+  const hsp = hitTest(mx, my);
+  const item = hotToDragItem(hsp);
+  if (!item) return;
+  dragItem  = item;
+  dragStart = { mx, my, gx0: DRAG_POSITIONS[item].gx, gy0: DRAG_POSITIONS[item].gy };
+  dragMoved = false;
+  canvas.style.cursor = 'grabbing';
+  e.preventDefault();
+});
+
+document.addEventListener('mouseup', () => {
+  if (!dragItem) return;
+  if (dragMoved) saveFurniture();
+  dragItem  = null;
+  dragStart = null;
+  // dragMoved is kept true until the click event so the click handler can
+  // detect that a drag (not a tap) just ended and suppress the action.
 });
 
 function handleHit(hsp) {
@@ -1252,20 +1322,54 @@ function handleHit(hsp) {
 }
 
 canvas.addEventListener('click', e => {
+  if (dragMoved) { dragMoved = false; return; }  // was a drag, not a click
   const { mx, my } = toScene(e);
   const hsp = hitTest(mx, my);
   if (hsp) handleHit(hsp);
 });
 
-// touch support
+// touch support (drag + tap)
 canvas.addEventListener('touchstart', e => {
   const t = e.touches[0]; if (!t) return;
   const { mx, my } = toScene(t);
   const hsp = hitTest(mx, my);
+  const item = hotToDragItem(hsp);
+  if (item) {
+    dragItem  = item;
+    dragStart = { mx, my, gx0: DRAG_POSITIONS[item].gx, gy0: DRAG_POSITIONS[item].gy };
+    dragMoved = false;
+    e.preventDefault();
+    return;
+  }
   if (!hsp) return;
   e.preventDefault();
   handleHit(hsp);
 }, { passive:false });
+
+canvas.addEventListener('touchmove', e => {
+  if (!dragItem) return;
+  e.preventDefault();
+  const t = e.touches[0]; if (!t) return;
+  const { mx, my } = toScene(t);
+  const { dgx, dgy } = screenToGrid(mx - dragStart.mx, my - dragStart.my);
+  DRAG_POSITIONS[dragItem].gx = Math.max(0, Math.min(GW - 2, dragStart.gx0 + dgx));
+  DRAG_POSITIONS[dragItem].gy = Math.max(0, Math.min(GH - 2, dragStart.gy0 + dgy));
+  dragMoved = true;
+}, { passive:false });
+
+canvas.addEventListener('touchend', () => {
+  if (!dragItem) return;
+  if (dragMoved) {
+    saveFurniture();
+    dragMoved = false;
+  } else {
+    // Tap without movement — trigger the normal action.
+    const hsp = hitTest(dragStart.mx, dragStart.my);
+    if (hsp) handleHit(hsp);
+  }
+  dragItem  = null;
+  dragStart = null;
+});
 
 // ── employee card ──
 const cardOverlay = document.getElementById('card-overlay');
@@ -1342,7 +1446,8 @@ document.getElementById('meeting-start').addEventListener('click', () => {
   participants.forEach((name, i) => {
     const emp = EMPLOYEES.find(e => e.name === name);
     if (!emp) return;
-    const seat = MEETING_CHAIRS[i] || MEETING_CHAIRS[MEETING_CHAIRS.length-1];
+    const chairs = getMeetingChairs();
+    const seat = chairs[i] || chairs[chairs.length-1];
     emp.meetingLock = true;
     emp.dx = seat.gx; emp.dy = seat.gy;
     emp.destKind = 'meeting';
