@@ -576,27 +576,41 @@ function drawWorkstation(emp) {
   const mGx = gx + 0.38, mGy = gy - 0.88;
   const mbX = isoX(mGx, mGy);                   // monitor base X on screen
   const mbY = isoY(mGx, mGy) - deskH;           // desk top surface Y → monitor base
-  const mW = 30, mH = 42;                        // screen px: portrait-ish panel
+  const mW = 46, mH = 24;                        // widescreen 16:8.5 landscape
   const fl = mbX - mW / 2;                       // frame left
   const ft = mbY - mH;                           // frame top
   // bezel
-  ctx.fillStyle = '#1e1e1e'; ctx.fillRect(fl - 2, ft - 2, mW + 4, mH + 6);
-  // screen
-  ctx.fillStyle = '#0a0f0a'; ctx.fillRect(fl, ft, mW, mH);
-  // glow
-  const g = 60 + Math.floor(Math.sin(time * 0.06 + gx) * 30);
-  ctx.fillStyle = `rgb(0,${g},${Math.floor(g * 0.7)})`;
-  ctx.fillRect(fl + 2, ft + 2, mW - 4, mH - 4);
-  // scan lines
-  ctx.fillStyle = 'rgba(0,255,150,0.5)';
-  for (let i = 0; i < 6; i++) {
-    const lw = 6 + ((time * 2 + i * 7) % 20);
-    ctx.fillRect(fl + 3, ft + 5 + i * 6, lw, 2);
+  ctx.fillStyle = '#1e1e1e'; ctx.fillRect(fl - 2, ft - 2, mW + 4, mH + 5);
+  // screen background
+  ctx.fillStyle = '#020a02'; ctx.fillRect(fl, ft, mW, mH);
+  // Matrix rain — columns of falling green drops, slow cascade
+  const rainCols = 7;
+  const colW = Math.floor((mW - 4) / rainCols);
+  for (let c = 0; c < rainCols; c++) {
+    const cx = fl + 2 + c * colW;
+    // each column has its own speed & phase so they stagger naturally
+    const speed = 0.18 + (c * 0.04 + gx * 0.03) % 0.14;
+    const cycleH = mH + 6;
+    const headY = ((time * speed + c * 11 + gx * 5) % cycleH) - 4;
+    // trail: dots above the head, fading out
+    for (let t = 0; t < 9; t++) {
+      const dy = headY - t * 3;
+      if (dy < 1 || dy > mH - 2) continue;
+      const alpha = Math.max(0, 1 - t / 8);
+      const bright = Math.floor(200 * alpha);
+      ctx.fillStyle = `rgba(0,${bright},${Math.floor(bright * 0.25)},${alpha.toFixed(2)})`;
+      ctx.fillRect(cx, ft + dy, colW - 1, 2);
+    }
+    // head: bright near-white green
+    if (headY >= 1 && headY <= mH - 2) {
+      ctx.fillStyle = '#aaffbb';
+      ctx.fillRect(cx, ft + headY, colW - 1, 2);
+    }
   }
   // stand stem + foot
   ctx.fillStyle = '#1a1a1a';
-  ctx.fillRect(mbX - 3, mbY - 7, 6, 9);
-  ctx.fillRect(mbX - 9, mbY - 1, 18, 4);
+  ctx.fillRect(mbX - 3, mbY - 6, 6, 8);
+  ctx.fillRect(mbX - 10, mbY - 1, 20, 4);
 
   // keyboard on desk surface (slightly in front of monitor)
   const kbX = isoX(gx + 0.25, gy - 0.52), kbY = isoY(gx + 0.25, gy - 0.52) - deskH;
