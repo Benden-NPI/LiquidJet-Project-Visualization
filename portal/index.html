@@ -649,23 +649,23 @@ function drawMeetingTable() {
 }
 
 // ════════════════════════════════════════════
-//  DRAW: PANTRY (茶水間) — counter + coffee machine + fridge
+//  DRAW: PANTRY (茶水間) — small table + coffee machine
 //  A relaxed corner where AI characters chitchat over coffee.
 //  Coffee machine is pushed flush against the left wall (gx≈0) so its
 //  front (right) face — screen + dispenser + drip tray — points into the
 //  room and reads as a coffee machine from the iso angle.
 // ════════════════════════════════════════════
 function drawPantry() {
-  const gx = 0.4, gy = 5.0, w = 1.9, d = 0.7;
+  const gx = 0.45, gy = 5.08, w = 0.95, d = 0.6;
   const hovered = hoverHot && hoverHot.kind === 'leisure' && hoverHot.ref === 'coffee';
-  // counter
-  drawBox(gx, gy, w, d, 18, '#a88860', '#704818', '#806030', '#332211');
+  // small table
+  drawBox(gx, gy, w, d, 14, '#a88860', '#704818', '#806030', '#332211');
 
   // ── coffee machine ─────────────────────────────────────────
   // Push it into the front-left corner so it sits against the left wall and
   // the visually lower/front edge of the pantry counter in the isometric view.
   // Taller body + a recognizable front face (screen, dispenser, drip tray).
-  const cmGx = 0.02, cmGy = gy + d - 0.53, cmW = 0.45, cmD = 0.5, cmH = 34;
+  const cmGx = 0.02, cmGy = gy + d - 0.5, cmW = 0.45, cmD = 0.5, cmH = 34;
   const machineBox = drawBox(cmGx, cmGy, cmW, cmD, cmH,
     hovered ? '#52607a' : '#3a3a44', // top
     hovered ? '#2c3d58' : '#1f1f28', // right face (visible from camera)
@@ -716,11 +716,6 @@ function drawPantry() {
   ctx.fillRect(noz[0]+1, noz[1]-6+puff, 2, 2);
   ctx.fillRect(noz[0]+3, noz[1]-10+puff, 2, 2);
   ctx.fillRect(noz[0],   noz[1]-13+puff, 2, 2);
-
-  // ── fridge on the right end of the counter ─────────────────
-  drawBox(gx+1.15, gy+0.05, 0.55, 0.55, 36, '#d8d8e6', '#a4a4bc', '#b8b8d0', '#33334a');
-  const fh = isoX(gx+1.7, gy+0.3), fy = isoY(gx+1.7, gy+0.3) - 28;
-  ctx.fillStyle = '#666'; ctx.fillRect(fh-1, fy, 2, 10);
 
   // signage
   const tc = [isoX(gx+w/2, gy+d+0.05), isoY(gx+w/2, gy+d+0.05) + 6];
