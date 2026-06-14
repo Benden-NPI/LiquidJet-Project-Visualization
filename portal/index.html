@@ -1367,12 +1367,22 @@ function leisureStatusText() {
   if (availableCount < 2) return '目前可呼叫人數不足 2 位。';
   if (leisureSelected.length === 0) return '請選 2 位員工。';
   const picked = leisureSelected.join('、');
-  if (leisureSelected.length < 2) return `已選：${picked}（再選 1 位）`;
+  if (leisureSelected.length === 1) return `已選：${picked}（再選 1 位）`;
   return `已選：${picked}（準備出發）`;
 }
 
 function isLeisureChoiceLocked(isSelected) {
   return !isSelected && leisureSelected.length >= 2;
+}
+
+function leisureStayProp(activity) {
+  return activity === 'foosball' ? 'foosballStay' : 'pantryStay';
+}
+
+function leisureStayDuration(activity) {
+  return activity === 'foosball'
+    ? rndInt(ROUTINE.foosballStayMin, ROUTINE.foosballStayMax)
+    : rndInt(ROUTINE.stayAtDestMin, ROUTINE.stayAtDestMax);
 }
 
 function renderLeisurePicker() {
@@ -1438,14 +1448,12 @@ function dispatchLeisurePair() {
   if (pair.length !== 2) return;
   const spots = WANDER_SPOTS[meta.spotKey];
   if (!spots || spots.length < 2) return;
-  const stay = leisureActivity === 'foosball'
-    ? rndInt(ROUTINE.foosballStayMin, ROUTINE.foosballStayMax)
-    : rndInt(ROUTINE.stayAtDestMin, ROUTINE.stayAtDestMax);
+  const stay = leisureStayDuration(leisureActivity);
+  const stayProp = leisureStayProp(leisureActivity);
 
   pair.forEach((emp, idx) => {
     clearActivityStay(emp);
-    if (leisureActivity === 'foosball') emp.foosballStay = stay;
-    else emp.pantryStay = stay;
+    emp[stayProp] = stay;
     sendTo(emp, spots[idx].gx, spots[idx].gy, meta.destKind);
   });
 
