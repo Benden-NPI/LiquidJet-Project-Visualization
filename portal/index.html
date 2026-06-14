@@ -705,62 +705,95 @@ function drawMeetingTable() {
 //  Floor-standing water dispenser with pixel-art design: one grid square base.
 // ════════════════════════════════════════════
 function drawPantry() {
-  const gx = DRAG_POSITIONS.coffee.gx, gy = DRAG_POSITIONS.coffee.gy, d = 0.6;
+  const gx = DRAG_POSITIONS.coffee.gx, gy = DRAG_POSITIONS.coffee.gy;
   const hovered = hoverHot && hoverHot.kind === 'leisure' && hoverHot.ref === 'coffee';
-  
-  // Floor-standing water dispenser design:
-  // Base: one floor grid square (w=0.9, d=0.9), height proportional (~48px)
-  const wdGx = gx - 0.43, wdGy = gy + d - 0.5, wdW = 0.9, wdD = 0.9;
-  
-  // Lower cabinet base (storage compartment) - height: 18px
-  const baseBox = drawBox(wdGx, wdGy, wdW, wdD, 18,
-    hovered ? '#7a8092' : '#65707f', // top
-    hovered ? '#48525e' : '#3d4754', // right face
-    hovered ? '#5a6474' : '#4d5763', // left face
-    hovered ? '#88ccff' : '#1a1f28'); // shadow
-  
-  // Main body (water tanks) - height: 30px, sitting on top of base
-  const bodyGy = wdGy;
-  const bodyBox = drawBox(wdGx + 0.08, bodyGy + 0.08, wdW - 0.16, wdD - 0.16, 30,
-    hovered ? '#e6f2ff' : '#d4e8ff', // top - light blue tint
-    hovered ? '#a8c8e8' : '#9ab8d8', // right face - blue gradient
-    hovered ? '#bcd8f0' : '#adc8e0', // left face
-    hovered ? '#88ccff' : '#5a7a9a'); // shadow
-  
-  // Blue water bottle visualization (upper tank) - drawn on the right face
-  const bodyBase = [isoX(wdGx + 0.08, bodyGy + 0.08), isoY(wdGx + 0.08, bodyGy + 0.08)];
-  const tankX = bodyBase[0] + 8;
-  const tankY = bodyBase[1] - 24; // upper portion
-  
-  // Water level indicator (blue gradient)
-  ctx.fillStyle = '#4488ff';
-  ctx.fillRect(tankX, tankY, 14, 8);
-  ctx.fillStyle = '#6699ff';
-  ctx.fillRect(tankX, tankY + 8, 14, 6);
-  
-  // Dispenser taps (hot/cold) - small colored rectangles
-  const tapY = bodyBase[1] - 12;
-  // Hot tap (red)
-  ctx.fillStyle = hovered ? '#ff6655' : '#ee4433';
-  ctx.fillRect(tankX + 2, tapY, 4, 3);
-  // Cold tap (blue)
-  ctx.fillStyle = hovered ? '#4488ff' : '#3366dd';
-  ctx.fillRect(tankX + 9, tapY, 4, 3);
-  
-  // Cup platform/drip tray - small detail at bottom
-  const trayY = bodyBase[1] - 6;
-  ctx.fillStyle = '#555566';
-  ctx.fillRect(tankX, trayY, 14, 2);
-  
-  // Combine bounding boxes for interaction (use the base box which covers full dispenser)
-  const machineBox = {
-    x: Math.min(baseBox.x, bodyBox.x),
-    y: Math.min(baseBox.y, bodyBox.y),
-    w: Math.max(baseBox.x + baseBox.w, bodyBox.x + bodyBox.w) - Math.min(baseBox.x, bodyBox.x),
-    h: Math.max(baseBox.y + baseBox.h, bodyBox.y + bodyBox.h) - Math.min(baseBox.y, bodyBox.y)
-  };
-  
-  return machineBox;
+
+  // 賀眾牌 slim floor-standing water cooler
+  // Slim footprint (0.50×0.50) — taller than wide
+  const W = 0.50, D = 0.50;
+  const bgx = gx - 0.25, bgy = gy - 0.25;
+
+  // Lower storage cabinet (silver-grey)
+  const loH = 24;
+  const baseBox = drawBox(bgx, bgy, W, D, loH,
+    hovered ? '#d4dce2' : '#bcc8d0',
+    hovered ? '#8898a8' : '#788898',
+    hovered ? '#98a8b8' : '#8898a8',
+    '#182028');
+
+  // Upper dispenser body — slightly inset, white-grey, taller
+  const hiH = 30;
+  const totH = loH + hiH;
+  drawBox(bgx + 0.05, bgy + 0.05, W - 0.10, D - 0.10, totH,
+    hovered ? '#f0f6fa' : '#dceaf2',
+    hovered ? '#b0c8dc' : '#a0b8cc',
+    hovered ? '#c4d8ec' : '#b4c8dc',
+    '#182028');
+
+  // ── details on the visible front face (+gy direction) ──────────────
+  // Compute front-face base midpoint so taps/bottle are centred on the face
+  const fL = [isoX(bgx,     bgy + D), isoY(bgx,     bgy + D)];
+  const fR = [isoX(bgx + W, bgy + D), isoY(bgx + W, bgy + D)];
+  const fx  = (fL[0] + fR[0]) / 2;
+  const fby = (fL[1] + fR[1]) / 2;   // vertical base level
+
+  // Tap faceplate (recessed dark panel)
+  const tapY = fby - loH - 6;
+  ctx.fillStyle = hovered ? '#3a5060' : '#28404e';
+  ctx.fillRect(fx - 11, tapY, 22, 12);
+
+  // Hot tap button (red square)
+  ctx.fillStyle = hovered ? '#ff6050' : '#cc3322';
+  ctx.fillRect(fx - 9, tapY + 3, 7, 7);
+  // Hot LED (blinks slowly)
+  ctx.fillStyle = (Math.floor(time / 42) % 2) ? '#ff3300' : '#770000';
+  ctx.fillRect(fx - 8, tapY + 1, 2, 2);
+
+  // Cold tap button (blue square)
+  ctx.fillStyle = hovered ? '#4499ff' : '#2255cc';
+  ctx.fillRect(fx + 2, tapY + 3, 7, 7);
+  // Cold LED (steady blue)
+  ctx.fillStyle = '#33aaff';
+  ctx.fillRect(fx + 3, tapY + 1, 2, 2);
+
+  // Drip tray
+  ctx.fillStyle = '#3a4a58';
+  ctx.fillRect(fx - 12, tapY + 12, 24, 3);
+  // Water droplet shimmer in tray
+  ctx.fillStyle = '#88ccee';
+  ctx.fillRect(fx - 1, tapY + 13, 2, 2);
+
+  // Cup well (dark recess below tray)
+  ctx.fillStyle = '#0e1c26';
+  ctx.fillRect(fx - 8, tapY + 15, 16, 5);
+
+  // ── Water bottle (inverted 5-gallon on top of body) ────────────────
+  const bottleBaseY = fby - totH;
+  const shimmer = Math.floor(148 + Math.sin(time * 0.024) * 24);
+  // Bottle barrel (translucent blue)
+  ctx.fillStyle = `rgba(32, 88, ${shimmer}, 0.82)`;
+  ctx.fillRect(fx - 9, bottleBaseY - 18, 18, 18);
+  // Inner water reflection
+  ctx.fillStyle = 'rgba(170, 225, 255, 0.32)';
+  ctx.fillRect(fx - 7, bottleBaseY - 16, 5, 12);
+  // Label band (horizontal white stripe)
+  ctx.fillStyle = 'rgba(255,255,255,0.26)';
+  ctx.fillRect(fx - 8, bottleBaseY - 13, 16, 5);
+  // Brand mark (tiny logo pixels)
+  ctx.fillStyle = 'rgba(0,50,110,0.65)';
+  ctx.fillRect(fx - 2, bottleBaseY - 12, 4, 3);
+  // Bottle neck (narrow connector down into dispenser)
+  ctx.fillStyle = 'rgba(38, 96, 180, 0.88)';
+  ctx.fillRect(fx - 5, bottleBaseY, 10, 6);
+  // Bottle dome / cap
+  ctx.fillStyle = '#e4f0f8';
+  ctx.fillRect(fx - 5, bottleBaseY - 21, 10, 4);
+  // Cap highlight
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(fx - 4, bottleBaseY - 21, 3, 2);
+
+  const hitY = bottleBaseY - 22;
+  return { x: fL[0] - 4, y: hitY, w: fR[0] - fL[0] + 8, h: fby - hitY + 4 };
 }
 
 // ════════════════════════════════════════════
@@ -1236,22 +1269,86 @@ function render() {
 // Yield = framed screen on the back-right wall (gx=0)
 function drawYieldPanel() {
   const f = FEATURES.yield;
-  const wallH = WALL_HEIGHT, panelH = 50, gy = 2.4, half = 1.0;
-  const topY = isoY(0, gy) - wallH + 18;
-  const a = [isoX(0, gy-half), isoY(0, gy-half)];
-  const b = [isoX(0, gy+half), isoY(0, gy+half)];
-  const pts = [[a[0],topY],[b[0],topY+ (b[1]-a[1]) ],[b[0],topY+panelH+(b[1]-a[1])],[a[0],topY+panelH]];
+  const wallH = WALL_HEIGHT, panelH = 56, gy = 2.4, half = 1.05;
+  const topY = isoY(0, gy) - wallH + 14;
+  const a = [isoX(0, gy-half), isoY(0, gy-half)];  // right edge (smaller gy)
+  const b = [isoX(0, gy+half), isoY(0, gy+half)];  // left edge  (larger gy)
+  // Panel parallelogram that follows the wall iso angle exactly
+  const pts = [
+    [a[0], topY],
+    [b[0], topY + (b[1]-a[1])],
+    [b[0], topY + panelH + (b[1]-a[1])],
+    [a[0], topY + panelH],
+  ];
   const hovered = hoverHot && hoverHot.kind==='feature' && hoverHot.label===f.label;
-  poly(pts, '#06120a', hovered?f.color:'#000', hovered?3:2);
-  // a tiny bar chart
-  const bx = (a[0]+b[0])/2, by = topY + 14 + (b[1]-a[1])/2;
-  ctx.fillStyle = hovered ? f.color : '#2a6a44';
-  [10,18,13,22,16].forEach((bh,i)=>ctx.fillRect(bx-22+i*9, by+18-bh, 6, bh));
+  poly(pts, '#050d05', hovered ? f.color : '#152515', hovered ? 3 : 2);
+
+  // Map (u,v) normalised coords → screen coords on the panel surface.
+  // u=0 → right(a) side, u=1 → left(b) side; v=0 → top, v=1 → bottom.
+  const pp = (u, v) => [
+    pts[0][0] + u*(pts[1][0]-pts[0][0]) + v*(pts[3][0]-pts[0][0]),
+    pts[0][1] + u*(pts[1][1]-pts[0][1]) + v*(pts[3][1]-pts[0][1]),
+  ];
+
+  // Yield trend data — upward with realistic dips
+  const data = [0.30, 0.38, 0.34, 0.46, 0.42, 0.54, 0.50, 0.64, 0.62, 0.77];
+  const n = data.length;
+  const mx0=0.07, mx1=0.93, my0=0.24, my1=0.87;
+
+  // Chart points mapped to parallelogram surface
+  const cpts = data.map((val, i) => {
+    const u = mx0 + (i/(n-1)) * (mx1-mx0);
+    const v = my0 + (1-val) * (my1-my0);
+    return pp(u, v);
+  });
+
+  // Area fill under the line
+  const bl = pp(mx0, my1), br = pp(mx1, my1);
+  ctx.beginPath();
+  ctx.moveTo(bl[0], bl[1]);
+  cpts.forEach(p => ctx.lineTo(p[0], p[1]));
+  ctx.lineTo(br[0], br[1]);
+  ctx.closePath();
+  ctx.fillStyle = hovered ? 'rgba(68,255,140,0.18)' : 'rgba(38,170,75,0.16)';
+  ctx.fill();
+
+  // Trend line
+  ctx.beginPath();
+  ctx.moveTo(cpts[0][0], cpts[0][1]);
+  cpts.slice(1).forEach(p => ctx.lineTo(p[0], p[1]));
+  ctx.strokeStyle = hovered ? '#88ffaa' : '#44cc66';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.lineWidth = 1;  // reset
+
+  // Data dots
+  cpts.forEach((p, i) => {
+    ctx.fillStyle = i === n-1 ? '#bbffcc' : (hovered ? '#66ee88' : '#33aa55');
+    ctx.fillRect(p[0]-1.5, p[1]-1.5, 3, 3);
+  });
+
+  // Animated upward lightning bolt above the highest (latest) data point
+  const peak = cpts[n-1];
+  const boltOn = Math.floor(time / 16) % 4 !== 0;  // brief flash-off
+  if (boltOn) {
+    const bx = peak[0], by = peak[1] - 4;
+    // Pixel lightning bolt going upward (zigzag)
+    const bolt = [[2,0],[3,0],[4,0],[1,2],[2,2],[3,2],[2,4],[3,4],[1,6],[2,6]];
+    ctx.fillStyle = hovered ? '#ffff88' : '#aaff44';
+    bolt.forEach(([dx,dy]) => ctx.fillRect(bx-2+dx, by-10+dy, 1, 1));
+    // Glow halo
+    ctx.fillStyle = `rgba(140,255,60,${0.22 + 0.14*Math.sin(time*0.11)})`;
+    ctx.fillRect(bx-4, by-12, 12, 12);
+  }
+
+  // Label at the top of the panel, centred along the wall surface
+  const lp = pp(0.5, 0.10);
   ctx.fillStyle = hovered ? '#ffe066' : f.color;
-  ctx.font='5px "Press Start 2P"'; ctx.textAlign='center';
-  ctx.fillText('📈 YIELD', bx, by-6);
+  ctx.font = '5px "Press Start 2P"'; ctx.textAlign = 'center';
+  ctx.fillText('YIELD ▲', lp[0], lp[1]);
+
   const minX=Math.min(a[0],b[0]), maxX=Math.max(a[0],b[0]);
-  return { bbox:{x:minX,y:topY,w:maxX-minX,h:panelH+(b[1]-a[1])}, kind:'feature', label:f.label, ref:f };
+  return { bbox:{x:minX, y:topY, w:maxX-minX, h:panelH+(b[1]-a[1])}, kind:'feature', label:f.label, ref:f };
 }
 
 requestAnimationFrame(render);
