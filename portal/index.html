@@ -330,7 +330,7 @@ const rgbStr = (c) => `rgb(${c[0]},${c[1]},${c[2]})`;
 // ════════════════════════════════════════════
 //  DATA
 // ════════════════════════════════════════════
-// 8 workstation employees. gx,gy = standing tile of the character.
+// 9 workstation employees (excluding Benden). gx,gy = standing tile.
 // Layout: 4 columns × 2 rows along the back of the room — balances the
 // composition against the front-centred meeting room.
 const EMPLOYEES = [
@@ -350,6 +350,8 @@ const EMPLOYEES = [
     desc:'守住品質底線，管控 CTQ、PFMEA 與反應計畫。' },
   { name:'LISA',   role:'Planner',               roleZh:'生產規劃',     gx:6.7, gy:2.7, hair:[0xaa,0x66,0x22], skin:[0xff,0xdd,0xaa], shirt:[0xff,0xbb,0x44],
     desc:'排程與資源規劃，讓 milestone 一個個準時落地。' },
+  { name:'RISK',   role:'Risk Analysis Eng.',    roleZh:'風險分析',     gx:8.9, gy:3.4, hair:[0x55,0x44,0x88], skin:[0xf2,0xcf,0xa5], shirt:[0xff,0x77,0x66],
+    desc:'辨識風險、分級衝擊與機率，提出可執行的緩解與監控方案。' },
   // Benden — Project Lead — also has his own desk on the right side of the room.
   // He only walks over to the meeting table when a debate is convened.
   { name:'BENDEN', role:'Project Lead',          roleZh:'專案負責人',   gx:8.3, gy:1.8, hair:[0x22,0x22,0x22], skin:[0xff,0xcc,0x99], shirt:[0xff,0xe0,0x66],
@@ -1008,6 +1010,7 @@ const EMP_DIALOGS = {
 //  based on keyword hits. Always includes Benden at the head of the table.
 // ════════════════════════════════════════════
 const TOPIC_ROUTES = [
+  { keys:['風險','risk'],                lead:'RISK',   collab:['MZ','EVAN'] },
   { keys:['良率','yield'],                lead:'MZ',     collab:['JASON','EVAN'] },
   { keys:['失效','不良','FA','fa'],       lead:'EVAN',   collab:['MZ','BRIAN'] },
   { keys:['蝕刻','etch'],                 lead:'JOY',    collab:['BRIAN','JACOB'] },
@@ -1025,7 +1028,7 @@ function routeTopic(topic) {
       return { lead: r.lead, collab: r.collab };
     }
   }
-  // Generic fallback — the front four members.
+  // Generic fallback — quality-first triage.
   return { lead: 'MZ', collab: ['MORGAN','EVAN','BRIAN'] };
 }
 
@@ -1218,8 +1221,13 @@ document.getElementById('meeting-start').addEventListener('click', () => {
   const topic = document.getElementById('meeting-topic').value.trim();
   if (!topic) { document.getElementById('meeting-topic').focus(); return; }
   const route = routeTopic(topic);
-  // Build participant list: Benden (head) + lead + collaborators, de-duped.
-  const order = ['BENDEN', route.lead, ...route.collab];
+  // Build participant list: keep the lead order, while always inviting the
+  // full AI office roster (including all original members).
+  const prioritized = new Set([route.lead, ...route.collab].filter(Boolean));
+  const everyone = EMPLOYEES
+    .map(e => e.name)
+    .filter(n => n !== 'BENDEN' && !prioritized.has(n));
+  const order = ['BENDEN', route.lead, ...route.collab, ...everyone];
   const seen = new Set();
   const participants = [];
   for (const n of order) {

@@ -320,7 +320,7 @@
     <div class="field">
       <label class="section-label">角色設定</label>
       <div class="roles-list" id="rolesList"></div>
-      <button class="btn btn-add-role" id="btnAddRole" style="margin-top:8px;">＋ 新增角色（最多 4 個）</button>
+      <button class="btn btn-add-role" id="btnAddRole" style="margin-top:8px;">＋ 新增角色（最多 12 個）</button>
     </div>
 
     <div class="divider"></div>
@@ -392,8 +392,8 @@ const XAI_URL           = "https://api.x.ai/v1/chat/completions";
 const ERR_INVALID_KEY =
   "API Key 格式錯誤：請填入 xAI Key（xai- 開頭）或 GitHub PAT（github_pat_ / ghp_ 開頭）。\n\n" +
   "請至側欄「🔑 API Key 設定」更正後再試。";
-const ROLE_COLORS = ["#4f8cff","#38d39f","#f3b54a","#f06292"];
-const MAX_ROLES   = 4;
+const ROLE_COLORS = ["#4f8cff","#38d39f","#f3b54a","#f06292","#7d6bff","#3cc7d0","#ff8a5b","#a0d468","#d16ff0","#ffd166","#5cc8ff","#ff6f91"];
+const MAX_ROLES   = 12;
 
 const PRESETS = {
   tech: {
@@ -1182,6 +1182,8 @@ loadState();
           desc: "你是品保工程師 MZ，守住 CTQ、PFMEA 與反應計畫，傾向保守且嚴謹。" },
         LISA:   { name: "LISA · 生產規劃",
           desc: "你是生產規劃 Lisa，從時程、資源與里程碑的角度切入。" },
+        RISK:   { name: "RISK · 風險分析",
+          desc: "你是風險分析工程師，專注風險辨識、風險分級、緩解方案與監控指標，確保決策前看清風險敞口。" },
       };
       const wanted = rolesParam.split(",").map(s => s.trim()).filter(Boolean);
       const mapped = wanted

@@ -94,7 +94,7 @@
   .modal .pill.ok { color:var(--accent2); border-color:var(--accent2); }
   .modal .pill.bad { color:var(--danger); border-color:var(--danger); }
 
-  .ai-panel { background:var(--panel); border-left:1px solid var(--border); overflow:auto; display:flex; flex-direction:column; }
+  .ai-panel { background:var(--panel); border-left:1px solid var(--border); overflow:hidden; display:flex; flex-direction:column; }
   .ai-head { padding:10px 12px; border-bottom:1px solid var(--border); }
   .ai-head .title { font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; }
   .ai-head .hint { margin-top:4px; font-size:11.5px; color:var(--muted); }
@@ -108,6 +108,39 @@
   .ai-item .row { display:flex; gap:6px; margin-top:8px; }
   .ai-item .row button { padding:4px 8px; font-size:12px; }
   .ai-empty { padding:16px 12px; color:var(--muted); font-size:12px; line-height:1.6; }
+
+  /* --- Discussion tabs --- */
+  .ai-tabs { display:flex; margin-top:6px; border-top:1px solid var(--border); }
+  .ai-tab { flex:1; padding:6px 4px; font-size:11.5px; text-align:center; cursor:pointer; color:var(--muted); background:transparent; border:none; border-top:2px solid transparent; border-radius:0; }
+  .ai-tab:hover { background:var(--panel2); color:var(--text); }
+  .ai-tab.active { color:var(--accent); border-top-color:var(--accent); }
+
+  /* --- Discussion panel --- */
+  #tabSuggest { overflow-y:auto; flex:1; }
+  .tab-discuss { display:flex; flex-direction:column; flex:1; overflow:hidden; }
+  .disc-members { display:flex; gap:5px; flex-wrap:wrap; padding:6px 10px; border-bottom:1px solid var(--border); background:var(--panel2); flex-shrink:0; }
+  .disc-member { font-size:11px; padding:2px 7px; border-radius:99px; border:1px solid var(--border); color:var(--muted); cursor:default; white-space:nowrap; }
+  .disc-member.speaking { border-color:var(--accent2); color:var(--accent2); }
+  @keyframes disc-pulse { from { opacity:.7; } to { opacity:1; } }
+  .disc-transcript { flex:1; overflow-y:auto; padding:8px; display:flex; flex-direction:column; gap:6px; }
+  .disc-msg { display:flex; gap:7px; align-items:flex-start; }
+  .disc-msg .dav { font-size:16px; flex-shrink:0; line-height:1.5; }
+  .disc-msg .dbub { background:var(--panel2); border:1px solid var(--border); border-radius:0 8px 8px 8px; padding:7px 9px; font-size:11.5px; line-height:1.6; flex:1; }
+  .disc-msg.benden .dbub { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 6%,var(--panel2)); }
+  .disc-msg .dname { font-size:10px; color:var(--muted); margin-bottom:3px; font-weight:600; }
+  .disc-msg.system { justify-content:center; }
+  .disc-msg.system .dbub { background:transparent; color:var(--muted); font-style:italic; border-style:dashed; font-size:11px; text-align:center; flex:none; max-width:90%; }
+  .disc-controls { padding:8px; border-top:1px solid var(--border); display:flex; flex-direction:column; gap:6px; flex-shrink:0; }
+  .disc-topic { width:100%; background:var(--panel2); border:1px solid var(--border); border-radius:6px; padding:5px 8px; font-size:12px; color:inherit; resize:none; height:46px; font-family:inherit; }
+  .disc-budget { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--muted); }
+  .disc-bw { flex:1; height:3px; background:var(--border); border-radius:2px; overflow:hidden; }
+  .disc-bf { height:100%; border-radius:2px; background:var(--accent2); transition:width .3s; }
+  .disc-bf.warn { background:var(--warn); }
+  .disc-bf.over { background:var(--danger); }
+  .disc-row { display:flex; gap:5px; }
+  .disc-row button { padding:4px 8px; font-size:12px; }
+  .disc-row select { flex:0 0 auto; font-size:12px; background:var(--panel2); border:1px solid var(--border); border-radius:6px; padding:3px 6px; color:inherit; }
+
   footer { grid-column:1/4; background:var(--panel); border-top:1px solid var(--border); font-size:11px; color:var(--muted); display:flex; align-items:center; gap:14px; padding:0 12px; }
   footer .spacer { flex:1; }
 
@@ -186,8 +219,37 @@
       <div class="title">AI Auto-Operation</div>
       <div class="hint">僅產生草稿建議，不會自動 commit。</div>
       <div class="ai-status" id="aiStatus">idle</div>
+      <div class="ai-tabs">
+        <button class="ai-tab active" data-tab="suggest">建議</button>
+        <button class="ai-tab" data-tab="discuss">討論室</button>
+      </div>
     </div>
-    <div class="ai-list" id="aiList"></div>
+    <div id="tabSuggest">
+      <div class="ai-list" id="aiList"></div>
+    </div>
+    <div id="tabDiscuss" class="tab-discuss" style="display:none;">
+      <div class="disc-members" id="discMembers"></div>
+      <div class="disc-transcript" id="discTranscript"></div>
+      <div class="disc-controls">
+        <textarea class="disc-topic" id="discTopic" placeholder="討論主題（留空使用心智圖根節點）"></textarea>
+        <div class="disc-budget">
+          <span>Token</span>
+          <div class="disc-bw"><div class="disc-bf" id="discBar" style="width:0%"></div></div>
+          <span id="discBudgetLabel">0 / 2000</span>
+        </div>
+        <div class="disc-row">
+          <select id="discBudgetSel">
+            <option value="1000">1k</option>
+            <option value="2000" selected>2k</option>
+            <option value="4000">4k</option>
+            <option value="8000">8k</option>
+          </select>
+          <button id="discStart" class="primary">▶ 開始</button>
+          <button id="discStop" disabled>■ 停止</button>
+          <button id="discClear">🗑</button>
+        </div>
+      </div>
+    </div>
   </section>
 
   <footer>
@@ -1051,6 +1113,388 @@ function applyAISuggestion(id) {
   setAIStatus("suggestion applied (draft only)");
 }
 
+// =========================================================
+// ===  MULTI-AGENT DISCUSSION ENGINE  =====================
+// =========================================================
+
+// --- Discussion engine tuning constants ---
+const DISC_MIN_DELAY_MS = 1800;          // minimum ms between speaker turns
+const DISC_MAX_DELAY_MS = 4400;          // maximum ms between speaker turns
+const DISC_FRAMEWORK_INTERVAL = 5;       // Benden injects a framework note every N member turns
+const DISC_CONTEXT_WINDOW = 6;           // recent messages sent to webhook for context
+const DISC_LOOP_KEY_LEN = 40;            // chars used to fingerprint a message for loop detection
+const DISC_MIN_REMAINING_TOKENS = 40;    // token headroom below which Benden closes and stops
+const DISC_SPEAKER_RANDOMNESS = 1.8;     // additive random weight balancing relevance vs. variety
+const DISC_BUDGET_WARN_PCT = 60;         // % used → turn progress bar amber
+const DISC_BUDGET_CRIT_PCT = 80;         // % used → turn progress bar red
+
+const TEAM_MEMBERS = [
+  {
+    id: "benden", name: "Benden", role: "PM / Facilitator", avatar: "🧭",
+    isFacilitator: true,
+    soul: "專業、精準、以終為始。用 PM 框架（RACI、風險矩陣、里程碑）組織討論，不贅言，直接切入重點。對的地方認同，不對的地方給出具體可執行建議，並記錄為 ADR。",
+    focus: ["scope", "milestone", "risk", "decision", "action", "deadline", "owner", "priority"],
+  },
+  {
+    id: "sam", name: "Sam", role: "Quality Engineer", avatar: "📊",
+    isFacilitator: false,
+    soul: "數據導向，Control Plan 思維。只說有根據的話，不確定就明說，直接給指標與數字。認同合理方向，對缺乏量測依據的決策直接點出。",
+    focus: ["quality", "control plan", "measurement", "defect", "yield", "spec", "cpk", "msa"],
+  },
+  {
+    id: "kai", name: "Kai", role: "Process Engineer", avatar: "⚙️",
+    isFacilitator: false,
+    soul: "技術深度第一，先問機制再說方向。認同有根據的技術方向，對不合理假設直接點出並提替代方案。",
+    focus: ["process", "parameter", "equipment", "root cause", "experiment", "DOE", "recipe", "spec"],
+  },
+  {
+    id: "mia", name: "Mia", role: "Planning", avatar: "📅",
+    isFacilitator: false,
+    soul: "時間與資源守門人。務實估算，主動暴露依賴關係，不承諾做不到的事，對排程衝突立即示警。",
+    focus: ["schedule", "resource", "dependency", "timeline", "milestone", "capacity", "bottleneck"],
+  },
+  {
+    id: "rex", name: "Rex", role: "Risk Analyst", avatar: "🔍",
+    isFacilitator: false,
+    soul: "挑戰假設，暴露盲點。建設性質疑，每個質疑都附替代方案，不是單純否定。",
+    focus: ["risk", "assumption", "blocker", "failure", "mitigation", "FMEA", "contingency"],
+  },
+];
+
+// Response templates – {topic} {point} {question} {field} {time} {dep} {impact} {assumption} {summary}
+const DISC_TEMPLATES = {
+  benden: {
+    open: [
+      "聚焦議題：{topic}。先確認範疇與 Owner，再進各項討論。",
+      "目標明確後再走流程。{topic} 的成功標準是什麼？各組先說想法。",
+      "三個基準先對齊：目標、邊界、Owner。主題：{topic}。",
+    ],
+    framework: [
+      "里程碑拆解：{point}。誰負責？什麼時間點？",
+      "這個決策要記成 ADR，不然下次還要重討。{point}",
+      "目前卡在哪？把阻礙說清楚，{point} 才能推進。",
+      "用 RACI 拆一下 {point}——Responsible 是誰？",
+    ],
+    redirect: [
+      "停一下，討論有些發散。核心問題是：{question}",
+      "迴圈偵測到了，重設框架：先釐清 WHY，再討論 HOW。{question}",
+      "這個點繞了好幾圈。把問題縮到：{question}",
+      "聚焦：{question} 先給出答案，其他的後面再說。",
+    ],
+    close: [
+      "本輪結論：{summary}。行動項目各 Owner 確認後執行。",
+      "整理三點：{summary}。下個 checkpoint 設在里程碑前。",
+    ],
+  },
+  sam: [
+    "Control Plan 這端，{point} 需要量測方法和規格上下限，現在有嗎？",
+    "有數據支撐嗎？{point} 如果沒有，先設計量測計畫再推進。",
+    "良率目標是多少？{point} 需要可追蹤的指標，Cpk ≥ 1.33 是底線。",
+    "認同 {point} 的方向，但需確認量測系統 MSA 過關了嗎？",
+    "{point} 的管制方法建議改成 SPC，比固定抽樣更有效。",
+    "這個 {field} 欄位是 Control Plan 必填，現在是空的。",
+  ],
+  kai: [
+    "機制上，{point} 的根本原因要從製程參數找，不能只看結果。",
+    "這個假設忽略了 {point}，建議先做小批驗證再放大。",
+    "技術上可行，但 {point} 需要先跑 DOE 確認製程視窗。",
+    "認同 {point}，這個方向機制說得通，參數範圍要確認一下。",
+    "設備能力支援嗎？{point} 的公差要求先比對設備規格。",
+    "{point} 的根本原因還沒清楚，先別急著解決方案。",
+  ],
+  mia: [
+    "時程上，{point} 至少需要 {time}，現在先確認依賴項。",
+    "資源這端，{point} 需要跨部門協調，誰是 Owner？",
+    "注意 {point} 有依賴 {dep}，這條要先解鎖，不然後面卡死。",
+    "認同 {point}，但並行做的話需要額外人力，容量先確認。",
+    "容量不夠的話，{point} 只能延期或砍範疇，三選一先決定。",
+    "{point} 的前置作業是什麼？先列出來，不然排不了。",
+  ],
+  rex: [
+    "風險：{point} 一旦發生，影響 {impact}，緩解措施是什麼？",
+    "這裡假設了 {assumption}，如果假設不成立呢？Plan B 是？",
+    "{point} 的 FMEA 評估了嗎？先別跳到解決方案，根因要清楚。",
+    "認同 {point} 的緩解方向，建議加上觸發條件讓執行更明確。",
+    "這個風險嚴重度和發生率各是多少？用數字排優先級才有依據。",
+    "{point} 如果失敗，後果和回退方案是什麼？",
+  ],
+};
+
+const _dp = (arr) => arr[Math.floor(Math.random() * arr.length)];
+const _df = (tpl, ctx) => tpl.replace(/\{(\w+)\}/g, (_, k) => ctx[k] ?? `[${k}]`);
+
+function _discCtx() {
+  const nodes = [];
+  walkTree(tree, (n) => nodes.push(n.text));
+  const rel = nodes.filter(t => t && t.length > 2).slice(0, 8);
+  const pick = () => rel.length ? rel[Math.floor(Math.random() * rel.length)] : "此議題";
+  return {
+    topic: $("discTopic")?.value?.trim() || tree?.text || "LiquidJet 專案",
+    point: pick(),
+    question: `「${pick()}」的現況與下一步是什麼？`,
+    field: _dp(["characteristic", "spec", "method", "msa", "sampling", "control"]),
+    time: _dp(["2 週", "3 個工作天", "下個里程碑前", "1 Sprint"]),
+    dep: pick(),
+    impact: _dp(["里程碑延誤", "品質風險上升", "資源衝突", "客戶問題"]),
+    assumption: `「${pick()}」已就緒`,
+    summary: rel.slice(0, 2).join("、") || "待確認事項",
+  };
+}
+
+class DiscussionEngine {
+  constructor() {
+    this.messages = [];
+    this.budget = 2000;
+    this.used = 0;
+    this.running = false;
+    this.timer = null;
+    this.lastId = null;
+    this.loopBuf = [];  // [{id, text}] last N turns
+    this.turnCount = 0;
+    this.onUpdate = null; // callback(event, msg?)
+  }
+
+  tokens(text) { return Math.ceil(text.length / 4); }
+
+  _emit(type, member, text) {
+    const t = this.tokens(text);
+    const msg = { type, member, text, tokens: t, ts: Date.now() };
+    this.messages.push(msg);
+    this.used += t;
+    this.onUpdate?.("add", msg);
+    return msg;
+  }
+
+  _pickSpeaker() {
+    // Never the same person twice in a row; weight by topic keyword overlap + randomness
+    const nonFac = TEAM_MEMBERS.filter(m => !m.isFacilitator && m.id !== this.lastId);
+    const topic = (($("discTopic")?.value || "") + " " + (tree?.text || "")).toLowerCase();
+    const scored = nonFac.map(m => {
+      const s = m.focus.reduce((a, kw) => a + (topic.includes(kw.toLowerCase()) ? 1 : 0), 0);
+      return { m, s: s + Math.random() * DISC_SPEAKER_RANDOMNESS };
+    }).sort((a, b) => b.s - a.s);
+    const total = scored.reduce((s, x) => s + x.s + 0.1, 0);
+    let r = Math.random() * total;
+    for (const { m, s } of scored) { r -= s + 0.1; if (r <= 0) return m; }
+    return scored[0].m;
+  }
+
+  _localResponse(member) {
+    const ctx = _discCtx();
+    const tpls = DISC_TEMPLATES[member.id];
+    if (!Array.isArray(tpls)) return "（無法生成回應）";
+    return _df(_dp(tpls), ctx);
+  }
+
+  async _response(member) {
+    // Webhook mode: real LLM call
+    if (aiSettings.mode === "webhook" && aiSettings.webhookUrl) {
+      try {
+        const history = this.messages.slice(-DISC_CONTEXT_WINDOW).map(m => ({
+          speaker: m.member?.name || "system", text: m.text,
+        }));
+        const res = await fetch(aiSettings.webhookUrl, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            ...(aiSettings.apiKey ? { authorization: "Bearer " + aiSettings.apiKey } : {}),
+          },
+          body: JSON.stringify({
+            task: "discussion-turn",
+            member: { id: member.id, name: member.name, role: member.role, soul: member.soul },
+            topic: $("discTopic")?.value?.trim() || tree?.text,
+            history,
+            mindmapContext: buildAIContext(),
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const txt = String(data?.text || data?.response || "").trim();
+          if (txt) return txt;
+        }
+      } catch { /* fall through */ }
+    }
+    return this._localResponse(member);
+  }
+
+  _detectLoop() {
+    // If same opening N chars appears ≥2 times in last 4 messages → loop
+    if (this.loopBuf.length < 4) return false;
+    const seen = {};
+    for (const { text } of this.loopBuf.slice(-4)) {
+      const key = text.slice(0, DISC_LOOP_KEY_LEN);
+      seen[key] = (seen[key] || 0) + 1;
+      if (seen[key] >= 2) return true;
+    }
+    return false;
+  }
+
+  _bendenSay(templateKey) {
+    const b = TEAM_MEMBERS.find(m => m.id === "benden");
+    const arr = DISC_TEMPLATES.benden[templateKey];
+    const text = _df(_dp(arr), _discCtx());
+    const prefix = templateKey === "redirect" ? "[⚠ 中斷迴圈] " : templateKey === "framework" ? "[📌 框架] " : "";
+    this._emit("member", b, prefix + text);
+    this.lastId = "benden";
+  }
+
+  start(budget) {
+    if (this.running) return;
+    this.budget = budget;
+    this.running = true;
+    this.used = 0;
+    this.turnCount = 0;
+    this.loopBuf = [];
+    this.onUpdate?.("start");
+    this._bendenSay("open");
+    this._schedule();
+  }
+
+  stop(reason = "手動停止") {
+    if (!this.running) return;
+    this.running = false;
+    clearTimeout(this.timer);
+    this._emit("system", null, `── 討論結束：${reason} ──`);
+    this.onUpdate?.("stop");
+  }
+
+  clear() {
+    this.stop("已清除");
+    this.messages = [];
+    this.used = 0;
+    this.loopBuf = [];
+    this.onUpdate?.("clear");
+  }
+
+  _schedule() {
+    if (!this.running) return;
+    const delay = DISC_MIN_DELAY_MS + Math.random() * (DISC_MAX_DELAY_MS - DISC_MIN_DELAY_MS);
+    this.timer = setTimeout(() => this._turn(), delay);
+  }
+
+  async _turn() {
+    if (!this.running) return;
+
+    // Token budget check
+    if (this.budget - this.used < DISC_MIN_REMAINING_TOKENS) {
+      this._bendenSay("close");
+      this.stop("Token 預算耗盡");
+      return;
+    }
+
+    // Loop check – Benden interrupts
+    if (this._detectLoop()) {
+      this._bendenSay("redirect");
+      this.loopBuf = [];
+      this._schedule();
+      return;
+    }
+
+    // Pick speaker & generate response
+    const speaker = this._pickSpeaker();
+    const text = await this._response(speaker);
+    this._emit("member", speaker, text);
+    this.lastId = speaker.id;
+    this.loopBuf.push({ id: speaker.id, text });
+    if (this.loopBuf.length > 8) this.loopBuf.shift();
+    this.turnCount++;
+
+    // Benden adds framework every N member turns
+    if (this.running && this.turnCount % DISC_FRAMEWORK_INTERVAL === 0) {
+      await new Promise(r => setTimeout(r, 700));
+      if (this.running) this._bendenSay("framework");
+    }
+
+    this._schedule();
+  }
+}
+
+const discEngine = new DiscussionEngine();
+
+// ===  DISCUSSION UI  =====================================
+function renderDiscMembers(speakingId = null) {
+  const el = $("discMembers");
+  if (!el) return;
+  el.innerHTML = TEAM_MEMBERS.map(m =>
+    `<span class="disc-member${m.id === speakingId ? " speaking" : ""}">${m.avatar} ${m.name}</span>`
+  ).join("");
+}
+
+function renderDiscMsg(msg) {
+  const el = $("discTranscript");
+  if (!el) return;
+  const div = document.createElement("div");
+  if (msg.type === "system") {
+    div.className = "disc-msg system";
+    div.innerHTML = `<div class="dbub">${msg.text}</div>`;
+  } else {
+    const m = msg.member;
+    div.className = `disc-msg${m?.id === "benden" ? " benden" : ""}`;
+    div.innerHTML =
+      `<div class="dav">${m?.avatar || "🤖"}</div>` +
+      `<div class="dbub"><div class="dname">${m?.name || "AI"} · ${m?.role || ""}</div>${msg.text}</div>`;
+  }
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+
+function updateDiscBudget() {
+  const pct = Math.min(100, Math.round(discEngine.used / discEngine.budget * 100));
+  const bar = $("discBar");
+  const label = $("discBudgetLabel");
+  if (bar) { bar.style.width = pct + "%"; bar.className = "disc-bf" + (pct > DISC_BUDGET_CRIT_PCT ? " over" : pct > DISC_BUDGET_WARN_PCT ? " warn" : ""); }
+  if (label) label.textContent = `${discEngine.used} / ${discEngine.budget}`;
+}
+
+discEngine.onUpdate = (event, msg) => {
+  if (event === "add") {
+    renderDiscMsg(msg);
+    updateDiscBudget();
+    renderDiscMembers(msg.type === "member" ? msg.member?.id : null);
+  } else if (event === "start") {
+    $("discStart").disabled = true;
+    $("discStop").disabled = false;
+    updateDiscBudget();
+    renderDiscMembers();
+    setAIStatus("discussion running");
+  } else if (event === "stop") {
+    $("discStart").disabled = false;
+    $("discStop").disabled = true;
+    renderDiscMembers();
+    setAIStatus(`idle · ${aiSettings.mode}`);
+  } else if (event === "clear") {
+    const el = $("discTranscript");
+    if (el) el.innerHTML = "";
+    $("discStart").disabled = false;
+    $("discStop").disabled = true;
+    updateDiscBudget();
+    renderDiscMembers();
+  }
+};
+
+function initDiscUI() {
+  renderDiscMembers();
+  updateDiscBudget();
+
+  $("discStart").onclick = () => {
+    const budget = parseInt($("discBudgetSel").value || "2000", 10);
+    discEngine.start(budget);
+  };
+  $("discStop").onclick = () => discEngine.stop();
+  $("discClear").onclick = () => discEngine.clear();
+
+  // Tab switching
+  document.querySelectorAll(".ai-tab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".ai-tab").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      const tab = btn.dataset.tab;
+      $("tabSuggest").style.display = tab === "suggest" ? "" : "none";
+      $("tabDiscuss").style.display = tab === "discuss" ? "" : "none";
+    });
+  });
+}
+
 // --- Local server adapter (works when you run `npm run edit`) ---
 const LocalAdapter = {
   name: "local",
@@ -1657,6 +2101,7 @@ pushHistory();
 savedSnapshot = snapshot();
 renderAISuggestions();
 setAIStatus(`idle · ${aiSettings.mode}`);
+initDiscUI();
 (async () => {
   await pickStorage();
   await refreshFileList();
