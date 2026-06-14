@@ -648,7 +648,7 @@ function drawPantry() {
 
   // ── coffee machine ─────────────────────────────────────────
   // Push it into the front-left corner so it sits against the left wall and
-  // lower edge of the pantry counter.
+  // the visually lower/front edge of the pantry counter in the isometric view.
   // Taller body + a recognizable front face (screen, dispenser, drip tray).
   const cmGx = 0.02, cmGy = gy + d - 0.53, cmW = 0.45, cmD = 0.5, cmH = 34;
   const machineBox = drawBox(cmGx, cmGy, cmW, cmD, cmH,
@@ -1356,6 +1356,7 @@ function availableLeisureEmployees() {
 }
 
 function clearActivityStay(emp) {
+  // Manual leisure dispatch should replace any prior destination linger state.
   emp.foosballStay = 0;
   emp.pantryStay = 0;
   emp.stayUntil = 0;
@@ -1363,7 +1364,7 @@ function clearActivityStay(emp) {
 
 function leisureStatusText() {
   const availableCount = availableLeisureEmployees().length;
-  if (availableCount < 2) return '目前可呼叫人數不足 2 位（部分員工正在開會）。';
+  if (availableCount < 2) return '目前可呼叫人數不足 2 位。';
   if (leisureSelected.length === 0) return '請選 2 位員工。';
   const picked = leisureSelected.join('、');
   if (leisureSelected.length < 2) return `已選：${picked}（再選 1 位）`;
