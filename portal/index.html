@@ -210,19 +210,28 @@ footer a:hover { color:#4488ff; }
   background:#0a0a2a; border:4px solid #ffffff;
   box-shadow:inset 0 0 0 2px #000, 0 0 24px #4444ff66;
   padding:18px 22px; min-height:140px; cursor:pointer;
+  display:flex; flex-direction:column; align-items:flex-start;
 }
 #rpg-speaker {
   display:inline-block;
   font-family:'Press Start 2P',monospace; font-size:10px;
   color:#ffe066; text-shadow:1px 1px #996600;
-  background:#1a1a4a; border:2px solid #ffffff;
+  background:#1a1a4a; border:2px solid #8888ff;
   padding:4px 10px; margin-bottom:10px;
 }
 #rpg-text {
   font-family:'Press Start 2P',monospace; font-size:11px;
   color:#ffffff; line-height:2.0; min-height:64px;
-  text-shadow:1px 1px #000;
+  text-shadow:1px 1px #000; width:100%;
 }
+/* left speaker: label + text hug the left edge */
+#rpg-box.speaker-left { align-items:flex-start; }
+#rpg-box.speaker-left #rpg-speaker { border-color:#8888ff; }
+#rpg-box.speaker-left #rpg-text { text-align:left; }
+/* right speaker: label + text hug the right edge */
+#rpg-box.speaker-right { align-items:flex-end; }
+#rpg-box.speaker-right #rpg-speaker { border-color:#ff8866; }
+#rpg-box.speaker-right #rpg-text { text-align:right; }
 #rpg-hint {
   position:absolute; right:14px; bottom:8px;
   font-family:'Press Start 2P',monospace; font-size:5px; color:#88aacc;
@@ -1782,6 +1791,7 @@ let rpgIndex  = 0;
 let rpgTyping = false;
 let rpgFullText = '';
 let rpgTimer = null;
+let rpgLeftName = 'BENDEN';
 
 function drawBigAvatar(canvasEl, emp) {
   const a = canvasEl.getContext('2d');
@@ -1805,6 +1815,7 @@ function openRpg(emp) {
   rpgIndex = 0;
   // Portraits — Benden left, the other engineer right.
   const benden = EMPLOYEES.find(e => e.name === 'BENDEN');
+  rpgLeftName = 'BENDEN';
   drawBigAvatar(document.querySelector('#rpg-left  .rpg-face'), benden);
   document.querySelector('#rpg-left  .rpg-pname').textContent = 'BENDEN';
   drawBigAvatar(document.querySelector('#rpg-right .rpg-face'), emp);
@@ -1816,6 +1827,10 @@ function openRpg(emp) {
 function rpgShowLine() {
   if (rpgIndex >= rpgScript.length) { closeRpg(); return; }
   const line = rpgScript[rpgIndex];
+  const isLeft = (line.who === rpgLeftName);
+  const box = document.getElementById('rpg-box');
+  box.classList.toggle('speaker-left', isLeft);
+  box.classList.toggle('speaker-right', !isLeft);
   document.getElementById('rpg-speaker').textContent = line.who;
   rpgFullText = line.text;
   const el = document.getElementById('rpg-text');
