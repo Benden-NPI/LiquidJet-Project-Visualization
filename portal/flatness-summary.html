@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>LiquidJet Flatness</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: #f8f9fa; }
+
+  /* ── Landing ── */
+  #landing { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; gap: 18px; }
+  #landing h1 { font-size: 1.6rem; color: #1e293b; }
+  #landing p  { color: #64748b; font-size: 0.9rem; }
+  #warn { display: none; background: #fef9c3; border: 1px solid #fde047; border-radius: 8px; padding: 12px 20px; font-size: 0.85rem; color: #713f12; max-width: 420px; text-align: center; }
+
+  /* ── App ── */
+  #app { display: none; padding: 20px; }
+  .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .toolbar h1 { font-size: 1.4rem; color: #1e293b; flex: 1; }
+  #status { font-size: 0.8rem; color: #64748b; margin-bottom: 12px; min-height: 18px; }
+  .legend { display: flex; gap: 20px; margin-bottom: 14px; font-size: 0.8rem; align-items: center; flex-wrap: wrap; }
+  .legend span { display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; border-radius: 6px; padding: 3px 8px; border: 1px solid transparent; transition: opacity 0.15s, border-color 0.15s; }
+  .legend span:hover { border-color: #cbd5e1; }
+  .legend span.off { opacity: 0.35; text-decoration: line-through; }
+  .dot { width: 14px; height: 14px; border-radius: 3px; border: 1px solid #cbd5e1; flex-shrink: 0; }
+
+  /* ── Buttons ── */
+  .btn { padding: 7px 16px; border: none; border-radius: 6px; font-size: 0.85rem; cursor: pointer; transition: background 0.15s; }
+  .btn-dark       { background: #1e293b; color: #fff; }
+  .btn-dark:hover { background: #334155; }
+  .btn-outline    { background: #fff; color: #475569; border: 1px solid #cbd5e1; }
+  .btn-outline:hover { background: #f1f5f9; }
+  .btn-big { padding: 12px 30px; font-size: 1rem; border-radius: 8px; }
+  .btn:disabled { opacity: 0.5; cursor: wait; }
+
+  /* View toggle group */
+  .btn-group { display: flex; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; }
+  .btn-group .btn { border-radius: 0; border: none; }
+  .btn-group .btn + .btn { border-left: 1px solid #cbd5e1; }
+  .btn-group .btn.active { background: #1e293b; color: #fff; }
+  .btn-group .btn:not(.active) { background: #fff; color: #475569; }
+  .btn-group .btn:not(.active):hover { background: #f1f5f9; }
+
+  /* ── Filter bar ── */
+  .filter-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .filter-label { font-size: 0.8rem; color: #64748b; white-space: nowrap; }
+  .chip { padding: 4px 12px; border-radius: 999px; border: 1px solid #cbd5e1; background: #fff; color: #475569; font-size: 0.8rem; cursor: pointer; transition: background 0.12s, color 0.12s, border-color 0.12s; white-space: nowrap; }
+  .chip:hover { background: #f1f5f9; }
+  .chip.active { background: #1e293b; color: #fff; border-color: #1e293b; }
+
+  /* ── List table ── */
+  .list-table { border-collapse: collapse; width: 100%; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; }
+  .list-table th { background: #1e293b; color: #fff; padding: 10px 14px; text-align: left; font-size: 0.85rem; white-space: nowrap; position: sticky; top: 0; z-index: 5; }
+  .list-table td { padding: 8px 14px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; font-size: 0.85rem; }
+  .list-table tr:last-child td { border-bottom: none; }
+  .list-table tr:hover td { filter: brightness(0.97); }
+  .list-table .col-id   { font-family: monospace; font-size: 0.82rem; white-space: nowrap; }
+  .list-table .col-val  { font-family: monospace; font-weight: 700; text-align: center; white-space: nowrap; font-size: 0.9rem; }
+  .list-table .col-part { font-family: monospace; font-size: 0.8rem; color: #475569; white-space: nowrap; }
+  .list-table .col-imgs { padding: 6px 14px; }
+  .list-table .col-imgs figure { display: block; margin: 4px 0 8px 0; }
+  .list-table .col-imgs img { max-width: 260px; max-height: 180px; display: block; border: 1px solid #cbd5e1; border-radius: 4px; cursor: zoom-in; transition: box-shadow 0.15s; }
+  .list-table .col-imgs img:hover { box-shadow: 0 0 0 2px #3b82f6; }
+  .list-table .col-imgs figcaption { font-size: 0.7rem; color: #64748b; text-align: center; margin-top: 2px; }
+
+  /* ── Pivot table ── */
+  .pv-wrap { overflow: auto; max-height: calc(100vh - 220px); border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+  .pv-table { border-collapse: collapse; background: #fff; }
+
+  /* Column widths */
+  .pv-table .col-id   { min-width: 115px; width: 115px; }
+  .pv-table .col-item { min-width: 145px; width: 145px; }
+  .pv-table .col-data { min-width: 200px; }
+
+  /* Sticky left: body cells */
+  .pv-table tbody td.col-id   { position: sticky; left: 0;     z-index: 3; }
+  .pv-table tbody td.col-item { position: sticky; left: 115px;  z-index: 3; }
+
+  /* Sticky top: sub-header row (the one with part names) */
+  .pv-table thead tr.pv-sub-header th {
+    position: sticky; top: 0; z-index: 5;
+  }
+
+  /* Sticky corner: sub-header cells in frozen columns (top + left both) */
+  .pv-table thead tr.pv-sub-header th.col-id   { position: sticky; top: 0; left: 0;     z-index: 8; }
+  .pv-table thead tr.pv-sub-header th.col-item  { position: sticky; top: 0; left: 115px; z-index: 8; }
+
+  /* Separator line after frozen columns (all rows) */
+  .pv-table .col-item { border-right: 2px solid #94a3b8 !important; }
+
+  /* Header rows */
+  .pv-table thead tr.pv-top-header th {
+    background: #fff; color: #1e293b; padding: 8px 14px;
+    font-size: 0.85rem; text-align: center; border: 1px solid #cbd5e1;
+    border-bottom: none;
+  }
+  .pv-table thead tr.pv-top-header th.col-id,
+  .pv-table thead tr.pv-top-header th.col-item {
+    background: #fff;
+  }
+  .pv-table thead tr.pv-sub-header th {
+    background: #1e293b; color: #fff; padding: 8px 14px;
+    font-size: 0.82rem; text-align: center; white-space: nowrap;
+    border: 1px solid #374151;
+  }
+  .pv-table thead tr.pv-sub-header th.col-id,
+  .pv-table thead tr.pv-sub-header th.col-item { text-align: left; }
+
+  /* Body cells */
+  .pv-table td { border: 1px solid #e2e8f0; vertical-align: middle; font-size: 0.82rem; padding: 0; }
+
+  /* ID cell (rowspan=3) */
+  .pv-id-cell {
+    font-family: monospace; font-size: 0.82rem; font-weight: 600;
+    color: #1e293b; text-align: center; padding: 8px 10px;
+    background: #f8fafc; white-space: nowrap;
+  }
+
+  /* Item label cell */
+  .pv-item-cell {
+    font-size: 0.8rem; color: #475569; padding: 6px 10px;
+    background: #f8fafc; white-space: nowrap;
+  }
+
+  /* Data cells */
+  .pv-data-cell { padding: 4px 8px; text-align: center; vertical-align: middle; }
+  .pv-data-cell.empty { background: #f8f9fa; }
+  .pv-data-cell.img-cell { padding: 6px 8px; text-align: left; vertical-align: top; }
+  .pv-data-cell.img-cell figure { display: block; margin: 2px 0 8px 0; }
+  .pv-data-cell.img-cell img { max-width: 200px; max-height: 140px; display: block; border: 1px solid #cbd5e1; border-radius: 4px; cursor: zoom-in; transition: box-shadow 0.15s; }
+  .pv-data-cell.img-cell img:hover { box-shadow: 0 0 0 2px #3b82f6; }
+  .pv-data-cell.img-cell figcaption { font-size: 0.65rem; color: #64748b; text-align: center; margin-top: 2px; }
+  .pv-data-cell.val-cell { font-family: monospace; font-weight: 700; font-size: 0.88rem; }
+  .pv-data-cell.date-cell { font-size: 0.78rem; color: #475569; white-space: nowrap; }
+
+  /* Group separator: thick bottom border on last sub-row of each group */
+  .pv-table tr.pv-group-end td { border-bottom: 2px solid #94a3b8; }
+
+  /* Sticky summary footer */
+  .pv-table tfoot td { position: sticky; bottom: 0; z-index: 4; background: #f0f4f8; border-top: 2px solid #94a3b8; font-size: 0.78rem; padding: 6px 8px; }
+  .pv-table tfoot td.col-id   { left: 0;     z-index: 8; text-align: center; font-weight: 700; color: #475569; }
+  .pv-table tfoot td.col-item { left: 115px; z-index: 8; color: #64748b; border-right: 2px solid #94a3b8 !important; }
+
+  /* ── Lightbox ── */
+  #lb { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center; cursor: zoom-out; }
+  #lb.on { display: flex; }
+  #lb img { max-width: 92vw; max-height: 92vh; border-radius: 6px; box-shadow: 0 4px 32px rgba(0,0,0,0.5); }
+
+  /* ── Spinner ── */
+  .spinner { display: inline-block; width: 13px; height: 13px; border: 2px solid #cbd5e1; border-top-color: #1e293b; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 5px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Print / PDF ── */
+  #print-header { display: none; }
+  @media print {
+    @page { margin: 1cm; size: A4 landscape; }
+    body { background: #fff; }
+    /* Hide everything except the pivot table */
+    #landing, .toolbar, .filter-bar, #pivot-date-bar, .legend, #status,
+    #lb, #progress-overlay, #trend-area, .list-table { display: none !important; }
+    #app { display: block !important; padding: 0; }
+    /* Print header */
+    #print-header { display: block !important; margin-bottom: 14px; }
+    #print-header h2 { font-size: 1rem; color: #1e293b; margin-bottom: 3px; }
+    #print-info { font-size: 0.75rem; color: #475569; }
+    /* Pivot table */
+    .pv-wrap { overflow: visible !important; max-height: none !important; box-shadow: none !important; border-radius: 0; }
+    .pv-table { font-size: 0.7rem; border-collapse: collapse; }
+    /* Remove sticky so columns don't overlap or disappear */
+    .pv-table td, .pv-table th { position: static !important; }
+    .pv-table .col-item { border-right: 1px solid #94a3b8 !important; }
+    /* Shrink images for print */
+    .pv-data-cell.img-cell img { max-width: 110px !important; max-height: 75px !important; }
+    /* Keep row group separator */
+    .pv-table tr.pv-group-end td { border-bottom: 1.5px solid #94a3b8; }
+    /* Page break: try not to split a 3-row ID group */
+    .pv-table tr.pv-group-end { page-break-after: auto; }
+    .pv-table tr:not(.pv-group-end) { page-break-inside: avoid; }
+  }
+
+  /* ── Trend ── */
+  #trend-area { display: none; }
+  .trend-card { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+  .trend-card-title { font-size: 1rem; font-weight: 700; color: #1e293b; margin-bottom: 14px; }
+  .trend-sub-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  .trend-sub-row label { font-size: 0.8rem; color: #64748b; }
+  .trend-input { padding: 4px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.82rem; outline: none; }
+  .trend-input:focus { border-color: #3b82f6; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- Progress overlay -->
+<div id="progress-overlay" style="display:none; position:fixed; inset:0; background:rgba(248,249,250,0.95); z-index:8888; flex-direction:column; align-items:center; justify-content:center; gap:16px;">
+  <div style="font-size:1rem; color:#1e293b; font-weight:600;">Scanning data...</div>
+  <div id="progress-folder" style="font-size:0.85rem; color:#64748b; font-family:monospace;"></div>
+  <div id="progress-count"  style="font-size:0.82rem; color:#94a3b8;"></div>
+  <div style="width:260px; height:6px; background:#e2e8f0; border-radius:3px; overflow:hidden;">
+    <div id="progress-bar" style="height:100%; background:#1e293b; width:0%; transition:width 0.2s;"></div>
+  </div>
+</div>
+
+<!-- Landing -->
+<div id="landing">
+  <h1>LiquidJet Flatness</h1>
+  <div id="warn">⚠️ This feature requires <strong>Chrome</strong> or <strong>Edge</strong> (v86+).</div>
+  <p>Select the Flatness folder to load all measurement data</p>
+  <button class="btn btn-dark btn-big" onclick="pickFolder()">📂 Select Flatness Folder</button>
+  <div id="landing-error" style="display:none; color:#dc2626; font-size:0.85rem; max-width:380px; text-align:center;"></div>
+</div>
+
+<!-- App -->
+<div id="app">
+  <div class="toolbar">
+    <h1>LiquidJet Flatness Data Summary</h1>
+    <div class="btn-group">
+      <button class="btn"        id="btn-list"  onclick="setView('list')">≡ List</button>
+      <button class="btn active" id="btn-pivot" onclick="setView('pivot')">⊞ Pivot</button>
+      <button class="btn"        id="btn-trend" onclick="setView('trend')">📈 Trend</button>
+    </div>
+    <button id="export-pdf-btn" class="btn btn-outline" style="display:none;" onclick="exportPDF()">📄 Export PDF</button>
+    <button class="btn btn-dark"    id="refresh-btn" onclick="rescan()">↻ Rescan</button>
+    <button class="btn btn-outline" onclick="pickFolder()">Change Folder</button>
+  </div>
+  <!-- Print-only header (hidden on screen) -->
+  <div id="print-header">
+    <h2>LiquidJet Flatness — Pivot Report</h2>
+    <p id="print-info"></p>
+  </div>
+  <div id="status"></div>
+  <div class="filter-bar">
+    <span class="filter-label">Part:</span>
+    <div id="filter-chips"></div>
+  </div>
+  <!-- Pivot date filter — visible only in pivot mode -->
+  <div id="pivot-date-bar" style="display:none;" class="filter-bar" style="flex-wrap:wrap;">
+    <span class="filter-label">Date:</span>
+    <button class="btn btn-outline" style="padding:3px 10px;font-size:0.78rem;" onclick="selectAllPivotDates()">All</button>
+    <button class="btn btn-outline" style="padding:3px 10px;font-size:0.78rem;" onclick="clearPivotDates()">Clear</button>
+    <div id="pivot-date-chips" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
+    <span id="pivot-date-count" style="font-size:0.78rem;color:#94a3b8;"></span>
+  </div>
+  <div class="legend">
+    <span data-level="high"   onclick="toggleLevel('high')"  ><span class="dot" style="background:#fee2e2"></span>max−min ≥ 0.050 mm</span>
+    <span data-level="medium" onclick="toggleLevel('medium')"><span class="dot" style="background:#fef9c3"></span>max−min ≥ 0.030 mm</span>
+    <span data-level="low"    onclick="toggleLevel('low')"   ><span class="dot" style="background:#fff"    ></span>max−min &lt; 0.030 mm</span>
+  </div>
+  <div id="trend-area">
+    <!-- Date filter card -->
+    <div class="trend-card" style="padding:14px 20px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+        <span style="font-size:0.85rem;font-weight:700;color:#1e293b;">Date Filter</span>
+        <button class="btn btn-outline" style="padding:3px 12px;font-size:0.78rem;" onclick="selectAllDates()">All</button>
+        <button class="btn btn-outline" style="padding:3px 12px;font-size:0.78rem;" onclick="clearDates()">Clear</button>
+        <span id="date-selected-count" style="font-size:0.78rem;color:#94a3b8;"></span>
+      </div>
+      <div id="date-chips" style="display:flex;flex-wrap:wrap;gap:5px;max-height:120px;overflow-y:auto;"></div>
+    </div>
+    <div class="trend-card">
+      <div class="trend-card-title">Section 1 — Flatness Over Time</div>
+      <div style="position:relative; height:380px;">
+        <canvas id="chart-time"></canvas>
+      </div>
+    </div>
+    <div class="trend-card">
+      <div class="trend-card-title">Section 2 — Per-Unit Station Progression</div>
+      <div class="trend-sub-row">
+        <label>Filter units:</label>
+        <input id="unit-search" class="trend-input" type="text" placeholder="e.g. 62239" oninput="filterUnits()">
+        <span id="unit-count" style="font-size:0.78rem;color:#94a3b8;"></span>
+      </div>
+      <div style="position:relative; height:420px;">
+        <canvas id="chart-station"></canvas>
+      </div>
+    </div>
+  </div>
+  <div id="table-area"></div>
+</div>
+
+<div id="lb" onclick="this.classList.remove('on')"><img id="lbimg" src=""></div>
+
+<script>
+// ── IndexedDB ────────────────────────────────────────────────
+const DB = (() => {
+  let _db;
+  function open() {
+    return new Promise((res, rej) => {
+      if (_db) return res(_db);
+      const r = indexedDB.open('flatness-v1', 1);
+      r.onupgradeneeded = e => e.target.result.createObjectStore('kv');
+      r.onsuccess = e => { _db = e.target.result; res(_db); };
+      r.onerror   = () => rej(r.error);
+    });
+  }
+  return {
+    async get(k)    { const d = await open(); return new Promise((res,rej) => { const r = d.transaction('kv').objectStore('kv').get(k); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); },
+    async set(k, v) { const d = await open(); return new Promise((res,rej) => { const tx=d.transaction('kv','readwrite'); tx.objectStore('kv').put(v,k); tx.oncomplete=res; tx.onerror=()=>rej(tx.error); }); }
+  };
+})();
+
+// ── CSV parser ───────────────────────────────────────────────
+function parseCSV(text) {
+  const rows = [];
+  let row = [], field = '', inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQ) {
+      if (c === '"' && text[i+1] === '"') { field += '"'; i++; }
+      else if (c === '"') inQ = false;
+      else field += c;
+    } else {
+      if      (c === '"')  inQ = true;
+      else if (c === ',')  { row.push(field); field = ''; }
+      else if (c === '\n') { if (field || row.length) { row.push(field); rows.push(row); } row = []; field = ''; }
+      else if (c !== '\r') field += c;
+    }
+  }
+  if (field || row.length) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Canonical group key: 2-digit number + 2-letter code.
+// No letters or single 'A' → append 'AA' (old parts fold into first variant).
+// Any other 2-letter combo (AB, etc.) → keep as-is.
+function canonicalSuffix(num, letters) {
+  const L = (letters || '').toUpperCase();
+  return (!L || L === 'A') ? num + 'AA' : num + L;
+}
+
+// "LiquidJet_LBottomPlate_64A_H2_zin (1)" → "BottomPlate_64AA"
+function zinToLabel(zin) {
+  return zin
+    .replace(/^LiquidJet_/, '')       // strip "LiquidJet_" prefix
+    .replace(/\s*\(\d+\)\s*$/, '')    // strip trailing " (1)" etc.
+    .replace(/_H\d+.*$/, '')          // strip "_H2_zin..." and everything after
+    .replace(/[._]zin.*$/i, '')       // fallback: strip ".zin" / "_zin"
+    .replace(/^L(?=[A-Z])/, '')       // strip leading L variant: LBottomPlate → BottomPlate
+    .replace(/(\d+)([A-Za-z]*)$/, (_, n, l) => canonicalSuffix(n, l))  // normalize to 4-char group
+    .trim();
+}
+
+// Normalize LiquidJet ID.
+// Steps:
+//   1. Extract _H01 / _H02 suffix and reformat as " - H01"
+//   2. Strip leading letter prefix (L, etc. — inconsistently present)
+//   3. Pad 5-digit to 6-digit: model(2) + serial.padStart(4,'0')
+// e.g.  "L61001_H02" → "610001 - H02"
+//       "610001_H01" → "610001 - H01"
+//       "L61009"     → "610009"
+//       "610001"     → "610001"  (unchanged)
+function normalizeId(id) {
+  const hm = id.match(/_H(\d+)$/i);
+  const hSuffix = hm ? ` - H${hm[1].padStart(2, '0')}` : '';
+  let s = id.replace(/_H\d+$/i, '').trim();   // strip _H01/_H02
+  s = s.replace(/^[A-Za-z]+/, '');             // strip letter prefix (L, etc.)
+  if (/^\d{5}$/.test(s))                       // pad 5-digit → 6-digit
+    s = s.slice(0, 2) + s.slice(2).padStart(4, '0');
+  return s + hSuffix;
+}
+
+// ── App state ─────────────────────────────────────────────────
+let dirHandle    = null;
+let blobUrls     = [];
+let allRows      = [];
+let activeFilters     = new Set(['64AA']); // multi-select group-key set; empty = show all
+let activeLevels      = new Set(['high', 'medium', 'low']);
+let activePivotDates  = new Set();   // selected dates in pivot; all = all shown
+let pivotDateList     = [];          // ordered list of available dates
+let _pivotBaseRows    = [];          // part+severity filtered rows (before date filter)
+let _lastPivotFilterKey = null;      // serialized activeFilters when date chips were built
+let _pendingPivotDates  = null;      // IDB-restored date set, applied by buildPivotDateFilter()
+let viewMode     = 'pivot';
+let imgHandles   = {};
+let imgCounter   = 0;
+const DATE_PAT   = /^\d{8}(_\d+)?$/;
+
+// ── Image handle registry ────────────────────────────────────
+function resetImgState() { imgHandles = {}; imgCounter = 0; }
+
+function mkImg(handle, label, maxW, maxH) {
+  const id = imgCounter++;
+  imgHandles[id] = handle;
+  const style = `min-width:60px;min-height:45px;background:#f1f5f9;${maxW?'max-width:'+maxW+'px;':''}${maxH?'max-height:'+maxH+'px;':''}`;
+  return `<figure><img data-imgid="${id}" src="" loading="lazy" style="${style}"><figcaption>${esc(label)}</figcaption></figure>`;
+}
+
+function setupImgObserver(container) {
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const img = entry.target;
+      if (img.dataset.loaded) return;
+      img.dataset.loaded = '1';
+      const handle = imgHandles[+img.dataset.imgid];
+      if (!handle) return;
+      handle.getFile().then(f => {
+        const url = URL.createObjectURL(f);
+        blobUrls.push(url);
+        img.src = url;
+        img.style.background = '';
+      }).catch(() => {});
+      observer.unobserve(img);
+    });
+  }, { rootMargin: '400px' });
+
+  container.querySelectorAll('img[data-imgid]').forEach(img => {
+    observer.observe(img);
+    img.addEventListener('click', e => {
+      e.stopPropagation();
+      if (!img.dataset.loaded) return;
+      document.getElementById('lbimg').src = img.src;
+      document.getElementById('lb').classList.add('on');
+    });
+  });
+}
+
+// ── Folder picker ─────────────────────────────────────────────
+async function pickFolder() {
+  if (!window.showDirectoryPicker) {
+    document.getElementById('warn').style.display = 'block';
+    return;
+  }
+  try {
+    dirHandle = await window.showDirectoryPicker({ mode: 'read' });
+    await DB.set('dirHandle', dirHandle);
+    await scan();
+  } catch(e) {
+    if (e.name !== 'AbortError') showError('Failed to open folder: ' + e.message);
+  }
+}
+
+async function rescan() {
+  if (!dirHandle) return pickFolder();
+  const perm = await dirHandle.queryPermission({ mode: 'read' });
+  if (perm !== 'granted') {
+    if (await dirHandle.requestPermission({ mode: 'read' }) !== 'granted') return;
+  }
+  await scan();
+}
+
+function showError(msg) {
+  const el = document.getElementById('landing-error');
+  el.textContent = '⚠️ ' + msg;
+  el.style.display = 'block';
+  setStatus('');
+}
+
+function showProgress(folder, done, total) {
+  const ov = document.getElementById('progress-overlay');
+  ov.style.display = 'flex';
+  document.getElementById('progress-folder').textContent = folder;
+  document.getElementById('progress-count').textContent = total ? `${done} / ${total} folders` : '';
+  document.getElementById('progress-bar').style.width = total ? `${Math.round(done/total*100)}%` : '0%';
+}
+
+function hideProgress() {
+  document.getElementById('progress-overlay').style.display = 'none';
+}
+
+// ── Scan ─────────────────────────────────────────────────────
+async function scan() {
+  const btn = document.getElementById('refresh-btn');
+  btn.disabled = true;
+  document.getElementById('landing-error').style.display = 'none';
+  blobUrls.forEach(u => URL.revokeObjectURL(u));
+  blobUrls = [];
+  showProgress('Preparing...', 0, 0);
+  try {
+    allRows = await collectData(dirHandle);
+    hideProgress();
+    // Restore UI state from IDB (part filter, severity, view mode, pivot dates)
+    try {
+      const uiState = await DB.get('uiState');
+      if (uiState) {
+        viewMode      = uiState.viewMode || 'pivot';
+        // migrate old single-value activeFilter → activeFilters Set
+        if (uiState.activeFilters)      activeFilters = new Set(uiState.activeFilters);
+        else if (uiState.activeFilter)  activeFilters = new Set([uiState.activeFilter]);
+        else                            activeFilters = new Set(['64AA']);
+        activeLevels  = new Set(uiState.activeLevels || ['high', 'medium', 'low']);
+        if (uiState.activePivotDates) _pendingPivotDates = new Set(uiState.activePivotDates);
+        document.getElementById('btn-list').classList.toggle('active', viewMode === 'list');
+        document.getElementById('btn-pivot').classList.toggle('active', viewMode === 'pivot');
+        document.getElementById('btn-trend').classList.toggle('active', viewMode === 'trend');
+        document.querySelectorAll('.legend [data-level]').forEach(el =>
+          el.classList.toggle('off', !activeLevels.has(el.dataset.level)));
+      }
+    } catch(e) {}
+    buildFilter(allRows);
+    applyFilter();  // uses restored (or default '64') activeFilter to filter + render
+    document.getElementById('landing').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+  } catch(e) {
+    hideProgress();
+    showError('Scan failed: ' + e.message);
+    console.error(e);
+  }
+  btn.disabled = false;
+}
+
+async function collectData(root) {
+  const rows = [];
+  const topDirs = [];
+  for await (const [name, handle] of root.entries()) {
+    if (handle.kind === 'directory') topDirs.push([name, handle]);
+  }
+  topDirs.sort((a, b) => a[0].localeCompare(b[0]));
+  let done = 0;
+  for (const [name, handle] of topDirs) {
+    done++;
+    showProgress(name, done, topDirs.length);
+    if (DATE_PAT.test(name)) {
+      await scanDateFolder(handle, null, rows);
+    } else if (/^LiquidJet_/i.test(name)) {
+      const partLabel = zinToLabel(name);
+      for await (const [subName, subHandle] of handle.entries()) {
+        if (subHandle.kind === 'directory' && DATE_PAT.test(subName))
+          await scanDateFolder(subHandle, partLabel, rows);
+      }
+    }
+  }
+  // Primary: Liquidjet_ID; secondary: date → images within same cell are oldest-first (left→right)
+  rows.sort((a, b) => {
+    const idCmp = a.id.localeCompare(b.id);
+    if (idCmp !== 0) return idCmp;
+    return a.date.localeCompare(b.date);
+  });
+  return rows;
+}
+
+async function scanDateFolder(folderHandle, partLabel, rows) {
+  const files = {};
+  for await (const [fname, fhandle] of folderHandle.entries()) {
+    if (fhandle.kind === 'file') files[fname] = fhandle;
+  }
+  const csvNames = Object.keys(files).filter(f => f.endsWith('.csv')).sort();
+  for (const csvName of csvNames) {
+    const stem     = csvName.slice(0, -4);
+    const pngNames = Object.keys(files).filter(f => f.startsWith(stem) && f.endsWith('.png')).sort();
+    let dateVal = '', batchVal = '', maxminVal = '', zinFile = '';
+    try {
+      const buf  = await (await files[csvName].getFile()).arrayBuffer();
+      const text = new TextDecoder('big5').decode(buf);
+      const csvRows = parseCSV(text);
+      for (let i = 1; i < csvRows.length; i++) {
+        const row = csvRows[i];
+        if (row.length < 14) continue;
+        if (!dateVal && row[0].trim()) {
+          dateVal  = row[0].trim();
+          batchVal = row[4].trim();
+          zinFile  = row[3].trim();
+        }
+        if (row[7].trim() === '4') { maxminVal = row[13].trim(); break; }
+      }
+    } catch(e) { continue; }
+    const liquidjetId = normalizeId(batchVal.length >= 10 ? batchVal.slice(-10) : batchVal);
+    const label = partLabel ?? zinToLabel(zinFile);
+    const pngs  = pngNames
+      .map(pngName => ({
+        handle: files[pngName],
+        label:  pngName.replace(/^\d{8}_\d{6}_VR-[^_]+_/, '').replace('.png', '')
+      }))
+      .sort((a, b) => {
+        const lc = a.label.localeCompare(b.label);  // "3d" < "t"
+        if (lc !== 0) return lc;
+        return a.handle.name.localeCompare(b.handle.name);  // same label → older filename first
+      });
+    rows.push({ date: dateVal, id: liquidjetId, maxmin: maxminVal, pngs, folder: label });
+  }
+}
+
+// ── Severity helpers ──────────────────────────────────────────
+function getSeverity(maxmin) {
+  const v = parseFloat(maxmin) || 0;
+  if (v >= 0.05) return 'high';
+  if (v >= 0.03) return 'medium';
+  return 'low';
+}
+
+function toggleLevel(level) {
+  if (activeLevels.has(level)) activeLevels.delete(level);
+  else activeLevels.add(level);
+  document.querySelectorAll('.legend [data-level]').forEach(el => {
+    el.classList.toggle('off', !activeLevels.has(el.dataset.level));
+  });
+  applyFilter();
+  saveUIState();
+}
+
+// ── Filter ───────────────────────────────────────────────────
+// Extract canonical 4-char group key from folder label.
+// e.g. "BasePlate_62" → "62AA", "BasePlate_62AA" → "62AA", "BasePlate_62AB" → "62AB", "BasePlate_64A" → "64AA"
+function folderSuffix(folder) {
+  const m = folder.match(/(\d+)([A-Za-z]*)$/);
+  return m ? canonicalSuffix(m[1], m[2]) : '';
+}
+
+// Canonical column order for pivot table
+const PART_PRIORITY = [
+  'BottomPlate', 'MiddlePlate', 'BasePlate', 'Base',
+  'ColdPlate', 'ColdPlateAfterLeak', 'ColdPlate_AfterLeak'
+];
+function partRank(folder) {
+  // Strip trailing number+letters ("_64AA" → ""), then strip leading "L" before a capital (e.g. "LBottomPlate" → "BottomPlate")
+  const name = folder.replace(/_\d+[A-Za-z]*$/, '').replace(/^L(?=[A-Z])/, '');
+  const idx = PART_PRIORITY.indexOf(name);
+  return idx === -1 ? PART_PRIORITY.length : idx;
+}
+
+function buildFilter(rows) {
+  const container = document.getElementById('filter-chips');
+  container.innerHTML = '';
+
+  // Suffix chips (pivot & trend): multi-select, no "All" chip — empty set = show all
+  const makeSuffixChip = value => {
+    const c = document.createElement('button');
+    c.className = 'chip' + (activeFilters.has(value) ? ' active' : '');
+    c.textContent = value;
+    c.onclick = () => {
+      if (activeFilters.has(value)) activeFilters.delete(value);
+      else activeFilters.add(value);
+      applyFilter();
+    };
+    return c;
+  };
+
+  // Full-name chips (list mode): multi-select + "All" to clear
+  const makeNameChip = value => {
+    const c = document.createElement('button');
+    const isAll = value === '';
+    c.className = 'chip' + ((isAll ? activeFilters.size === 0 : activeFilters.has(value)) ? ' active' : '');
+    c.textContent = isAll ? 'All' : value;
+    c.onclick = () => {
+      if (isAll) activeFilters.clear();
+      else {
+        if (activeFilters.has(value)) activeFilters.delete(value);
+        else activeFilters.add(value);
+      }
+      applyFilter();
+    };
+    return c;
+  };
+
+  if (viewMode === 'pivot' || viewMode === 'trend') {
+    const suffixSet = new Set();
+    for (const r of rows) { const s = folderSuffix(r.folder); if (s) suffixSet.add(s); }
+    [...suffixSet].sort((a, b) => Number(a) - Number(b))
+      .forEach(v => container.appendChild(makeSuffixChip(v)));
+  } else {
+    container.appendChild(makeNameChip(''));
+    [...new Set(rows.map(r => r.folder))].sort()
+      .forEach(v => container.appendChild(makeNameChip(v)));
+  }
+}
+
+function applyFilter() {
+  const bySuffix = viewMode === 'pivot' || viewMode === 'trend';
+  let filtered = activeFilters.size === 0
+    ? allRows
+    : allRows.filter(r => bySuffix
+        ? activeFilters.has(folderSuffix(r.folder))
+        : activeFilters.has(r.folder));
+
+  if (activeLevels.size < 3) {
+    filtered = filtered.filter(r => activeLevels.has(getSeverity(r.maxmin)));
+  }
+  document.querySelectorAll('#filter-chips .chip').forEach(c => {
+    const isAll = c.textContent === 'All';
+    c.classList.toggle('active', isAll
+      ? activeFilters.size === 0
+      : activeFilters.has(c.textContent));
+  });
+  renderView(filtered);
+  const shown = filtered.length, total = allRows.length;
+  setStatus(shown === total ? `${total} measurements total` : `Showing ${shown} of ${total}`);
+  saveUIState();
+}
+
+// ── View toggle ───────────────────────────────────────────────
+function setView(mode) {
+  if (mode !== 'pivot') { pivotDateList = []; _lastPivotFilterKey = null; }
+  viewMode = mode;
+  activeFilters = new Set();
+  document.getElementById('btn-list').classList.toggle('active', mode === 'list');
+  document.getElementById('btn-pivot').classList.toggle('active', mode === 'pivot');
+  document.getElementById('btn-trend').classList.toggle('active', mode === 'trend');
+  buildFilter(allRows);
+  renderView(allRows);
+  saveUIState();
+}
+
+function renderView(rows) {
+  const ta  = document.getElementById('table-area');
+  const tra = document.getElementById('trend-area');
+  const pdb = document.getElementById('pivot-date-bar');
+
+  const exportBtn = document.getElementById('export-pdf-btn');
+  if (viewMode === 'trend') {
+    ta.style.display  = 'none';
+    tra.style.display = 'block';
+    if (pdb) pdb.style.display = 'none';
+    if (exportBtn) exportBtn.style.display = 'none';
+    renderTrendView(rows);
+  } else {
+    ta.style.display  = 'block';
+    tra.style.display = 'none';
+    if (viewMode === 'pivot') {
+      if (pdb) pdb.style.display = 'flex';
+      if (exportBtn) exportBtn.style.display = 'inline-block';
+      _pivotBaseRows = rows;
+      // Rebuild date chips when part filter changed or first time in pivot
+      const _filterKey = [...activeFilters].sort().join(',');
+      if (_filterKey !== _lastPivotFilterKey || pivotDateList.length === 0) {
+        buildPivotDateFilter(rows);
+        _lastPivotFilterKey = _filterKey;
+      }
+      // Apply date filter before rendering
+      const dateFiltered = activePivotDates.size === pivotDateList.length
+        ? rows : rows.filter(r => activePivotDates.has(r.date));
+      renderPivotTable(dateFiltered);
+    } else {
+      if (pdb) pdb.style.display = 'none';
+      if (exportBtn) exportBtn.style.display = 'none';
+      renderListTable(rows);
+    }
+  }
+}
+
+// ── List view ─────────────────────────────────────────────────
+function renderListTable(rows) {
+  resetImgState();
+  const tbody = rows.map(r => {
+    const val   = parseFloat(r.maxmin) || 0;
+    const bg    = val >= 0.05 ? '#fee2e2' : val >= 0.03 ? '#fef9c3' : '';
+    const style = bg ? ` style="background:${bg}"` : '';
+    const imgs  = r.pngs.map(p => mkImg(p.handle, p.label, 260, 180)).join('');
+    return `<tr${style}>
+      <td class="col-id">${esc(r.id)}</td>
+      <td class="col-val">${esc(r.maxmin)}</td>
+      <td class="col-part">${esc(r.folder)}</td>
+      <td>${esc(r.date)}</td>
+      <td class="col-imgs">${imgs}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('table-area').innerHTML = `
+    <table class="list-table">
+      <thead><tr>
+        <th>Liquidjet_ID</th>
+        <th style="text-align:center">Max − Min (mm)</th>
+        <th>Part</th>
+        <th>Date</th>
+        <th>Images</th>
+      </tr></thead>
+      <tbody>${tbody}</tbody>
+    </table>`;
+
+  setupImgObserver(document.getElementById('table-area'));
+}
+
+// ── Pivot view ────────────────────────────────────────────────
+function renderPivotTable(rows) {
+  resetImgState();
+
+  // Unique folders (columns) — sorted by canonical part order, then suffix number
+  const folders = [...new Set(rows.map(r => r.folder))];
+  folders.sort((a, b) => {
+    const ra = partRank(a), rb = partRank(b);
+    if (ra !== rb) return ra - rb;
+    return Number(folderSuffix(a)) - Number(folderSuffix(b));
+  });
+  const ids = [...new Set(rows.map(r => r.id))].sort();
+
+  // Build lookup: id → folder → [measurement, ...]
+  const lookup = {};
+  for (const r of rows) {
+    if (!lookup[r.id]) lookup[r.id] = {};
+    if (!lookup[r.id][r.folder]) lookup[r.id][r.folder] = [];
+    lookup[r.id][r.folder].push(r);
+  }
+
+  const nParts = folders.length;
+
+  // Top header: empty corner + "量測件別" spanning all part cols
+  const topHeader = `<tr class="pv-top-header">
+    <th class="col-id"></th>
+    <th class="col-item"></th>
+    <th colspan="${nParts}" style="font-weight:700; letter-spacing:0.05em;">Part Type</th>
+  </tr>`;
+
+  // Sub-header: LiquidJet_ID | Item | part1 | part2 | ...
+  const subHeader = `<tr class="pv-sub-header">
+    <th class="col-id">Liquidjet_ID</th>
+    <th class="col-item">Item</th>
+    ${folders.map(f => `<th class="col-data">${esc(f)}</th>`).join('')}
+  </tr>`;
+
+  // Body rows: 3 sub-rows per ID (images / value / date)
+  let bodyHtml = '';
+  for (const id of ids) {
+    const group = lookup[id];
+
+    // Row 1 — images
+    const imgCells = folders.map(f => {
+      const ms = group[f];
+      if (!ms) return `<td class="pv-data-cell img-cell empty"></td>`;
+      const imgs = ms.flatMap(m => m.pngs.map(p => mkImg(p.handle, p.label, 200, 140))).join('');
+      return `<td class="pv-data-cell img-cell">${imgs}</td>`;
+    }).join('');
+
+    // Row 2 — values
+    const valCells = folders.map(f => {
+      const ms = group[f];
+      if (!ms) return `<td class="pv-data-cell val-cell empty"></td>`;
+      const worst = Math.max(...ms.map(m => parseFloat(m.maxmin) || 0));
+      const bg    = worst >= 0.05 ? '#fee2e2' : worst >= 0.03 ? '#fef9c3' : '';
+      const style = bg ? ` style="background:${bg}"` : '';
+      const vals  = ms.map(m => {
+        const v = parseFloat(m.maxmin) || 0;
+        const color = v >= 0.05 ? '#dc2626' : v >= 0.03 ? '#b45309' : '#1e293b';
+        return `<div style="color:${color}">${esc(m.maxmin)}</div>`;
+      }).join('');
+      return `<td class="pv-data-cell val-cell"${style}>${vals}</td>`;
+    }).join('');
+
+    // Row 3 — dates
+    const dateCells = folders.map(f => {
+      const ms = group[f];
+      if (!ms) return `<td class="pv-data-cell date-cell empty"></td>`;
+      const dates = ms.map(m => `<div>${esc(m.date)}</div>`).join('');
+      return `<td class="pv-data-cell date-cell">${dates}</td>`;
+    }).join('');
+
+    bodyHtml += `
+    <tr>
+      <td class="pv-id-cell col-id" rowspan="3">${esc(id)}</td>
+      <td class="pv-item-cell col-item">Images</td>
+      ${imgCells}
+    </tr>
+    <tr>
+      <td class="pv-item-cell col-item">Max − Min (mm)</td>
+      ${valCells}
+    </tr>
+    <tr class="pv-group-end">
+      <td class="pv-item-cell col-item">Date</td>
+      ${dateCells}
+    </tr>`;
+  }
+
+  // Summary footer: per-column severity counts (worst value per ID)
+  const summaryCells = folders.map(f => {
+    let high = 0, med = 0, low = 0, empty = 0;
+    for (const id of ids) {
+      const ms = lookup[id]?.[f];
+      if (!ms || !ms.length) { empty++; continue; }
+      const worst = Math.max(...ms.map(m => parseFloat(m.maxmin) || 0));
+      if (worst >= 0.05) high++;
+      else if (worst >= 0.03) med++;
+      else low++;
+    }
+    const p = [];
+    if (high)  p.push(`<span style="color:#dc2626;font-weight:700">${high}🔴</span>`);
+    if (med)   p.push(`<span style="color:#b45309;font-weight:700">${med}🟡</span>`);
+    if (low)   p.push(`<span style="color:#166534">${low}🟢</span>`);
+    if (empty) p.push(`<span style="color:#cbd5e1" title="${empty} unit(s) have no data for this station">N/A ×${empty}</span>`);
+    return `<td style="text-align:center">${p.join('&nbsp; ')}</td>`;
+  }).join('');
+  const footHtml = `<tr>
+    <td class="col-id">Summary</td>
+    <td class="col-item">Worst / ID</td>
+    ${summaryCells}
+  </tr>`;
+
+  document.getElementById('table-area').innerHTML = `
+    <div class="pv-wrap">
+      <table class="pv-table">
+        <colgroup>
+          <col class="col-id">
+          <col class="col-item">
+          ${folders.map(() => `<col class="col-data">`).join('')}
+        </colgroup>
+        <thead>${topHeader}${subHeader}</thead>
+        <tbody>${bodyHtml}</tbody>
+        <tfoot>${footHtml}</tfoot>
+      </table>
+    </div>`;
+
+  setupImgObserver(document.getElementById('table-area'));
+}
+
+// ── Trend view ────────────────────────────────────────────────
+const CHART_COLORS = [
+  '#3b82f6','#ef4444','#22c55e','#f59e0b','#8b5cf6',
+  '#06b6d4','#ec4899','#f97316','#84cc16','#14b8a6',
+  '#a855f7','#0ea5e9','#d946ef','#10b981','#f43f5e'
+];
+
+let chartTime    = null;
+let chartStation = null;
+let trendRows    = [];
+let activeDates  = new Set();   // set of selected date strings; all selected = all shown
+
+function parseDate(str) {
+  if (!str) return null;
+  // CSV date format: "2026/4/22" — single-digit month/day, must zero-pad for valid ISO 8601
+  const parts = str.trim().split(' ')[0].split(/[\/\-]/);
+  if (parts.length !== 3) return null;
+  const iso = `${parts[0]}-${parts[1].padStart(2,'0')}-${parts[2].padStart(2,'0')}T00:00:00`;
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? null : d.getTime();
+}
+
+function filterUnits() {
+  const q = (document.getElementById('unit-search')?.value || '').trim().toLowerCase();
+  const rows = activeDates.size === document.querySelectorAll('#date-chips .chip').length
+    ? trendRows : trendRows.filter(r => activeDates.has(r.date));
+  renderStationChart(rows, q);
+}
+
+function buildDateFilter(rows) {
+  const dates = [...new Set(rows.map(r => r.date))]
+    .sort((a, b) => (parseDate(a) || 0) - (parseDate(b) || 0));
+  activeDates = new Set(dates);  // default: all selected
+
+  const container = document.getElementById('date-chips');
+  if (!container) return;
+  container.innerHTML = '';
+  dates.forEach(d => {
+    const c = document.createElement('button');
+    c.className = 'chip active';
+    c.style.cssText = 'padding:2px 9px;font-size:0.75rem;';
+    c.textContent = d;
+    c.dataset.date = d;
+    c.onclick = () => {
+      if (activeDates.has(d)) activeDates.delete(d);
+      else activeDates.add(d);
+      c.classList.toggle('active', activeDates.has(d));
+      updateDateCount(dates.length);
+      refreshTrendCharts();
+    };
+    container.appendChild(c);
+  });
+  updateDateCount(dates.length);
+}
+
+function updateDateCount(total) {
+  const el = document.getElementById('date-selected-count');
+  if (el) el.textContent = `${activeDates.size} / ${total} selected`;
+}
+
+function selectAllDates() {
+  document.querySelectorAll('#date-chips .chip').forEach(c => {
+    activeDates.add(c.dataset.date);
+    c.classList.add('active');
+  });
+  updateDateCount(document.querySelectorAll('#date-chips .chip').length);
+  refreshTrendCharts();
+}
+
+function clearDates() {
+  document.querySelectorAll('#date-chips .chip').forEach(c => {
+    activeDates.delete(c.dataset.date);
+    c.classList.remove('active');
+  });
+  updateDateCount(document.querySelectorAll('#date-chips .chip').length);
+  refreshTrendCharts();
+}
+
+function refreshTrendCharts() {
+  const total = document.querySelectorAll('#date-chips .chip').length;
+  const filtered = activeDates.size === total ? trendRows
+    : trendRows.filter(r => activeDates.has(r.date));
+  const q = (document.getElementById('unit-search')?.value || '').trim().toLowerCase();
+  renderTimeChart(filtered);
+  renderStationChart(filtered, q);
+}
+
+function renderTrendView(rows) {
+  trendRows = rows;
+  buildDateFilter(rows);
+  renderTimeChart(rows);
+  renderStationChart(rows, '');
+}
+
+function renderTimeChart(rows) {
+  // Group by folder (part type)
+  const byPart = {};
+  for (const r of rows) {
+    if (!byPart[r.folder]) byPart[r.folder] = [];
+    byPart[r.folder].push(r);
+  }
+  const folders = Object.keys(byPart);
+  folders.sort((a, b) => {
+    const d = partRank(a) - partRank(b);
+    if (d !== 0) return d;
+    return Number(folderSuffix(a)) - Number(folderSuffix(b));
+  });
+
+  const datasets = folders.map((folder, i) => {
+    const pts = byPart[folder]
+      .map(r => ({ x: parseDate(r.date), y: parseFloat(r.maxmin) || null }))
+      .filter(p => p.x !== null && p.y !== null)
+      .sort((a, b) => a.x - b.x);
+    const col = CHART_COLORS[i % CHART_COLORS.length];
+    return { label: folder, data: pts, borderColor: col, backgroundColor: col + '30',
+             tension: 0.2, pointRadius: 4, pointHoverRadius: 7, fill: false };
+  });
+
+  // Reference lines
+  const allX = datasets.flatMap(d => d.data.map(p => p.x));
+  if (allX.length) {
+    const xMin = Math.min(...allX), xMax = Math.max(...allX);
+    const pad  = (xMax - xMin) * 0.03 || 86400000;
+    [{ y: 0.05, color: '#fca5a5', label: '──  0.050 limit' },
+     { y: 0.03, color: '#fde68a', label: '──  0.030 limit' }].forEach(ref => {
+      datasets.push({ label: ref.label, data: [{x: xMin - pad, y: ref.y},{x: xMax + pad, y: ref.y}],
+        borderColor: ref.color, borderDash: [6,3], borderWidth: 1.5,
+        pointRadius: 0, fill: false, tension: 0 });
+    });
+  }
+
+  if (chartTime) { chartTime.destroy(); chartTime = null; }
+  const ctx = document.getElementById('chart-time')?.getContext('2d');
+  if (!ctx) return;
+  chartTime = new Chart(ctx, {
+    type: 'line',
+    data: { datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      parsing: false,
+      scales: {
+        x: {
+          type: 'linear',
+          title: { display: true, text: 'Measurement Date' },
+          ticks: {
+            maxTicksLimit: 14,
+            callback: val => {
+              const d = new Date(val);
+              return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+            }
+          }
+        },
+        y: { title: { display: true, text: 'Max − Min (mm)' }, beginAtZero: true, max: 1 }
+      },
+      plugins: {
+        legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              if (ctx.parsed.y == null) return null;
+              const d = new Date(ctx.parsed.x);
+              const ds = `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+              return `${ctx.dataset.label}  ${ds}: ${ctx.parsed.y.toFixed(4)} mm`;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+function renderStationChart(rows, unitFilter) {
+  // Station labels in canonical order
+  const stationSet = new Set(rows.map(r => r.folder.replace(/_\d+$/, '')));
+  const stations = [...stationSet].sort((a, b) => {
+    const ia = PART_PRIORITY.indexOf(a), ib = PART_PRIORITY.indexOf(b);
+    return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+  });
+
+  let units = [...new Set(rows.map(r => r.id))].sort();
+  if (unitFilter) units = units.filter(u => u.toLowerCase().includes(unitFilter));
+
+  const el = document.getElementById('unit-count');
+  if (el) el.textContent = `${units.length} unit${units.length !== 1 ? 's' : ''}`;
+
+  const datasets = units.map((unit, i) => {
+    const data = stations.map(station => {
+      const ms = rows.filter(r => r.id === unit && r.folder.replace(/_\d+$/, '') === station);
+      if (!ms.length) return null;
+      return parseFloat(ms[ms.length - 1].maxmin) || null;  // most recent
+    });
+    const col = `hsl(${Math.round(i * 360 / Math.max(units.length, 1))}, 65%, 48%)`;
+    return { label: unit, data, borderColor: col, backgroundColor: col,
+             tension: 0.25, pointRadius: 5, pointHoverRadius: 8, spanGaps: true, fill: false };
+  });
+
+  // Reference lines
+  [{ y: 0.05, color: '#fca5a5', label: '──  0.050 limit' },
+   { y: 0.03, color: '#fde68a', label: '──  0.030 limit' }].forEach(ref => {
+    datasets.push({ label: ref.label, data: new Array(stations.length).fill(ref.y),
+      borderColor: ref.color, borderDash: [6,3], borderWidth: 1.5,
+      pointRadius: 0, fill: false, tension: 0 });
+  });
+
+  if (chartStation) { chartStation.destroy(); chartStation = null; }
+  const ctx = document.getElementById('chart-station')?.getContext('2d');
+  if (!ctx) return;
+  chartStation = new Chart(ctx, {
+    type: 'line',
+    data: { labels: stations, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { title: { display: true, text: 'Station' } },
+        y: { title: { display: true, text: 'Max − Min (mm)' }, beginAtZero: true, max: 1 }
+      },
+      plugins: {
+        legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 },
+          filter: item => !item.text.startsWith('──') } },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const v = ctx.parsed.y;
+              return v != null ? `${ctx.dataset.label}: ${v.toFixed(4)} mm` : null;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// ── Pivot date filter ─────────────────────────────────────────
+function buildPivotDateFilter(rows) {
+  pivotDateList = [...new Set(rows.map(r => r.date))]
+    .sort((a, b) => (parseDate(a) || 0) - (parseDate(b) || 0));
+  // Restore saved selection or default to all
+  if (_pendingPivotDates) {
+    activePivotDates = new Set(pivotDateList.filter(d => _pendingPivotDates.has(d)));
+    if (!activePivotDates.size) activePivotDates = new Set(pivotDateList);
+    _pendingPivotDates = null;
+  } else {
+    activePivotDates = new Set(pivotDateList);
+  }
+  const container = document.getElementById('pivot-date-chips');
+  if (!container) return;
+  container.innerHTML = '';
+  pivotDateList.forEach(d => {
+    const c = document.createElement('button');
+    c.className = 'chip' + (activePivotDates.has(d) ? ' active' : '');
+    c.style.cssText = 'padding:2px 9px;font-size:0.75rem;';
+    c.textContent = d;
+    c.dataset.date = d;
+    c.onclick = () => {
+      if (activePivotDates.has(d)) activePivotDates.delete(d);
+      else activePivotDates.add(d);
+      c.classList.toggle('active', activePivotDates.has(d));
+      updatePivotDateCount();
+      applyPivotDateFilter();
+    };
+    container.appendChild(c);
+  });
+  updatePivotDateCount();
+}
+
+function updatePivotDateCount() {
+  const el = document.getElementById('pivot-date-count');
+  if (el) el.textContent = `${activePivotDates.size} / ${pivotDateList.length} selected`;
+}
+
+function applyPivotDateFilter() {
+  const filtered = activePivotDates.size === pivotDateList.length
+    ? _pivotBaseRows
+    : _pivotBaseRows.filter(r => activePivotDates.has(r.date));
+  renderPivotTable(filtered);
+  saveUIState();
+}
+
+function selectAllPivotDates() {
+  pivotDateList.forEach(d => activePivotDates.add(d));
+  document.querySelectorAll('#pivot-date-chips .chip').forEach(c => c.classList.add('active'));
+  updatePivotDateCount();
+  applyPivotDateFilter();
+}
+
+function clearPivotDates() {
+  activePivotDates.clear();
+  document.querySelectorAll('#pivot-date-chips .chip').forEach(c => c.classList.remove('active'));
+  updatePivotDateCount();
+  applyPivotDateFilter();
+}
+
+// ── Export PDF ────────────────────────────────────────────────
+async function exportPDF() {
+  const btn = document.getElementById('export-pdf-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Loading images…'; }
+
+  // Pre-load every unloaded image in the pivot table so they print correctly
+  const imgs = [...document.querySelectorAll('#table-area img[data-imgid]')]
+    .filter(img => !img.dataset.loaded);
+  if (imgs.length) {
+    await Promise.all(imgs.map(img => new Promise(resolve => {
+      const handle = imgHandles[+img.dataset.imgid];
+      if (!handle) return resolve();
+      handle.getFile().then(f => {
+        const url = URL.createObjectURL(f);
+        blobUrls.push(url);
+        img.dataset.loaded = '1';
+        img.style.background = '';
+        img.onload  = resolve;
+        img.onerror = resolve;
+        img.src = url;
+      }).catch(resolve);
+    })));
+  }
+
+  // Build filter summary for print header
+  const parts = [];
+  if (activeFilters.size) parts.push(`Part: ${[...activeFilters].sort().join(', ')}`);
+  if (activeLevels.size < 3) parts.push(`Severity: ${[...activeLevels].join(', ')}`);
+  if (activePivotDates.size < pivotDateList.length)
+    parts.push(`Dates: ${[...activePivotDates].sort().join('  /  ')}`);
+  document.getElementById('print-info').textContent =
+    parts.length ? parts.join('   |   ') : 'All data';
+
+  if (btn) { btn.disabled = false; btn.textContent = '📄 Export PDF'; }
+  window.print();
+}
+
+function setStatus(html) { document.getElementById('status').innerHTML = html; }
+
+// ── UI State persistence ──────────────────────────────────────
+function saveUIState() {
+  DB.set('uiState', {
+    viewMode,
+    activeFilters:    [...activeFilters],
+    activeLevels:     [...activeLevels],
+    activePivotDates: [...activePivotDates],
+  }).catch(() => {});
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.getElementById('lb').classList.remove('on');
+});
+
+// ── Init ──────────────────────────────────────────────────────
+(async () => {
+  if (!window.showDirectoryPicker) {
+    document.getElementById('warn').style.display = 'block';
+    return;
+  }
+  try {
+    const stored = await DB.get('dirHandle');
+    if (stored && await stored.queryPermission({ mode: 'read' }) === 'granted') {
+      dirHandle = stored;
+      await scan();
+    }
+  } catch(e) {}
+})();
+</script>
+</body>
+</html>
