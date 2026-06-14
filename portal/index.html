@@ -428,13 +428,16 @@ const EMPLOYEES = [
     desc:'負責 bonding 製程參數與良率，盯緊介面品質。' },
   { name:'JACOB',  role:'Mechanical Eng.',       roleZh:'機構工程',     gx:6.7, gy:0.9, hair:[0x44,0x33,0x22], skin:[0xff,0xdd,0xbb], shirt:[0x88,0x88,0x55],
     desc:'設計治具與機構，讓設備與夾持穩定可靠。' },
-  { name:'JOY',    role:'Etching Process Eng.',  roleZh:'蝕刻製程',     gx:0.7, gy:2.7, hair:[0x99,0x22,0x77], skin:[0xff,0xcc,0xaa], shirt:[0xff,0x88,0xcc],
+  // Front row is STAGGERED +1 column vs the back row, so each back-row
+  // employee falls into the gap between two front desks and stays visible
+  // instead of being hidden directly behind a front desk + laptop.
+  { name:'JOY',    role:'Etching Process Eng.',  roleZh:'蝕刻製程',     gx:1.7, gy:2.9, hair:[0x99,0x22,0x77], skin:[0xff,0xcc,0xaa], shirt:[0xff,0x88,0xcc],
     desc:'掌控 etching 製程窗口與均勻度，雕琢每一條線路。' },
-  { name:'JASON',  role:'Test Eng.',             roleZh:'測試工程',     gx:2.7, gy:2.7, hair:[0x22,0x44,0x66], skin:[0xff,0xcc,0x99], shirt:[0x44,0xcc,0xcc],
+  { name:'JASON',  role:'Test Eng.',             roleZh:'測試工程',     gx:3.7, gy:2.9, hair:[0x22,0x44,0x66], skin:[0xff,0xcc,0x99], shirt:[0x44,0xcc,0xcc],
     desc:'建立量測與測試流程，把資料變成可信的判斷。' },
-  { name:'MZ',     role:'Quality Eng.',          roleZh:'品質工程',     gx:4.7, gy:2.7, hair:[0x33,0x33,0x33], skin:[0xee,0xcc,0xbb], shirt:[0xaa,0x66,0xff],
+  { name:'MZ',     role:'Quality Eng.',          roleZh:'品質工程',     gx:5.7, gy:2.9, hair:[0x33,0x33,0x33], skin:[0xee,0xcc,0xbb], shirt:[0xaa,0x66,0xff],
     desc:'守住品質底線，管控 CTQ、PFMEA 與反應計畫。' },
-  { name:'LISA',   role:'Planner',               roleZh:'生產規劃',     gx:6.7, gy:2.7, hair:[0xaa,0x66,0x22], skin:[0xff,0xdd,0xaa], shirt:[0xff,0xbb,0x44],
+  { name:'LISA',   role:'Planner',               roleZh:'生產規劃',     gx:7.7, gy:2.9, hair:[0xaa,0x66,0x22], skin:[0xff,0xdd,0xaa], shirt:[0xff,0xbb,0x44],
     desc:'排程與資源規劃，讓 milestone 一個個準時落地。' },
   { name:'RISK',   role:'Risk Analysis Eng.',    roleZh:'風險分析',     gx:8.9, gy:3.4, hair:[0x55,0x44,0x88], skin:[0xf2,0xcf,0xa5], shirt:[0xff,0x77,0x66],
     desc:'辨識風險、分級衝擊與機率，提出可執行的緩解與監控方案。' },
@@ -570,41 +573,47 @@ function drawWorkstation(emp) {
   const deskH = 26;
   drawBox(gx-0.08, gy-0.94, 1.25, 0.72, deskH, '#6a4824','#4a3018','#5a3d1e','#2a1c0e');
 
-  // Laptop — open on the desk. The lid IS the screen (monitor).
-  const lpW=0.72, lpD=0.42, lpH=4;
-  const lpGx=gx+0.10, lpGy=gy-0.76;
-  // Base (keyboard deck): thin dark slab on desk surface
-  drawBox(lpGx-lpW/2, lpGy-lpD/2, lpW, lpD, lpH, '#2e2e2e','#161616','#222','#080808');
+  // Laptop — sits ON the desk top surface. The lid IS the screen (monitor).
+  // The desk top is `deskH` px above the floor, so every part of the laptop is
+  // anchored to that surface (isoY - deskH) rather than the floor.
+  const lpW=0.66, lpD=0.40, lpH=4;
+  const lpGx=gx+0.50, lpGy=gy-0.60;                 // centred on the desktop
+  const bx0=lpGx-lpW/2, by0=lpGy-lpD/2, bx1=lpGx+lpW/2, by1=lpGy+lpD/2;
 
-  // Keyboard hint on base top — small darker rectangle aligned with iso top
-  const kTL=[isoX(lpGx-lpW/2+0.06, lpGy-lpD/2+0.16), isoY(lpGx-lpW/2+0.06, lpGy-lpD/2+0.16)-deskH-lpH];
-  const kTR=[isoX(lpGx+lpW/2-0.06, lpGy-lpD/2+0.16), isoY(lpGx+lpW/2-0.06, lpGy-lpD/2+0.16)-deskH-lpH];
-  const kBL=[isoX(lpGx-lpW/2+0.06, lpGy+lpD/2-0.06), isoY(lpGx-lpW/2+0.06, lpGy+lpD/2-0.06)-deskH-lpH];
-  const kBR=[isoX(lpGx+lpW/2-0.06, lpGy+lpD/2-0.06), isoY(lpGx+lpW/2-0.06, lpGy+lpD/2-0.06)-deskH-lpH];
-  poly([kTL, kTR, kBR, kBL], '#0e0e0e');
-  // Touchpad — tiny lighter strip near the front edge
-  const tpL=[(kBL[0]+kTL[0])/2 + (kBL[0]-kTL[0])*0.18, (kBL[1]+kTL[1])/2 + (kBL[1]-kTL[1])*0.18];
-  const tpR=[(kBR[0]+kTR[0])/2 + (kBR[0]-kTR[0])*0.18, (kBR[1]+kTR[1])/2 + (kBR[1]-kTR[1])*0.18];
-  ctx.strokeStyle='#252525'; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.moveTo(tpL[0],tpL[1]); ctx.lineTo(tpR[0],tpR[1]); ctx.stroke();
+  // Base slab — bottom rests on the desk top (isoY - deskH), top is lpH above it
+  const bA=[isoX(bx0,by0),isoY(bx0,by0)-deskH], bB=[isoX(bx1,by0),isoY(bx1,by0)-deskH],
+        bC=[isoX(bx1,by1),isoY(bx1,by1)-deskH], bD=[isoX(bx0,by1),isoY(bx0,by1)-deskH];
+  const bAt=[bA[0],bA[1]-lpH], bBt=[bB[0],bB[1]-lpH], bCt=[bC[0],bC[1]-lpH], bDt=[bD[0],bD[1]-lpH];
+  poly([bB,bC,bCt,bBt], '#161616');     // right face (+gx)
+  poly([bD,bC,bCt,bDt], '#242424');     // front face (+gy, toward viewer)
+  poly([bAt,bBt,bCt,bDt], '#2e2e2e');   // top face — the keyboard deck
 
-  // Screen lid — hinged at back edge of base, tilted slightly back from vertical
-  const backGy=lpGy-lpD/2;
-  const hL=[isoX(lpGx-lpW/2, backGy), isoY(lpGx-lpW/2, backGy)-deskH-lpH];
-  const hR=[isoX(lpGx+lpW/2, backGy), isoY(lpGx+lpW/2, backGy)-deskH-lpH];
-  const lidH=24;
-  const tilt=3;  // small back-tilt so the lid stays mostly vertical
+  // Keyboard hint — inset rectangle on the front portion of the deck top
+  const lerp=(p,q,t)=>[p[0]+(q[0]-p[0])*t, p[1]+(q[1]-p[1])*t];
+  const deckPt=(u,v)=>lerp(lerp(bAt,bBt,u), lerp(bDt,bCt,u), v);
+  poly([deckPt(0.12,0.40), deckPt(0.88,0.40), deckPt(0.88,0.90), deckPt(0.12,0.90)], '#0e0e0e');
+  // Touchpad — small lighter strip at the very front of the deck
+  ctx.strokeStyle='#3a3a3a'; ctx.lineWidth=1;
+  ctx.beginPath();
+  ctx.moveTo(deckPt(0.38,0.78)[0], deckPt(0.38,0.78)[1]);
+  ctx.lineTo(deckPt(0.62,0.78)[0], deckPt(0.62,0.78)[1]);
+  ctx.stroke();
+
+  // Screen lid — hinged along the BACK edge of the deck (bAt→bBt), rising up
+  const hL=bAt, hR=bBt;
+  const lidH=19;
+  const tilt=3;  // slight back-tilt so the lid isn't perfectly vertical
   const tL=[hL[0]+tilt, hL[1]-lidH];
   const tR=[hR[0]+tilt, hR[1]-lidH];
-  // Lid back panel (frame) — clearly attached to base hinge edge
+  // Lid frame — clearly attached to the deck's hinge edge
   poly([hL, hR, tR, tL], '#1c1c1c', '#080808', 1);
-  // Hinge strip — visible bar where lid meets base, sells the "open laptop" silhouette
+  // Hinge strip — visible bar where lid meets the deck
   ctx.strokeStyle='#444'; ctx.lineWidth=1;
   ctx.beginPath(); ctx.moveTo(hL[0], hL[1]); ctx.lineTo(hR[0], hR[1]); ctx.stroke();
-  // Apple-style notch dot at top of lid
+  // Camera dot at top of lid
   const notch=[(tL[0]+tR[0])/2, (tL[1]+tR[1])/2+1];
   ctx.fillStyle='#444'; ctx.fillRect(notch[0]-1, notch[1], 2, 1);
-  // Screen surface (inset from bezel — this IS the monitor display)
+  // Screen surface (inset from bezel — this IS the display)
   const sc=[[hL[0]+2,hL[1]-2],[hR[0]-2,hR[1]-2],[tR[0]-2,tR[1]+3],[tL[0]+2,tL[1]+3]];
   poly(sc, '#020a02');
 
@@ -638,10 +647,10 @@ function drawWorkstation(emp) {
   }
   ctx.restore();
 
-  // Power LED on front edge of base (blinks green)
-  const fmX=isoX(lpGx, lpGy+lpD/2), fmY=isoY(lpGx, lpGy+lpD/2)-deskH-1;
+  // Power LED on the front face of the base (blinks green)
+  const fm=lerp(bD, bC, 0.5);
   ctx.fillStyle=Math.floor(time/30)%2?'#00ff88':'#00aa55';
-  ctx.fillRect(fmX+10, fmY, 2, 2);
+  ctx.fillRect(fm[0]-1, fm[1]-2, 2, 2);
 
   // Chair
   drawBox(gx+0.11, gy+0.22, 0.62, 0.62, 12, '#33334a','#22223a','#2a2a42');
@@ -698,19 +707,20 @@ function drawChatBubble(cx, cy, text) {
 //  a debate is convened.
 // ════════════════════════════════════════════
 function drawMeetingChair(cgx, cgy, facing) {
-  // Office chair: seat + backrest. `facing` points TOWARD the table — the
-  // backrest sits on the opposite side of the seat.
-  const sw=0.55, sd=0.55, sh=10;
-  // Seat
-  drawBox(cgx, cgy, sw, sd, sh, '#3a2030','#281020','#311828','#1a0810');
-  // Backrest — thin tall slab on the side opposite where the chair faces
-  const brT=0.10, brH=14;
+  // Dark slate office chair — deliberately a cool blue-grey so it reads
+  // clearly against the warm pink meeting table. `facing` points TOWARD the
+  // table, so the backrest is drawn on the OPPOSITE (outer) side of the seat.
+  const sw=0.46, sd=0.46, sh=9;
+  // Seat cushion
+  drawBox(cgx, cgy, sw, sd, sh, '#3c3c56','#22223a','#2e2e48','#14141e');
+  // Backrest — thin tall slab on the outer side of the seat
+  const brT=0.10, brH=17;
   let bX=cgx, bY=cgy, bW=sw, bD=sd;
   if (facing === 'right')      { bW = brT; }                       // back on LEFT
   else if (facing === 'left')  { bX = cgx + sw - brT; bW = brT; }  // back on RIGHT
   else if (facing === 'back')  { bY = cgy + sd - brT; bD = brT; }  // back at FRONT
   else /* 'front' */           { bD = brT; }                       // back at BACK
-  drawBox(bX, bY, bW, bD, sh + brH, '#4a2840','#28102a','#3a1830','#1a0810');
+  drawBox(bX, bY, bW, bD, sh + brH, '#4a4a68','#26263c','#383852','#14141e');
 }
 
 function drawMeetingTable() {
@@ -804,23 +814,30 @@ function drawPantry() {
   // Cup well
   ctx.fillStyle='#0e1c26'; ctx.fillRect(fx-8, tapY+15, 16, 5);
 
-  // Inverted 5-gallon bottle on top of cooler body
-  const bottleBaseY=fby-totH;
+  // Inverted 5-gallon bottle — anchored to the BODY TOP centre (not the front
+  // face) so it sits squarely on the cooler instead of drifting to one side.
+  const bcx=isoX(bgx+W/2, bgy+D/2);
+  const bottleBaseY=isoY(bgx+W/2, bgy+D/2)-totH;
   const shimmer=Math.floor(148+Math.sin(time*0.024)*24);
+  // Neck collar (where bottle meets the dispenser)
+  ctx.fillStyle='#cfd8de'; ctx.fillRect(bcx-7, bottleBaseY-2, 14, 4);
+  // Barrel (translucent blue)
   ctx.fillStyle=`rgba(32,88,${shimmer},0.82)`;
-  ctx.fillRect(fx-9, bottleBaseY-18, 18, 18);
+  ctx.fillRect(bcx-9, bottleBaseY-19, 18, 18);
   ctx.fillStyle='rgba(170,225,255,0.32)';
-  ctx.fillRect(fx-7, bottleBaseY-16, 5, 12);
+  ctx.fillRect(bcx-7, bottleBaseY-17, 5, 13);
   ctx.fillStyle='rgba(255,255,255,0.26)';
-  ctx.fillRect(fx-8, bottleBaseY-13, 16, 5);
+  ctx.fillRect(bcx-8, bottleBaseY-13, 16, 5);
   ctx.fillStyle='rgba(0,50,110,0.65)';
-  ctx.fillRect(fx-2, bottleBaseY-12, 4, 3);
+  ctx.fillRect(bcx-2, bottleBaseY-12, 4, 3);
+  // Inverted neck (tapers down into the cooler)
   ctx.fillStyle='rgba(38,96,180,0.88)';
-  ctx.fillRect(fx-5, bottleBaseY, 10, 6);
-  ctx.fillStyle='#e4f0f8'; ctx.fillRect(fx-5, bottleBaseY-21, 10, 4);
-  ctx.fillStyle='#ffffff'; ctx.fillRect(fx-4, bottleBaseY-21, 3,  2);
+  ctx.fillRect(bcx-4, bottleBaseY-1, 8, 5);
+  // Cap dome at the very top + highlight
+  ctx.fillStyle='#e4f0f8'; ctx.fillRect(bcx-5, bottleBaseY-22, 10, 4);
+  ctx.fillStyle='#ffffff'; ctx.fillRect(bcx-4, bottleBaseY-22, 3,  2);
 
-  const hitY=bottleBaseY-22;
+  const hitY=bottleBaseY-23;
   return { x:fL[0]-4, y:hitY, w:fR[0]-fL[0]+8, h:fby-hitY+4 };
 }
 
