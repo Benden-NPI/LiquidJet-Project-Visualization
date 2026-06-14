@@ -6,6 +6,7 @@
   "scripts": {
     "build": "node scripts/build-index.mjs",
     "edit": "node scripts/editor-server.mjs",
+    "preview": "npm run build && node scripts/preview-server.mjs",
     "clean": "rm -rf dist"
   }
 }
