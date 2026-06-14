@@ -1117,6 +1117,17 @@ function applyAISuggestion(id) {
 // ===  MULTI-AGENT DISCUSSION ENGINE  =====================
 // =========================================================
 
+// --- Discussion engine tuning constants ---
+const DISC_MIN_DELAY_MS = 1800;          // minimum ms between speaker turns
+const DISC_MAX_DELAY_MS = 4400;          // maximum ms between speaker turns
+const DISC_FRAMEWORK_INTERVAL = 5;       // Benden injects a framework note every N member turns
+const DISC_CONTEXT_WINDOW = 6;           // recent messages sent to webhook for context
+const DISC_LOOP_KEY_LEN = 40;            // chars used to fingerprint a message for loop detection
+const DISC_MIN_REMAINING_TOKENS = 40;    // token headroom below which Benden closes and stops
+const DISC_SPEAKER_RANDOMNESS = 1.8;     // additive random weight balancing relevance vs. variety
+const DISC_BUDGET_WARN_PCT = 60;         // % used → turn progress bar amber
+const DISC_BUDGET_CRIT_PCT = 80;         // % used → turn progress bar red
+
 const TEAM_MEMBERS = [
   {
     id: "benden", name: "Benden", role: "PM / Facilitator", avatar: "🧭",
@@ -1260,7 +1271,7 @@ class DiscussionEngine {
     const topic = (($("discTopic")?.value || "") + " " + (tree?.text || "")).toLowerCase();
     const scored = nonFac.map(m => {
       const s = m.focus.reduce((a, kw) => a + (topic.includes(kw.toLowerCase()) ? 1 : 0), 0);
-      return { m, s: s + Math.random() * 1.8 };
+      return { m, s: s + Math.random() * DISC_SPEAKER_RANDOMNESS };
     }).sort((a, b) => b.s - a.s);
     const total = scored.reduce((s, x) => s + x.s + 0.1, 0);
     let r = Math.random() * total;
@@ -1279,7 +1290,7 @@ class DiscussionEngine {
     // Webhook mode: real LLM call
     if (aiSettings.mode === "webhook" && aiSettings.webhookUrl) {
       try {
-        const history = this.messages.slice(-6).map(m => ({
+        const history = this.messages.slice(-DISC_CONTEXT_WINDOW).map(m => ({
           speaker: m.member?.name || "system", text: m.text,
         }));
         const res = await fetch(aiSettings.webhookUrl, {
@@ -1307,11 +1318,11 @@ class DiscussionEngine {
   }
 
   _detectLoop() {
-    // If same opening 40 chars appears ≥2 times in last 4 messages → loop
+    // If same opening N chars appears ≥2 times in last 4 messages → loop
     if (this.loopBuf.length < 4) return false;
     const seen = {};
     for (const { text } of this.loopBuf.slice(-4)) {
-      const key = text.slice(0, 40);
+      const key = text.slice(0, DISC_LOOP_KEY_LEN);
       seen[key] = (seen[key] || 0) + 1;
       if (seen[key] >= 2) return true;
     }
@@ -1357,7 +1368,7 @@ class DiscussionEngine {
 
   _schedule() {
     if (!this.running) return;
-    const delay = 1800 + Math.random() * 2600;
+    const delay = DISC_MIN_DELAY_MS + Math.random() * (DISC_MAX_DELAY_MS - DISC_MIN_DELAY_MS);
     this.timer = setTimeout(() => this._turn(), delay);
   }
 
@@ -1365,7 +1376,7 @@ class DiscussionEngine {
     if (!this.running) return;
 
     // Token budget check
-    if (this.budget - this.used < 40) {
+    if (this.budget - this.used < DISC_MIN_REMAINING_TOKENS) {
       this._bendenSay("close");
       this.stop("Token 預算耗盡");
       return;
@@ -1388,8 +1399,8 @@ class DiscussionEngine {
     if (this.loopBuf.length > 8) this.loopBuf.shift();
     this.turnCount++;
 
-    // Benden adds framework every 5 member turns
-    if (this.running && this.turnCount % 5 === 0) {
+    // Benden adds framework every N member turns
+    if (this.running && this.turnCount % DISC_FRAMEWORK_INTERVAL === 0) {
       await new Promise(r => setTimeout(r, 700));
       if (this.running) this._bendenSay("framework");
     }
@@ -1431,7 +1442,7 @@ function updateDiscBudget() {
   const pct = Math.min(100, Math.round(discEngine.used / discEngine.budget * 100));
   const bar = $("discBar");
   const label = $("discBudgetLabel");
-  if (bar) { bar.style.width = pct + "%"; bar.className = "disc-bf" + (pct > 80 ? " over" : pct > 60 ? " warn" : ""); }
+  if (bar) { bar.style.width = pct + "%"; bar.className = "disc-bf" + (pct > DISC_BUDGET_CRIT_PCT ? " over" : pct > DISC_BUDGET_WARN_PCT ? " warn" : ""); }
   if (label) label.textContent = `${discEngine.used} / ${discEngine.budget}`;
 }
 
