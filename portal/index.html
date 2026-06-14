@@ -570,41 +570,47 @@ function drawWorkstation(emp) {
   const deskH = 26;
   drawBox(gx-0.08, gy-0.94, 1.25, 0.72, deskH, '#6a4824','#4a3018','#5a3d1e','#2a1c0e');
 
-  // Laptop — open on the desk. The lid IS the screen (monitor).
-  const lpW=0.72, lpD=0.42, lpH=4;
-  const lpGx=gx+0.10, lpGy=gy-0.76;
-  // Base (keyboard deck): thin dark slab on desk surface
-  drawBox(lpGx-lpW/2, lpGy-lpD/2, lpW, lpD, lpH, '#2e2e2e','#161616','#222','#080808');
+  // Laptop — sits ON the desk top surface. The lid IS the screen (monitor).
+  // The desk top is `deskH` px above the floor, so every part of the laptop is
+  // anchored to that surface (isoY - deskH) rather than the floor.
+  const lpW=0.66, lpD=0.40, lpH=4;
+  const lpGx=gx+0.50, lpGy=gy-0.60;                 // centred on the desktop
+  const bx0=lpGx-lpW/2, by0=lpGy-lpD/2, bx1=lpGx+lpW/2, by1=lpGy+lpD/2;
 
-  // Keyboard hint on base top — small darker rectangle aligned with iso top
-  const kTL=[isoX(lpGx-lpW/2+0.06, lpGy-lpD/2+0.16), isoY(lpGx-lpW/2+0.06, lpGy-lpD/2+0.16)-deskH-lpH];
-  const kTR=[isoX(lpGx+lpW/2-0.06, lpGy-lpD/2+0.16), isoY(lpGx+lpW/2-0.06, lpGy-lpD/2+0.16)-deskH-lpH];
-  const kBL=[isoX(lpGx-lpW/2+0.06, lpGy+lpD/2-0.06), isoY(lpGx-lpW/2+0.06, lpGy+lpD/2-0.06)-deskH-lpH];
-  const kBR=[isoX(lpGx+lpW/2-0.06, lpGy+lpD/2-0.06), isoY(lpGx+lpW/2-0.06, lpGy+lpD/2-0.06)-deskH-lpH];
-  poly([kTL, kTR, kBR, kBL], '#0e0e0e');
-  // Touchpad — tiny lighter strip near the front edge
-  const tpL=[(kBL[0]+kTL[0])/2 + (kBL[0]-kTL[0])*0.18, (kBL[1]+kTL[1])/2 + (kBL[1]-kTL[1])*0.18];
-  const tpR=[(kBR[0]+kTR[0])/2 + (kBR[0]-kTR[0])*0.18, (kBR[1]+kTR[1])/2 + (kBR[1]-kTR[1])*0.18];
-  ctx.strokeStyle='#252525'; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.moveTo(tpL[0],tpL[1]); ctx.lineTo(tpR[0],tpR[1]); ctx.stroke();
+  // Base slab — bottom rests on the desk top (isoY - deskH), top is lpH above it
+  const bA=[isoX(bx0,by0),isoY(bx0,by0)-deskH], bB=[isoX(bx1,by0),isoY(bx1,by0)-deskH],
+        bC=[isoX(bx1,by1),isoY(bx1,by1)-deskH], bD=[isoX(bx0,by1),isoY(bx0,by1)-deskH];
+  const bAt=[bA[0],bA[1]-lpH], bBt=[bB[0],bB[1]-lpH], bCt=[bC[0],bC[1]-lpH], bDt=[bD[0],bD[1]-lpH];
+  poly([bB,bC,bCt,bBt], '#161616');     // right face (+gx)
+  poly([bD,bC,bCt,bDt], '#242424');     // front face (+gy, toward viewer)
+  poly([bAt,bBt,bCt,bDt], '#2e2e2e');   // top face — the keyboard deck
 
-  // Screen lid — hinged at back edge of base, tilted slightly back from vertical
-  const backGy=lpGy-lpD/2;
-  const hL=[isoX(lpGx-lpW/2, backGy), isoY(lpGx-lpW/2, backGy)-deskH-lpH];
-  const hR=[isoX(lpGx+lpW/2, backGy), isoY(lpGx+lpW/2, backGy)-deskH-lpH];
+  // Keyboard hint — inset rectangle on the front portion of the deck top
+  const lerp=(p,q,t)=>[p[0]+(q[0]-p[0])*t, p[1]+(q[1]-p[1])*t];
+  const deckPt=(u,v)=>lerp(lerp(bAt,bBt,u), lerp(bDt,bCt,u), v);
+  poly([deckPt(0.12,0.40), deckPt(0.88,0.40), deckPt(0.88,0.90), deckPt(0.12,0.90)], '#0e0e0e');
+  // Touchpad — small lighter strip at the very front of the deck
+  ctx.strokeStyle='#3a3a3a'; ctx.lineWidth=1;
+  ctx.beginPath();
+  ctx.moveTo(deckPt(0.38,0.78)[0], deckPt(0.38,0.78)[1]);
+  ctx.lineTo(deckPt(0.62,0.78)[0], deckPt(0.62,0.78)[1]);
+  ctx.stroke();
+
+  // Screen lid — hinged along the BACK edge of the deck (bAt→bBt), rising up
+  const hL=bAt, hR=bBt;
   const lidH=24;
-  const tilt=3;  // small back-tilt so the lid stays mostly vertical
+  const tilt=3;  // slight back-tilt so the lid isn't perfectly vertical
   const tL=[hL[0]+tilt, hL[1]-lidH];
   const tR=[hR[0]+tilt, hR[1]-lidH];
-  // Lid back panel (frame) — clearly attached to base hinge edge
+  // Lid frame — clearly attached to the deck's hinge edge
   poly([hL, hR, tR, tL], '#1c1c1c', '#080808', 1);
-  // Hinge strip — visible bar where lid meets base, sells the "open laptop" silhouette
+  // Hinge strip — visible bar where lid meets the deck
   ctx.strokeStyle='#444'; ctx.lineWidth=1;
   ctx.beginPath(); ctx.moveTo(hL[0], hL[1]); ctx.lineTo(hR[0], hR[1]); ctx.stroke();
-  // Apple-style notch dot at top of lid
+  // Camera dot at top of lid
   const notch=[(tL[0]+tR[0])/2, (tL[1]+tR[1])/2+1];
   ctx.fillStyle='#444'; ctx.fillRect(notch[0]-1, notch[1], 2, 1);
-  // Screen surface (inset from bezel — this IS the monitor display)
+  // Screen surface (inset from bezel — this IS the display)
   const sc=[[hL[0]+2,hL[1]-2],[hR[0]-2,hR[1]-2],[tR[0]-2,tR[1]+3],[tL[0]+2,tL[1]+3]];
   poly(sc, '#020a02');
 
@@ -638,10 +644,10 @@ function drawWorkstation(emp) {
   }
   ctx.restore();
 
-  // Power LED on front edge of base (blinks green)
-  const fmX=isoX(lpGx, lpGy+lpD/2), fmY=isoY(lpGx, lpGy+lpD/2)-deskH-1;
+  // Power LED on the front face of the base (blinks green)
+  const fm=lerp(bD, bC, 0.5);
   ctx.fillStyle=Math.floor(time/30)%2?'#00ff88':'#00aa55';
-  ctx.fillRect(fmX+10, fmY, 2, 2);
+  ctx.fillRect(fm[0]-1, fm[1]-2, 2, 2);
 
   // Chair
   drawBox(gx+0.11, gy+0.22, 0.62, 0.62, 12, '#33334a','#22223a','#2a2a42');
