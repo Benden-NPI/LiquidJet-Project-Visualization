@@ -237,6 +237,87 @@ footer a:hover { color:#4488ff; }
   font-family:'Press Start 2P',monospace; font-size:5px; color:#88aacc;
   animation:blink 1.2s step-end infinite;
 }
+
+/* ── AI 即時對話 chat overlay ── */
+#chat-overlay {
+  position:fixed; inset:0; background:#00000099; z-index:230;
+  display:none; align-items:center; justify-content:center; padding:16px;
+}
+#chat-overlay.active { display:flex; }
+#chat-card {
+  width:min(500px,96vw); height:min(600px,88vh);
+  background:#0a0a2a; border:4px solid #66ffcc;
+  box-shadow:inset 0 0 0 2px #000, 0 0 28px #22ffaa44;
+  display:flex; flex-direction:column; position:relative;
+}
+#chat-head {
+  background:#0d2a20; border-bottom:3px solid #66ffcc;
+  padding:10px 14px; display:flex; gap:10px; align-items:center; flex-shrink:0;
+}
+#chat-avatar {
+  width:32px; height:32px; image-rendering:pixelated;
+  border:2px solid #000; flex-shrink:0;
+}
+#chat-emp-name {
+  color:#66ffcc; font-size:9px; letter-spacing:1px; flex:1;
+  text-shadow:1px 1px #00664a;
+}
+#chat-close {
+  background:none; border:2px solid #ff4444; color:#ff4444;
+  font-family:'Press Start 2P',monospace; font-size:7px;
+  padding:3px 6px; cursor:pointer; flex-shrink:0;
+}
+#chat-close:hover { background:#ff444422; }
+#chat-messages {
+  flex:1; overflow-y:auto; padding:12px; display:flex;
+  flex-direction:column; gap:10px;
+  scrollbar-width:thin; scrollbar-color:#1a3a2a #050518;
+}
+#chat-messages::-webkit-scrollbar { width:6px; }
+#chat-messages::-webkit-scrollbar-track { background:#050518; }
+#chat-messages::-webkit-scrollbar-thumb { background:#1a3a2a; border-radius:3px; }
+.chat-bubble {
+  max-width:78%; padding:8px 11px; font-size:7px; line-height:1.9;
+  border:2px solid #2a2a5a; word-break:break-word;
+}
+.chat-user {
+  align-self:flex-end; background:#1a2a4a; border-color:#4488ff;
+  color:#cce0ff;
+}
+.chat-colleague {
+  align-self:flex-start; background:#0d2a20; border-color:#44cc88;
+  color:#bbffdd;
+}
+.cb-name {
+  display:block; font-size:5px; margin-bottom:5px; opacity:.7;
+}
+.chat-user .cb-name { color:#88aaff; text-align:right; }
+.chat-colleague .cb-name { color:#44cc88; }
+.cb-text { display:block; white-space:pre-wrap; }
+.chat-thinking { opacity:.5; font-style:italic; }
+#chat-input-row {
+  display:flex; gap:0; border-top:3px solid #66ffcc; flex-shrink:0;
+}
+#chat-input {
+  flex:1; min-height:54px; padding:8px 10px; resize:none;
+  background:#050518; border:none; color:#ddeeff;
+  font-family:'Press Start 2P',monospace; font-size:7px; line-height:1.8;
+  outline:none;
+}
+#chat-input::placeholder { color:#2a4a3a; }
+#chat-send {
+  background:#0d2a20; border:none; border-left:3px solid #66ffcc;
+  color:#66ffcc; font-family:'Press Start 2P',monospace;
+  font-size:6px; padding:0 14px; cursor:pointer; flex-shrink:0;
+  white-space:nowrap;
+}
+#chat-send:hover { background:#1a4a30; }
+#chat-send:disabled { opacity:.4; cursor:not-allowed; }
+#chat-plan-badge {
+  display:none; font-size:5px; padding:3px 8px;
+  background:#2a0a3a; border:1px solid #aa44ff; color:#cc88ff;
+  margin-left:auto; align-self:center; margin-right:8px;
+}
 </style>
 </head>
 <body>
@@ -335,6 +416,22 @@ footer a:hover { color:#4488ff; }
     <div id="rpg-speaker">???</div>
     <div id="rpg-text"></div>
     <div id="rpg-hint">▶ 點對話框或按 SPACE 繼續 · ESC 離開</div>
+  </div>
+</div>
+
+<!-- AI real-time chat overlay -->
+<div id="chat-overlay">
+  <div id="chat-card">
+    <div id="chat-head">
+      <canvas id="chat-avatar" width="32" height="32"></canvas>
+      <span id="chat-emp-name">???</span>
+      <button id="chat-close">✕</button>
+    </div>
+    <div id="chat-messages"></div>
+    <div id="chat-input-row">
+      <textarea id="chat-input" rows="2" placeholder="輸入訊息，或以 !PLAN 開頭進行深度規劃…"></textarea>
+      <button id="chat-send">▶ SEND</button>
+    </div>
   </div>
 </div>
 
@@ -1588,6 +1685,17 @@ function openCard(emp) {
     openRpg(emp);
   });
   actions.appendChild(talk);
+  // AI real-time chat button (for every employee including Benden).
+  if (emp.name !== 'BENDEN') {
+    const chatBtn = document.createElement('button');
+    chatBtn.className='card-btn'; chatBtn.type='button';
+    chatBtn.textContent = '🤖 AI 即時對話';
+    chatBtn.addEventListener('click', () => {
+      cardOverlay.classList.remove('active');
+      openChat(emp);
+    });
+    actions.appendChild(chatBtn);
+  }
   // Benden also gets a direct entry to the AI debate room (preserved).
   if (emp.name === 'BENDEN') {
     const a = document.createElement('a');
@@ -1873,6 +1981,7 @@ document.addEventListener('keydown', e => {
     closeMeeting();
     closeLeisure();
     closeRpg();
+    closeChat();
     return;
   }
   if (rpgOverlay.classList.contains('active') && (e.key === ' ' || e.key === 'Enter')) {
@@ -1880,6 +1989,120 @@ document.addEventListener('keydown', e => {
     rpgAdvance();
   }
 });
+
+// ── AI 即時對話 chat overlay ──
+const chatOverlay = document.getElementById('chat-overlay');
+let chatEmp = null;
+let chatBubbleSeq = 0;
+let chatSending = false;
+
+function drawChatAvatar(emp) {
+  const ac = document.getElementById('chat-avatar');
+  const a = ac.getContext('2d'); a.imageSmoothingEnabled=false; a.clearRect(0,0,32,32);
+  a.fillStyle=rgbStr(emp.hair); a.fillRect(7,2,18,8);
+  a.fillStyle=rgbStr(emp.skin); a.fillRect(8,8,16,13);
+  a.fillStyle='#111'; a.fillRect(11,12,3,3); a.fillRect(18,12,3,3);
+  a.fillStyle='#aa6655'; a.fillRect(13,18,6,2);
+  a.fillStyle=rgbStr(emp.shirt); a.fillRect(5,21,22,11);
+}
+
+function openChat(emp) {
+  chatEmp = emp;
+  chatBubbleSeq = 0;
+  document.getElementById('chat-messages').innerHTML = '';
+  document.getElementById('chat-emp-name').textContent = emp.name + ' · ' + emp.roleZh;
+  drawChatAvatar(emp);
+  chatOverlay.classList.add('active');
+  setTimeout(() => document.getElementById('chat-input').focus(), 50);
+}
+
+function closeChat() {
+  chatOverlay.classList.remove('active');
+  chatEmp = null;
+}
+
+function escapeHtml(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function appendChatBubble(side, name, text, extra) {
+  const id = 'cb-' + (++chatBubbleSeq);
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.id = id;
+  div.className = 'chat-bubble chat-' + side + (extra ? ' ' + extra : '');
+  const nameEl = document.createElement('span');
+  nameEl.className = 'cb-name'; nameEl.textContent = name;
+  const textEl = document.createElement('span');
+  textEl.className = 'cb-text'; textEl.textContent = text;
+  div.appendChild(nameEl); div.appendChild(textEl);
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return id;
+}
+
+function updateChatBubble(id, text, removeExtra) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (removeExtra) el.classList.remove(removeExtra);
+  el.querySelector('.cb-text').textContent = text;
+  const msgs = document.getElementById('chat-messages');
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+async function sendChatMessage() {
+  if (chatSending || !chatEmp) return;
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+  const sendBtn = document.getElementById('chat-send');
+  chatSending = true;
+  sendBtn.disabled = true;
+
+  // Render user bubble.
+  appendChatBubble('user', 'YOU', text);
+
+  const isPlan = text.startsWith('!PLAN');
+
+  // Render placeholder colleague bubble.
+  const loadId = appendChatBubble('colleague', chatEmp.name, '…', 'chat-thinking');
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        colleagueId: chatEmp.name,
+        message: text,
+        isPlan,
+      }),
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const reply = data.reply || data.message || data.text || '（無回應）';
+    updateChatBubble(loadId, reply, 'chat-thinking');
+  } catch (err) {
+    updateChatBubble(loadId, '⚠ 連線錯誤：' + err.message, 'chat-thinking');
+  } finally {
+    chatSending = false;
+    sendBtn.disabled = false;
+    input.focus();
+  }
+}
+
+document.getElementById('chat-send').addEventListener('click', sendChatMessage);
+
+document.getElementById('chat-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendChatMessage();
+  }
+});
+
+document.getElementById('chat-close').addEventListener('click', closeChat);
+chatOverlay.addEventListener('click', e => { if (e.target === chatOverlay) closeChat(); });
 
 // ── build info ──
 const ts = "__BUILD_TS__";
