@@ -663,20 +663,66 @@ function drawMeetingTable() {
 }
 
 // ════════════════════════════════════════════
-//  DRAW: PANTRY (茶水間) — small table + coffee machine
-//  A relaxed corner where AI characters chitchat over coffee.
-//  Coffee machine remains as a simple black body without extra props.
+//  DRAW: PANTRY (茶水間) — small table + water dispenser
+//  A relaxed corner where AI characters chitchat around the water dispenser.
+//  Floor-standing water dispenser with pixel-art design: one grid square base.
 // ════════════════════════════════════════════
 function drawPantry() {
   const gx = DRAG_POSITIONS.coffee.gx, gy = DRAG_POSITIONS.coffee.gy, d = 0.6;
   const hovered = hoverHot && hoverHot.kind === 'leisure' && hoverHot.ref === 'coffee';
-  // Keep only the black coffee-machine body.
-  const cmGx = gx - 0.43, cmGy = gy + d - 0.5, cmW = 0.45, cmD = 0.5, cmH = 34;
-  const machineBox = drawBox(cmGx, cmGy, cmW, cmD, cmH,
-    hovered ? '#52607a' : '#3a3a44', // top
-    hovered ? '#2c3d58' : '#1f1f28', // right face (visible from camera)
-    hovered ? '#39465c' : '#2a2a34', // left face
-    hovered ? '#88ccff' : '#0a0a10');
+  
+  // Floor-standing water dispenser design:
+  // Base: one floor grid square (w=0.9, d=0.9), height proportional (~48px)
+  const wdGx = gx - 0.43, wdGy = gy + d - 0.5, wdW = 0.9, wdD = 0.9;
+  
+  // Lower cabinet base (storage compartment) - height: 18px
+  const baseBox = drawBox(wdGx, wdGy, wdW, wdD, 18,
+    hovered ? '#7a8092' : '#65707f', // top
+    hovered ? '#48525e' : '#3d4754', // right face
+    hovered ? '#5a6474' : '#4d5763', // left face
+    hovered ? '#88ccff' : '#1a1f28'); // shadow
+  
+  // Main body (water tanks) - height: 30px, sitting on top of base
+  const bodyGy = wdGy;
+  const bodyBox = drawBox(wdGx + 0.08, bodyGy + 0.08, wdW - 0.16, wdD - 0.16, 30,
+    hovered ? '#e6f2ff' : '#d4e8ff', // top - light blue tint
+    hovered ? '#a8c8e8' : '#9ab8d8', // right face - blue gradient
+    hovered ? '#bcd8f0' : '#adc8e0', // left face
+    hovered ? '#88ccff' : '#5a7a9a'); // shadow
+  
+  // Blue water bottle visualization (upper tank) - drawn on the right face
+  const bodyBase = [isoX(wdGx + 0.08, bodyGy + 0.08), isoY(wdGx + 0.08, bodyGy + 0.08)];
+  const tankX = bodyBase[0] + 8;
+  const tankY = bodyBase[1] - 24; // upper portion
+  
+  // Water level indicator (blue gradient)
+  ctx.fillStyle = '#4488ff';
+  ctx.fillRect(tankX, tankY, 14, 8);
+  ctx.fillStyle = '#6699ff';
+  ctx.fillRect(tankX, tankY + 8, 14, 6);
+  
+  // Dispenser taps (hot/cold) - small colored rectangles
+  const tapY = bodyBase[1] - 12;
+  // Hot tap (red)
+  ctx.fillStyle = hovered ? '#ff6655' : '#ee4433';
+  ctx.fillRect(tankX + 2, tapY, 4, 3);
+  // Cold tap (blue)
+  ctx.fillStyle = hovered ? '#4488ff' : '#3366dd';
+  ctx.fillRect(tankX + 9, tapY, 4, 3);
+  
+  // Cup platform/drip tray - small detail at bottom
+  const trayY = bodyBase[1] - 6;
+  ctx.fillStyle = '#555566';
+  ctx.fillRect(tankX, trayY, 14, 2);
+  
+  // Combine bounding boxes for interaction (use the base box which covers full dispenser)
+  const machineBox = {
+    x: Math.min(baseBox.x, bodyBox.x),
+    y: Math.min(baseBox.y, bodyBox.y),
+    w: Math.max(baseBox.x + baseBox.w, bodyBox.x + bodyBox.w) - Math.min(baseBox.x, bodyBox.x),
+    h: Math.max(baseBox.y + baseBox.h, bodyBox.y + bodyBox.h) - Math.min(baseBox.y, bodyBox.y)
+  };
+  
   return machineBox;
 }
 
