@@ -1342,7 +1342,7 @@ const LEISURE_META = {
   },
   foosball: {
     title:'⚽ 呼叫玩手足球',
-    prompt:'點擊手足球檯後，選兩位員工到桌台兩側長邊對戰。',
+    prompt:'點擊手足球檯後，選兩位員工到球檯的兩側長邊對戰。',
     button:'▶ 去玩手足球',
     spotKey:'foosball',
     destKind:'foosball',
@@ -1363,11 +1363,15 @@ function clearActivityStay(emp) {
 
 function leisureStatusText() {
   const availableCount = availableLeisureEmployees().length;
-  if (availableCount < 2) return '目前可呼叫人數不足 2 位。';
+  if (availableCount < 2) return '目前可呼叫人數不足 2 位（部分員工正在開會）。';
   if (leisureSelected.length === 0) return '請選 2 位員工。';
   const picked = leisureSelected.join('、');
   if (leisureSelected.length < 2) return `已選：${picked}（再選 1 位）`;
   return `已選：${picked}（準備出發）`;
+}
+
+function isLeisureChoiceLocked(isSelected) {
+  return !isSelected && leisureSelected.length >= 2;
 }
 
 function renderLeisurePicker() {
@@ -1378,7 +1382,7 @@ function renderLeisurePicker() {
   document.getElementById('leisure-status').textContent = leisureStatusText();
   const startBtn = document.getElementById('leisure-start');
   startBtn.textContent = meta.button;
-  startBtn.disabled = leisureSelected.length !== 2 || employees.length < 2;
+  startBtn.disabled = leisureSelected.length !== 2;
 
   const grid = document.getElementById('leisure-grid');
   grid.innerHTML = '';
@@ -1395,7 +1399,7 @@ function renderLeisurePicker() {
     btn.type = 'button';
     const isSelected = leisureSelected.includes(emp.name);
     btn.className = 'leisure-emp' + (isSelected ? ' active' : '');
-    btn.disabled = !isSelected && leisureSelected.length >= 2;
+    btn.disabled = isLeisureChoiceLocked(isSelected);
     btn.textContent = `${emp.name}\n${emp.roleZh}`;
     btn.addEventListener('click', () => toggleLeisureEmployee(emp.name));
     grid.appendChild(btn);
