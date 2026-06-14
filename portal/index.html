@@ -1685,7 +1685,7 @@ function openCard(emp) {
     openRpg(emp);
   });
   actions.appendChild(talk);
-  // AI real-time chat button (for every employee including Benden).
+  // AI real-time chat button (for every employee except Benden).
   if (emp.name !== 'BENDEN') {
     const chatBtn = document.createElement('button');
     chatBtn.className='card-btn'; chatBtn.type='button';
@@ -2019,10 +2019,6 @@ function openChat(emp) {
 function closeChat() {
   chatOverlay.classList.remove('active');
   chatEmp = null;
-}
-
-function escapeHtml(t) {
-  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 function appendChatBubble(side, name, text, extra) {
