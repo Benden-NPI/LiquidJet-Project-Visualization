@@ -1223,7 +1223,10 @@ document.getElementById('meeting-start').addEventListener('click', () => {
   const route = routeTopic(topic);
   // Build participant list: keep the lead order, while always inviting the
   // full AI office roster (including all original members).
-  const everyone = EMPLOYEES.map(e => e.name).filter(n => n !== 'BENDEN');
+  const prioritized = new Set([route.lead, ...route.collab].filter(Boolean));
+  const everyone = EMPLOYEES
+    .map(e => e.name)
+    .filter(n => n !== 'BENDEN' && !prioritized.has(n));
   const order = ['BENDEN', route.lead, ...route.collab, ...everyone];
   const seen = new Set();
   const participants = [];
