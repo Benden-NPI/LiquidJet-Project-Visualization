@@ -299,7 +299,7 @@ footer a:hover { color:#4488ff; }
       <button id="leisure-close">✕</button>
     </div>
     <div id="leisure-body">
-      <div id="leisure-prompt">選兩位員工。</div>
+      <div id="leisure-prompt">請選兩位員工開始活動。</div>
       <div id="leisure-status">尚未選擇。</div>
       <div id="leisure-grid"></div>
       <div id="leisure-actions">
@@ -1394,7 +1394,7 @@ function renderLeisurePicker() {
     const btn = document.createElement('button');
     btn.type = 'button';
     const isSelected = leisureSelected.includes(emp.name);
-    btn.className = 'leisure-emp' + (leisureSelected.includes(emp.name) ? ' active' : '');
+    btn.className = 'leisure-emp' + (isSelected ? ' active' : '');
     btn.disabled = !isSelected && leisureSelected.length >= 2;
     btn.textContent = `${emp.name}\n${emp.roleZh}`;
     btn.addEventListener('click', () => toggleLeisureEmployee(emp.name));
