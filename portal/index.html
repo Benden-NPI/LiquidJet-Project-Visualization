@@ -1337,11 +1337,15 @@ const LEISURE_META = {
     title:'☕ 呼叫喝咖啡',
     prompt:'點擊咖啡機後，選兩位員工去茶水間喝咖啡。',
     button:'▶ 去喝咖啡',
+    spotKey:'pantry',
+    destKind:'pantry',
   },
   foosball: {
     title:'⚽ 呼叫玩手足球',
     prompt:'點擊手足球檯後，選兩位員工到桌台兩側長邊對戰。',
     button:'▶ 去玩手足球',
+    spotKey:'foosball',
+    destKind:'foosball',
   },
 };
 let leisureActivity = 'coffee';
@@ -1399,6 +1403,7 @@ function renderLeisurePicker() {
 }
 
 function openLeisure(activity) {
+  if (!LEISURE_META[activity]) return;
   leisureActivity = activity;
   leisureSelected = [];
   renderLeisurePicker();
@@ -1420,11 +1425,13 @@ function toggleLeisureEmployee(name) {
 
 function dispatchLeisurePair() {
   if (leisureSelected.length !== 2) return;
+  const meta = LEISURE_META[leisureActivity];
+  if (!meta) return;
   const pair = leisureSelected
     .map(name => EMPLOYEES.find(emp => emp.name === name))
     .filter(Boolean);
   if (pair.length !== 2) return;
-  const spots = WANDER_SPOTS[leisureActivity];
+  const spots = WANDER_SPOTS[meta.spotKey];
   if (!spots || spots.length < 2) return;
   const stay = leisureActivity === 'foosball'
     ? rndInt(ROUTINE.foosballStayMin, ROUTINE.foosballStayMax)
@@ -1434,7 +1441,7 @@ function dispatchLeisurePair() {
     clearActivityStay(emp);
     if (leisureActivity === 'foosball') emp.foosballStay = stay;
     else emp.pantryStay = stay;
-    sendTo(emp, spots[idx].gx, spots[idx].gy, leisureActivity === 'coffee' ? 'pantry' : 'foosball');
+    sendTo(emp, spots[idx].gx, spots[idx].gy, meta.destKind);
   });
 
   closeLeisure();
