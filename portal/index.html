@@ -704,19 +704,20 @@ function drawChatBubble(cx, cy, text) {
 //  a debate is convened.
 // ════════════════════════════════════════════
 function drawMeetingChair(cgx, cgy, facing) {
-  // Office chair: seat + backrest. `facing` points TOWARD the table — the
-  // backrest sits on the opposite side of the seat.
-  const sw=0.55, sd=0.55, sh=10;
-  // Seat
-  drawBox(cgx, cgy, sw, sd, sh, '#3a2030','#281020','#311828','#1a0810');
-  // Backrest — thin tall slab on the side opposite where the chair faces
-  const brT=0.10, brH=14;
+  // Dark slate office chair — deliberately a cool blue-grey so it reads
+  // clearly against the warm pink meeting table. `facing` points TOWARD the
+  // table, so the backrest is drawn on the OPPOSITE (outer) side of the seat.
+  const sw=0.46, sd=0.46, sh=9;
+  // Seat cushion
+  drawBox(cgx, cgy, sw, sd, sh, '#3c3c56','#22223a','#2e2e48','#14141e');
+  // Backrest — thin tall slab on the outer side of the seat
+  const brT=0.10, brH=17;
   let bX=cgx, bY=cgy, bW=sw, bD=sd;
   if (facing === 'right')      { bW = brT; }                       // back on LEFT
   else if (facing === 'left')  { bX = cgx + sw - brT; bW = brT; }  // back on RIGHT
   else if (facing === 'back')  { bY = cgy + sd - brT; bD = brT; }  // back at FRONT
   else /* 'front' */           { bD = brT; }                       // back at BACK
-  drawBox(bX, bY, bW, bD, sh + brH, '#4a2840','#28102a','#3a1830','#1a0810');
+  drawBox(bX, bY, bW, bD, sh + brH, '#4a4a68','#26263c','#383852','#14141e');
 }
 
 function drawMeetingTable() {
@@ -810,23 +811,30 @@ function drawPantry() {
   // Cup well
   ctx.fillStyle='#0e1c26'; ctx.fillRect(fx-8, tapY+15, 16, 5);
 
-  // Inverted 5-gallon bottle on top of cooler body
-  const bottleBaseY=fby-totH;
+  // Inverted 5-gallon bottle — anchored to the BODY TOP centre (not the front
+  // face) so it sits squarely on the cooler instead of drifting to one side.
+  const bcx=isoX(bgx+W/2, bgy+D/2);
+  const bottleBaseY=isoY(bgx+W/2, bgy+D/2)-totH;
   const shimmer=Math.floor(148+Math.sin(time*0.024)*24);
+  // Neck collar (where bottle meets the dispenser)
+  ctx.fillStyle='#cfd8de'; ctx.fillRect(bcx-7, bottleBaseY-2, 14, 4);
+  // Barrel (translucent blue)
   ctx.fillStyle=`rgba(32,88,${shimmer},0.82)`;
-  ctx.fillRect(fx-9, bottleBaseY-18, 18, 18);
+  ctx.fillRect(bcx-9, bottleBaseY-19, 18, 18);
   ctx.fillStyle='rgba(170,225,255,0.32)';
-  ctx.fillRect(fx-7, bottleBaseY-16, 5, 12);
+  ctx.fillRect(bcx-7, bottleBaseY-17, 5, 13);
   ctx.fillStyle='rgba(255,255,255,0.26)';
-  ctx.fillRect(fx-8, bottleBaseY-13, 16, 5);
+  ctx.fillRect(bcx-8, bottleBaseY-13, 16, 5);
   ctx.fillStyle='rgba(0,50,110,0.65)';
-  ctx.fillRect(fx-2, bottleBaseY-12, 4, 3);
+  ctx.fillRect(bcx-2, bottleBaseY-12, 4, 3);
+  // Inverted neck (tapers down into the cooler)
   ctx.fillStyle='rgba(38,96,180,0.88)';
-  ctx.fillRect(fx-5, bottleBaseY, 10, 6);
-  ctx.fillStyle='#e4f0f8'; ctx.fillRect(fx-5, bottleBaseY-21, 10, 4);
-  ctx.fillStyle='#ffffff'; ctx.fillRect(fx-4, bottleBaseY-21, 3,  2);
+  ctx.fillRect(bcx-4, bottleBaseY-1, 8, 5);
+  // Cap dome at the very top + highlight
+  ctx.fillStyle='#e4f0f8'; ctx.fillRect(bcx-5, bottleBaseY-22, 10, 4);
+  ctx.fillStyle='#ffffff'; ctx.fillRect(bcx-4, bottleBaseY-22, 3,  2);
 
-  const hitY=bottleBaseY-22;
+  const hitY=bottleBaseY-23;
   return { x:fL[0]-4, y:hitY, w:fR[0]-fL[0]+8, h:fby-hitY+4 };
 }
 
