@@ -1348,6 +1348,7 @@ const LEISURE_META = {
     destKind:'foosball',
   },
 };
+const LEISURE_PAIR_SIZE = 2;
 let leisureActivity = 'coffee';
 let leisureSelected = [];
 
@@ -1364,15 +1365,15 @@ function clearActivityStay(emp) {
 
 function leisureStatusText() {
   const availableCount = availableLeisureEmployees().length;
-  if (availableCount < 2) return '目前可呼叫人數不足 2 位。';
-  if (leisureSelected.length === 0) return '請選 2 位員工。';
+  if (availableCount < LEISURE_PAIR_SIZE) return `目前可呼叫人數不足 ${LEISURE_PAIR_SIZE} 位。`;
+  if (leisureSelected.length === 0) return `請選 ${LEISURE_PAIR_SIZE} 位員工。`;
   const picked = leisureSelected.join('、');
   if (leisureSelected.length === 1) return `已選：${picked}（再選 1 位）`;
   return `已選：${picked}（準備出發）`;
 }
 
 function isLeisureChoiceLocked(isSelected) {
-  return !isSelected && leisureSelected.length >= 2;
+  return !isSelected && leisureSelected.length >= LEISURE_PAIR_SIZE;
 }
 
 function leisureStayProp(activity) {
@@ -1393,7 +1394,7 @@ function renderLeisurePicker() {
   document.getElementById('leisure-status').textContent = leisureStatusText();
   const startBtn = document.getElementById('leisure-start');
   startBtn.textContent = meta.button;
-  startBtn.disabled = leisureSelected.length !== 2;
+  startBtn.disabled = leisureSelected.length !== LEISURE_PAIR_SIZE;
 
   const grid = document.getElementById('leisure-grid');
   grid.innerHTML = '';
@@ -1411,7 +1412,7 @@ function renderLeisurePicker() {
     const isSelected = leisureSelected.includes(emp.name);
     btn.className = 'leisure-emp' + (isSelected ? ' active' : '');
     btn.disabled = isLeisureChoiceLocked(isSelected);
-    btn.textContent = `${emp.name}\n${emp.roleZh}`;
+    btn.append(document.createTextNode(emp.name), document.createElement('br'), document.createTextNode(emp.roleZh));
     btn.addEventListener('click', () => toggleLeisureEmployee(emp.name));
     grid.appendChild(btn);
   });
@@ -1432,22 +1433,22 @@ function closeLeisure() {
 function toggleLeisureEmployee(name) {
   if (leisureSelected.includes(name)) {
     leisureSelected = leisureSelected.filter(n => n !== name);
-  } else if (leisureSelected.length < 2) {
+  } else if (leisureSelected.length < LEISURE_PAIR_SIZE) {
     leisureSelected = [...leisureSelected, name];
   }
   renderLeisurePicker();
 }
 
 function dispatchLeisurePair() {
-  if (leisureSelected.length !== 2) return;
+  if (leisureSelected.length !== LEISURE_PAIR_SIZE) return;
   const meta = LEISURE_META[leisureActivity];
   if (!meta) return;
   const pair = leisureSelected
     .map(name => EMPLOYEES.find(emp => emp.name === name))
     .filter(Boolean);
-  if (pair.length !== 2) return;
+  if (pair.length !== LEISURE_PAIR_SIZE) return;
   const spots = WANDER_SPOTS[meta.spotKey];
-  if (!spots || spots.length < 2) return;
+  if (!spots || spots.length < LEISURE_PAIR_SIZE) return;
   const stay = leisureStayDuration(leisureActivity);
   const stayProp = leisureStayProp(leisureActivity);
 
