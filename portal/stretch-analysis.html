@@ -1,0 +1,1929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stretch Vector Analysis Tool</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
+h1{font-size:1.4rem;font-weight:700;color:#f1f5f9}
+h2{font-size:1rem;font-weight:600;color:#94a3b8;margin-bottom:8px}
+
+/* ── Header ── */
+header{padding:16px 24px;border-bottom:1px solid #1e293b;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.badge{background:#0ea5e9;color:#fff;font-size:11px;padding:2px 8px;border-radius:99px;font-weight:600}
+.badge-v3{background:#8b5cf6;color:#fff;font-size:11px;padding:2px 8px;border-radius:99px;font-weight:600}
+
+/* ── Drop Zone Area ── */
+#dropArea{display:flex;gap:16px;padding:20px 24px;flex-wrap:wrap}
+.drop-col{flex:1;min-width:280px;display:flex;flex-direction:column;gap:8px}
+.drop-col-title{font-size:.85rem;font-weight:600;color:#94a3b8;padding:0 2px}
+.drop-zone{border:2px dashed #334155;border-radius:12px;padding:24px;text-align:center;cursor:pointer;transition:all .2s;position:relative;background:#1e293b;min-height:100px}
+.drop-zone:hover,.drop-zone.dragover{border-color:#0ea5e9;background:#0f2236}
+.drop-zone.loaded{border-color:#22c55e;border-style:solid;background:#052e16}
+.drop-zone .icon{font-size:2rem;margin-bottom:8px}
+.drop-zone .label{font-size:.8rem;color:#64748b;margin-top:4px}
+.drop-zone-title{font-size:.95rem;font-weight:600;color:#e2e8f0}
+.drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+.file-list{display:flex;flex-direction:column;gap:3px;margin-top:4px}
+.file-item{font-size:.75rem;color:#22c55e;padding:2px 4px;display:flex;align-items:center;gap:4px}
+.file-item .fmt-tag{color:#64748b;font-size:.7rem}
+.file-item .del-btn{margin-left:auto;padding:1px 6px;border-radius:4px;border:none;background:transparent;color:#475569;font-size:.75rem;cursor:pointer;flex-shrink:0;line-height:1}
+.file-item .del-btn:hover{background:#7f1d1d;color:#fca5a5}
+
+/* ── Global drop overlay ── */
+#globalOverlay{display:none;position:fixed;inset:0;background:rgba(14,165,233,.15);border:4px dashed #0ea5e9;z-index:999;pointer-events:none;align-items:center;justify-content:center;font-size:1.5rem;color:#0ea5e9}
+#globalOverlay.show{display:flex}
+
+/* ── Status bar ── */
+#statusBar{padding:8px 24px;font-size:.8rem;color:#64748b;border-bottom:1px solid #1e293b;min-height:32px}
+#statusBar.ok{color:#22c55e}
+#statusBar.warn{color:#f59e0b}
+#statusBar.err{color:#ef4444}
+
+/* ── Threshold Panel ── */
+#threshPanel{margin:0 24px 0;border:1px solid #1e3a5f;border-radius:10px;overflow:hidden}
+#threshHeader{padding:10px 16px;background:#0d1e35;cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-size:.85rem;font-weight:600;color:#94a3b8;user-select:none}
+#threshHeader:hover{background:#162840;color:#e2e8f0}
+#threshBody{padding:14px 16px;background:#0a1628;display:none;flex-wrap:wrap;gap:16px;align-items:flex-end}
+#threshBody.open{display:flex}
+.thresh-group{display:flex;flex-direction:column;gap:4px;font-size:.8rem;color:#94a3b8}
+.thresh-group label{font-weight:500}
+.thresh-input{background:#1e293b;color:#e2e8f0;border:1px solid #334155;border-radius:6px;padding:5px 10px;font-size:.85rem;width:110px}
+.thresh-input:focus{outline:none;border-color:#0ea5e9}
+.thresh-radio-group{display:flex;gap:10px;align-items:center}
+.thresh-radio-group label{display:flex;align-items:center;gap:4px;cursor:pointer;font-size:.8rem;color:#94a3b8}
+#yieldBar{margin-top:10px;padding:8px 12px;background:#0f172a;border-radius:6px;font-size:.8rem;color:#94a3b8;display:flex;gap:20px;flex-wrap:wrap;width:100%}
+.yield-item{display:flex;align-items:center;gap:6px}
+.yield-val{font-weight:700;font-size:.9rem}
+.yield-pass{color:#22c55e}
+.yield-mid{color:#eab308}
+.yield-fail{color:#ef4444}
+
+/* ── Results ── */
+#results{display:none;padding:0 24px 40px}
+
+/* ── Tabs ── */
+.tabs{display:flex;gap:0;border-bottom:1px solid #1e293b;margin-bottom:20px;padding-top:20px;flex-wrap:wrap}
+.tab-btn{padding:8px 20px;font-size:.85rem;font-weight:500;color:#64748b;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;transition:all .2s}
+.tab-btn:hover{color:#e2e8f0}
+.tab-btn.active{color:#0ea5e9;border-bottom-color:#0ea5e9}
+
+/* ── Controls ── */
+#controls{display:flex;align-items:center;gap:20px;margin-bottom:16px;flex-wrap:wrap}
+.ctrl-group{display:flex;align-items:center;gap:8px;font-size:.82rem;color:#94a3b8}
+.ctrl-group label{white-space:nowrap}
+input[type=range]{width:120px;accent-color:#0ea5e9}
+.ctrl-val{min-width:32px;color:#f1f5f9;font-weight:600}
+.btn-sm{padding:5px 14px;border-radius:6px;border:1px solid #334155;background:#1e293b;color:#e2e8f0;font-size:.8rem;cursor:pointer;transition:all .2s}
+.btn-sm:hover{background:#334155}
+.btn-sm.active{background:#0ea5e9;border-color:#0ea5e9;color:#fff}
+.btn-export{padding:5px 12px;border-radius:6px;border:1px solid #334155;background:#1e293b;color:#94a3b8;font-size:.78rem;cursor:pointer;transition:all .2s}
+.btn-export:hover{background:#334155;color:#e2e8f0}
+
+/* ── Pair selector ── */
+.pair-select{background:#1e293b;color:#e2e8f0;border:1px solid #334155;border-radius:6px;padding:6px 12px;font-size:.85rem;cursor:pointer}
+.pair-select-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;font-size:.82rem;color:#94a3b8;flex-wrap:wrap}
+
+/* ── SVG Container ── */
+#svgWrapper{background:#0a1628;border-radius:12px;border:1px solid #1e293b;overflow:hidden;position:relative;cursor:grab;user-select:none}
+#svgWrapper.panning{cursor:grabbing}
+#svgWrapper svg{display:block;width:100%;max-height:calc(100vh - 300px);height:auto}
+#zoomHint{position:absolute;bottom:8px;right:10px;font-size:.72rem;color:#334155;pointer-events:none}
+#resetView{position:absolute;top:8px;right:8px;padding:4px 10px;border-radius:6px;border:1px solid #334155;background:#1e293b99;color:#94a3b8;font-size:.75rem;cursor:pointer;backdrop-filter:blur(4px)}
+#resetView:hover{background:#334155;color:#e2e8f0}
+
+/* ── Legend ── */
+#legend{display:flex;align-items:center;gap:8px;font-size:.75rem;color:#64748b;margin-top:10px}
+.legend-bar{width:160px;height:10px;border-radius:4px;background:linear-gradient(to right,#22c55e,#eab308,#ef4444)}
+.legend-bar.diverge{background:linear-gradient(to right,#38bdf8,#475569,#f97316)}
+
+/* ── Mini grid ── */
+.mini-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:20px}
+.mini-card{background:#111827;border-radius:8px;border:2px solid #1e293b;cursor:pointer;overflow:hidden;transition:border-color .2s}
+.mini-card:hover{border-color:#334155}
+.mini-card.selected{border-color:#0ea5e9}
+.mini-card.fail-card{border-color:#7f1d1d}
+.mini-card.warn-card{border-color:#78350f}
+.mini-card svg{display:block;width:100%}
+.mini-card .mini-label{font-size:.7rem;color:#64748b;padding:4px 6px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini-card .mini-num{font-size:.7rem;padding:3px 6px 0;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+.mini-card-empty{background:#0d1520;border-radius:8px;border:2px dashed #1e293b;min-height:80px;opacity:.4}
+
+/* ── Tooltip ── */
+#tooltip{position:fixed;background:#1e293b;border:1px solid #334155;border-radius:8px;padding:10px 14px;font-size:.78rem;pointer-events:none;z-index:1000;display:none;min-width:180px;line-height:1.6;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+#tooltip .tt-title{font-weight:700;color:#0ea5e9;margin-bottom:4px}
+#tooltip .tt-row{display:flex;justify-content:space-between;gap:16px}
+#tooltip .tt-key{color:#94a3b8}
+#tooltip .tt-val{color:#f1f5f9;font-weight:600}
+#tooltip .tt-fail{color:#ef4444;font-weight:700}
+
+/* ── Table ── */
+#tableSection{margin-top:28px}
+.data-table{width:100%;border-collapse:collapse;font-size:.78rem}
+.data-table th{background:#1e293b;color:#94a3b8;font-weight:600;padding:7px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid #334155;cursor:pointer;user-select:none}
+.data-table th:first-child,.data-table th:nth-child(2){text-align:left}
+.data-table th:hover{color:#e2e8f0}
+.data-table td{padding:6px 10px;text-align:right;border-bottom:1px solid #1e293b;font-family:monospace}
+.data-table td:first-child,.data-table td:nth-child(2){text-align:left;font-family:system-ui}
+.data-table tr:hover td{background:#1e293b}
+.chip-sep{border-top:2px solid #334155!important}
+.mag-high{color:#ef4444;font-weight:700}
+.mag-mid{color:#eab308}
+.mag-low{color:#22c55e}
+.row-fail{background:#1c0a0a!important}
+.row-fail td{border-bottom-color:#3b0f0f!important}
+.row-masked{opacity:.4}
+
+/* ── Pairing Panel ── */
+#pairingPanel{margin:8px 24px 0;border:1px solid #1e3a5f;border-radius:10px;overflow:hidden;display:none}
+#pairingPanel.show{display:block}
+#pairingHeader{padding:10px 16px;background:#0d1e35;display:flex;align-items:center;justify-content:space-between;font-size:.85rem;font-weight:600;color:#94a3b8}
+.pairing-table{width:100%;border-collapse:collapse;font-size:.78rem;background:#0a1628}
+.pairing-table th{background:#0d1e35;color:#64748b;font-weight:600;padding:6px 12px;text-align:left;border-bottom:1px solid #1e293b}
+.pairing-table td{padding:6px 12px;border-bottom:1px solid #1e293b;vertical-align:middle}
+.pairing-table tr:last-child td{border-bottom:none}
+.pair-status-ok{color:#22c55e;font-weight:600;font-size:.75rem}
+.pair-status-warn{color:#f59e0b;font-weight:600;font-size:.75rem}
+.pair-key{color:#94a3b8;font-size:.72rem;font-family:monospace}
+.pair-file-sel{background:#1e293b;color:#e2e8f0;border:1px solid #334155;border-radius:5px;padding:3px 8px;font-size:.75rem;cursor:pointer;max-width:220px}
+.pair-file-sel:focus{outline:none;border-color:#0ea5e9}
+.pairing-toolbar{padding:8px 12px;display:flex;gap:10px;background:#070e1c;border-top:1px solid #1e293b}
+.btn-pair{padding:4px 12px;border-radius:6px;border:1px solid #334155;background:#1e293b;color:#94a3b8;font-size:.75rem;cursor:pointer}
+.btn-pair:hover{background:#334155;color:#e2e8f0}
+.btn-pair.primary{border-color:#0ea5e9;color:#0ea5e9}
+.btn-pair.primary:hover{background:#0f2236}
+
+/* ── Filter Panel ── */
+#filterPanel{margin:8px 24px 0;border:1px solid #1e3a5f;border-radius:10px;overflow:hidden}
+#filterHeader{padding:10px 16px;background:#0d1e35;cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-size:.85rem;font-weight:600;color:#94a3b8;user-select:none}
+#filterHeader:hover{background:#162840;color:#e2e8f0}
+#filterBody{padding:14px 16px;background:#0a1628;display:none;gap:24px;flex-wrap:wrap;align-items:flex-start}
+#filterBody.open{display:flex}
+.filter-group{display:flex;flex-direction:column;gap:6px;font-size:.8rem;color:#94a3b8;min-width:220px;flex:1}
+.filter-group label{font-weight:500;display:flex;justify-content:space-between}
+.filter-group label span{color:#e2e8f0;font-family:monospace}
+/* Dual-handle range slider */
+.range-wrap{position:relative;height:32px;width:100%}
+.range-track{position:absolute;top:14px;left:0;right:0;height:4px;background:#1e293b;border-radius:2px}
+.range-fill{position:absolute;top:14px;height:4px;background:#0ea5e9;border-radius:2px}
+.range-wrap input[type=range]{position:absolute;width:100%;top:10px;height:14px;background:none;pointer-events:none;-webkit-appearance:none;appearance:none;margin:0}
+.range-wrap input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#0ea5e9;cursor:pointer;pointer-events:all;border:2px solid #0f172a;box-shadow:0 0 0 1px #0ea5e9}
+.range-wrap input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#0ea5e9;cursor:pointer;pointer-events:all;border:2px solid #0f172a;box-sizing:border-box}
+.range-limits{display:flex;justify-content:space-between;font-size:.7rem;color:#475569;margin-top:2px}
+.filter-masked-info{width:100%;font-size:.78rem;color:#f59e0b;padding:4px 0}
+.btn-filter-reset{padding:4px 12px;border-radius:6px;border:1px solid #334155;background:#1e293b;color:#94a3b8;font-size:.75rem;cursor:pointer}
+.btn-filter-reset:hover{background:#334155;color:#e2e8f0}
+
+/* ── Summary tab ── */
+#summarySection{padding-top:8px}
+.summary-table{width:100%;border-collapse:collapse;font-size:.82rem}
+.summary-table th{background:#1e293b;color:#94a3b8;font-weight:600;padding:8px 12px;text-align:right;white-space:nowrap;border-bottom:1px solid #334155;cursor:pointer;user-select:none}
+.summary-table th:nth-child(-n+3){text-align:left}
+.summary-table th:hover{color:#e2e8f0}
+.summary-table td{padding:7px 12px;text-align:right;border-bottom:1px solid #1e293b;font-family:monospace}
+.summary-table td:nth-child(-n+3){text-align:left;font-family:system-ui}
+.summary-table tr:hover td{background:#1e293b;cursor:pointer}
+.badge-pass{display:inline-block;padding:2px 8px;border-radius:99px;font-size:.72rem;font-weight:700;background:#052e16;color:#22c55e;border:1px solid #166534}
+.badge-warn{display:inline-block;padding:2px 8px;border-radius:99px;font-size:.72rem;font-weight:700;background:#2d1700;color:#eab308;border:1px solid #78350f}
+.badge-fail{display:inline-block;padding:2px 8px;border-radius:99px;font-size:.72rem;font-weight:700;background:#1c0a0a;color:#ef4444;border:1px solid #7f1d1d}
+
+/* ── Trend chart ── */
+#trendChart{margin-top:24px}
+#trendChart h2{margin-bottom:12px}
+</style>
+</head>
+<body>
+
+<div id="globalOverlay">📂 Drop files here</div>
+
+<header>
+  <div>
+    <h1>Stretch Vector Analysis Tool</h1>
+  </div>
+  <span class="badge">4×4 Chip</span>
+  <span class="badge-v3">V3.0</span>
+  <div style="margin-left:auto;display:flex;gap:8px">
+    <button class="btn-export" onclick="exportCSV()">⬇ Export CSV</button>
+    <button class="btn-export" onclick="exportSummaryCSV()">⬇ Summary CSV</button>
+    <button class="btn-export" onclick="exportPNG()">⬇ Export PNG</button>
+  </div>
+</header>
+
+<div id="dropArea">
+  <div class="drop-col">
+    <div class="drop-col-title">Before Stretch</div>
+    <div class="drop-zone" id="dropBefore"
+         ondragover="handleDragOver(event,'before')"
+         ondragleave="handleDragLeave(event,'before')"
+         ondrop="handleDrop(event,'before')">
+      <input type="file" accept=".csv" multiple onchange="handleFileInput(event,'before')">
+      <div class="icon">📋</div>
+      <div class="drop-zone-title">Drop Before files here</div>
+      <div class="label">Up to 10 files · Auto-detect format · Front-scan X-axis auto-flipped</div>
+    </div>
+    <div class="file-list" id="fileListBefore"></div>
+  </div>
+  <div class="drop-col">
+    <div class="drop-col-title">After Stretch</div>
+    <div class="drop-zone" id="dropAfter"
+         ondragover="handleDragOver(event,'after')"
+         ondragleave="handleDragLeave(event,'after')"
+         ondrop="handleDrop(event,'after')">
+      <input type="file" accept=".csv" multiple onchange="handleFileInput(event,'after')">
+      <div class="icon">📊</div>
+      <div class="drop-zone-title">Drop After files here</div>
+      <div class="label">Up to 10 files · Both formats supported</div>
+    </div>
+    <div class="file-list" id="fileListAfter"></div>
+  </div>
+</div>
+
+<div id="statusBar">Drag &amp; drop or click above to load CSV files — pair Before[i] with After[i] by order</div>
+
+<!-- Pass/Fail Threshold Panel -->
+<div id="threshPanel">
+  <div id="threshHeader" onclick="toggleThreshPanel()">
+    <span>⚙ Pass/Fail Thresholds &amp; Yield</span>
+    <span id="threshArrow">▸</span>
+  </div>
+  <div id="threshBody">
+    <div class="thresh-group">
+      <label>Displacement threshold (mm)</label>
+      <input class="thresh-input" type="number" id="dispThresh" value="0.5" min="0" step="0.01" oninput="onThreshChange()">
+    </div>
+    <div class="thresh-group">
+      <label>Δ|r| threshold (mm)</label>
+      <input class="thresh-input" type="number" id="drThresh" value="0.3" min="0" step="0.01" oninput="onThreshChange()">
+    </div>
+    <div class="thresh-group">
+      <label>Fail logic</label>
+      <div class="thresh-radio-group">
+        <label><input type="radio" name="failLogic" value="OR" checked onchange="onThreshChange()"> OR (either)</label>
+        <label><input type="radio" name="failLogic" value="AND" onchange="onThreshChange()"> AND (both)</label>
+      </div>
+    </div>
+    <div style="width:100%">
+      <div id="yieldBar">
+        <span class="yield-item">Corner yield: <span class="yield-val" id="yCorner">—</span></span>
+        <span class="yield-item">Chip yield: <span class="yield-val" id="yChip">—</span></span>
+        <span class="yield-item">Worst chip: <span class="yield-val" id="yWorst">—</span></span>
+        <span class="yield-item">Worst corner: <span class="yield-val" id="yWorstC">—</span></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Data Filter Panel -->
+<div id="filterPanel">
+  <div id="filterHeader" onclick="toggleFilterPanel()">
+    <span>🔽 Data Filter (mask erroneous values)</span>
+    <span id="filterArrow">▸</span>
+  </div>
+  <div id="filterBody">
+    <div class="filter-group">
+      <label>Displacement (mm) <span id="filterDispLabel">— / —</span></label>
+      <div class="range-wrap">
+        <div class="range-track"></div>
+        <div class="range-fill" id="filterDispFill"></div>
+        <input type="range" id="filterDispMin" step="0.001" oninput="onFilterChange('disp')">
+        <input type="range" id="filterDispMax" step="0.001" oninput="onFilterChange('disp')">
+      </div>
+      <div class="range-limits"><span id="filterDispLo">0</span><span id="filterDispHi">—</span></div>
+    </div>
+    <div class="filter-group">
+      <label>Δ|r| (mm) <span id="filterDrLabel">— / —</span></label>
+      <div class="range-wrap">
+        <div class="range-track"></div>
+        <div class="range-fill" id="filterDrFill"></div>
+        <input type="range" id="filterDrMin" step="0.001" oninput="onFilterChange('dr')">
+        <input type="range" id="filterDrMax" step="0.001" oninput="onFilterChange('dr')">
+      </div>
+      <div class="range-limits"><span id="filterDrLo">—</span><span id="filterDrHi">—</span></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;justify-content:flex-end">
+      <button class="btn-filter-reset" onclick="resetFilter()">↺ Reset Filter</button>
+      <div class="filter-masked-info" id="filterMaskedInfo"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Pairing Review Panel -->
+<div id="pairingPanel">
+  <div id="pairingHeader" onclick="togglePairingPanel()" style="cursor:pointer">
+    <span>🔗 Pairing Review — auto-matched by filename key</span>
+    <div style="display:flex;gap:8px;align-items:center" onclick="event.stopPropagation()">
+      <button class="btn-pair" onclick="applyOrderPairing()">Use order (1↔1, 2↔2…)</button>
+      <button class="btn-pair primary" onclick="applyAutoPairing()">↺ Re-auto-match</button>
+      <span id="pairingArrow" style="color:#64748b;font-size:.9rem;margin-left:4px;pointer-events:none">▾</span>
+    </div>
+  </div>
+  <div id="pairingBody_wrap">
+    <table class="pairing-table">
+      <thead><tr>
+        <th>#</th><th>Key</th><th>Before File</th><th>After File</th><th>Status</th>
+      </tr></thead>
+      <tbody id="pairingBody"></tbody>
+    </table>
+    <div class="pairing-toolbar">
+      <button class="btn-pair" onclick="addPairingRow()">+ Add row</button>
+      <button class="btn-pair primary" onclick="applyManualPairing()">✓ Apply pairing</button>
+    </div>
+  </div>
+</div>
+
+<div id="results">
+  <div class="tabs">
+    <button class="tab-btn active" id="tabBtn0" onclick="switchTab('result1')">Result 1: Radial Change</button>
+    <button class="tab-btn" id="tabBtn1" onclick="switchTab('result2')">Result 2: Displacement</button>
+    <button class="tab-btn" id="tabBtn2" onclick="switchTab('goodbad')">Good/Bad Map</button>
+    <button class="tab-btn" id="tabBtn3" onclick="switchTab('summary')">Summary</button>
+  </div>
+
+  <!-- Result 1 & 2 & Good/Bad Map panel -->
+  <div id="panelMain">
+    <div class="pair-select-row">
+      <label>Pair:</label>
+      <select class="pair-select" id="pairSelect" onchange="onPairChange(this.value)"></select>
+    </div>
+
+    <div id="miniGridSection">
+      <h2 style="margin-top:8px;margin-bottom:0">All Pairs Overview</h2>
+      <div class="mini-grid" id="miniGrid"></div>
+    </div>
+
+    <div id="controls" style="margin-top:20px">
+      <div class="ctrl-group">
+        <label>Arrow Scale</label>
+        <input type="range" id="arrowScale" min="5" max="300" value="50" oninput="onScaleChange(this.value)">
+        <span class="ctrl-val" id="arrowScaleVal">50</span><span style="color:#64748b;font-size:.78rem">×</span>
+      </div>
+      <div class="ctrl-group">
+        <label>Corner Labels</label>
+        <button class="btn-sm active" id="btnLabels" onclick="toggleLabels()">Show</button>
+      </div>
+      <div class="ctrl-group">
+        <label>Color by</label>
+        <button class="btn-sm active" id="btnColorMag" onclick="setColorMode('mag')">Displacement</button>
+        <button class="btn-sm" id="btnColorDist" onclick="setColorMode('dist')">Δ Distance</button>
+      </div>
+    </div>
+
+    <div id="svgWrapper">
+      <svg id="boardSVG" viewBox="0 0 820 820" xmlns="http://www.w3.org/2000/svg">
+        <rect id="svgBg" x="0" y="0" width="820" height="820" fill="#090e1a"/>
+        <g id="zoomGroup"></g>
+      </svg>
+      <button id="resetView" onclick="resetZoom()">⟲ Reset View</button>
+      <div id="zoomHint">Scroll to zoom · Drag to pan</div>
+    </div>
+
+    <div id="legend">
+      <span id="legendMin">Min</span>
+      <div class="legend-bar" id="legendBar"></div>
+      <span id="legendMax">Max</span>
+      <span style="margin-left:12px;color:#94a3b8" id="legendLabel">Displacement</span>
+      <span id="legendRange" style="color:#f1f5f9"></span>
+    </div>
+
+    <div id="tableSection">
+      <h2>Detailed Data Table</h2>
+      <div style="overflow-x:auto">
+        <table class="data-table" id="dataTable">
+          <thead>
+            <tr>
+              <th>Chip</th><th>Corner</th>
+              <th>Before X</th><th>Before Y</th>
+              <th>After X</th><th>After Y</th>
+              <th>ΔX (mm)</th><th>ΔY (mm)</th>
+              <th>Displacement (mm)</th><th>Direction (°)</th>
+              <th>Before |r|</th><th>After |r|</th><th>Δ|r| (mm)</th>
+              <th>Pass/Fail</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary panel -->
+  <div id="panelSummary" style="display:none">
+    <div id="summarySection">
+      <div style="overflow-x:auto">
+        <table class="summary-table" id="summaryTable">
+          <thead>
+            <tr>
+              <th onclick="sortSummary(0)">Pair #</th>
+              <th onclick="sortSummary(1)">Before File</th>
+              <th onclick="sortSummary(2)">After File</th>
+              <th onclick="sortSummary(3)">Max Displ. (mm)</th>
+              <th onclick="sortSummary(4)">Avg Displ. (mm)</th>
+              <th onclick="sortSummary(5)">Max Δ|r| (mm)</th>
+              <th onclick="sortSummary(6)">Avg Δ|r| (mm)</th>
+              <th onclick="sortSummary(7)">Corner Yield</th>
+              <th onclick="sortSummary(8)">Chip Yield</th>
+              <th onclick="sortSummary(9)">Status</th>
+            </tr>
+          </thead>
+          <tbody id="summaryBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="trendChart">
+      <h2>Max Displacement per Pair</h2>
+      <svg id="trendSVG" width="100%" height="160" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+  </div>
+</div>
+
+<div id="tooltip">
+  <div class="tt-title" id="ttTitle"></div>
+  <div class="tt-row"><span class="tt-key">ΔX</span><span class="tt-val" id="ttDx"></span></div>
+  <div class="tt-row"><span class="tt-key">ΔY</span><span class="tt-val" id="ttDy"></span></div>
+  <div class="tt-row"><span class="tt-key">Displacement</span><span class="tt-val" id="ttMag"></span></div>
+  <div class="tt-row"><span class="tt-key">Direction</span><span class="tt-val" id="ttAngle"></span></div>
+  <div class="tt-row"><span class="tt-key">Δ|r|</span><span class="tt-val" id="ttDist"></span></div>
+  <div class="tt-row"><span class="tt-key">Status</span><span class="tt-val" id="ttPass"></span></div>
+</div>
+
+<script>
+'use strict';
+
+// ===============================================
+// State
+// ===============================================
+let beforeFiles = [];
+let afterFiles  = [];
+let pairs       = [];
+let currentPair = 0;
+let currentTab  = 'result1';
+let arrowScale  = 50;
+let showLabels  = true;
+let colorMode   = 'mag';
+let summarySort = { col: 0, asc: true };
+let rafPending  = false;
+
+const CHIPS   = ['11','12','13','14','21','22','23','24','31','32','33','34','41','42','43','44'];
+const CORNERS = ['1','2','3','4'];
+
+// ── Threshold helpers ─────────────────────────
+function getThresh() {
+  const dispT = Math.abs(parseFloat(document.getElementById('dispThresh').value) || 0.5);
+  const drT   = Math.abs(parseFloat(document.getElementById('drThresh').value)   || 0.3);
+  const logic = document.querySelector('input[name="failLogic"]:checked')?.value || 'OR';
+  return { dispT, drT, logic };
+}
+
+function isFail(d) {
+  const { dispT, drT, logic } = getThresh();
+  const dispFail = d.mag   > dispT;
+  const drFail   = Math.abs(d.dd) > drT;
+  return logic === 'OR' ? (dispFail || drFail) : (dispFail && drFail);
+}
+
+function computeYield(res) {
+  const { data } = res;
+  let passCorners = 0, totalCorners = 0, maskedCorners = 0;
+  let chipPass = 0;
+  let worstChip = null, worstChipMag = -1;
+  let worstCorner = null, worstMag = -1;
+
+  for (const chip of CHIPS) {
+    let chipOk = true;
+    for (const c of CORNERS) {
+      const d = data[chip][c];
+      if (isFiltered(d)) { maskedCorners++; continue; } // excluded from yield
+      totalCorners++;
+      if (!isFail(d)) {
+        passCorners++;
+      } else {
+        chipOk = false;
+      }
+      if (d.mag > worstMag) {
+        worstMag = d.mag;
+        worstCorner = `Chip ${chip} C${c} (${d.mag.toFixed(3)}mm)`;
+      }
+    }
+    if (chipOk) chipPass++;
+    const chipMaxMag = Math.max(...CORNERS.map(c => data[chip][c].mag));
+    if (chipMaxMag > worstChipMag) {
+      worstChipMag = chipMaxMag;
+      worstChip = `${chip} (${chipMaxMag.toFixed(3)}mm)`;
+    }
+  }
+  return {
+    passCorners, totalCorners,
+    chipPass, totalChips: CHIPS.length,
+    cornerPct: (passCorners / totalCorners * 100).toFixed(1),
+    chipPct:   (chipPass    / CHIPS.length  * 100).toFixed(1),
+    worstChip, worstCorner,
+  };
+}
+
+function updateYieldBar() {
+  if (pairs.length === 0) return;
+  const y = computeYield(pairs[currentPair].results);
+  const cp = parseFloat(y.chipPct);
+  const cls = cp >= 90 ? 'yield-pass' : cp >= 60 ? 'yield-mid' : 'yield-fail';
+  document.getElementById('yCorner').textContent  = `${y.passCorners}/${y.totalCorners} (${y.cornerPct}%)`;
+  document.getElementById('yChip').textContent    = `${y.chipPass}/${y.totalChips} (${y.chipPct}%)`;
+  document.getElementById('yWorst').textContent   = y.worstChip   || '—';
+  document.getElementById('yWorstC').textContent  = y.worstCorner || '—';
+  document.getElementById('yChip').className = `yield-val ${cls}`;
+  document.getElementById('yCorner').className = `yield-val ${cls}`;
+}
+
+function onThreshChange() {
+  saveThresholds();
+  if (pairs.length === 0) return;
+  renderSVGOnly();
+  updateYieldBar();
+  buildTable(pairs[currentPair].results);
+  buildMiniGrid();
+}
+
+function saveThresholds() {
+  try {
+    const t = getThresh();
+    localStorage.setItem('stretch_thresholds', JSON.stringify(t));
+  } catch(e) {}
+}
+
+function loadThresholds() {
+  try {
+    const t = JSON.parse(localStorage.getItem('stretch_thresholds') || '{}');
+    if (t.dispT) document.getElementById('dispThresh').value = t.dispT;
+    if (t.drT)   document.getElementById('drThresh').value   = t.drT;
+    if (t.logic === 'AND') {
+      document.querySelector('input[name="failLogic"][value="AND"]').checked = true;
+    }
+  } catch(e) {}
+}
+
+function toggleThreshPanel() {
+  const body  = document.getElementById('threshBody');
+  const arrow = document.getElementById('threshArrow');
+  const open  = body.classList.toggle('open');
+  arrow.textContent = open ? '▾' : '▸';
+}
+
+// ── Filter helpers ────────────────────────────
+let filterRange = { dispMin:0, dispMax:Infinity, drMin:-Infinity, drMax:Infinity };
+
+function isFiltered(d) {
+  const { dispMin, dispMax, drMin, drMax } = filterRange;
+  return d.mag < dispMin || d.mag > dispMax || d.dd < drMin || d.dd > drMax;
+}
+
+function initFilter(res) {
+  const { data, maxMag, maxDist } = res;
+  // Full range = no filter
+  filterRange = { dispMin:0, dispMax:maxMag, drMin:-maxDist, drMax:maxDist };
+
+  const setSlider = (id, min, max, val) => {
+    const el = document.getElementById(id);
+    el.min = min; el.max = max; el.value = val;
+  };
+  setSlider('filterDispMin', 0, maxMag, 0);
+  setSlider('filterDispMax', 0, maxMag, maxMag);
+  setSlider('filterDrMin', -maxDist, maxDist, -maxDist);
+  setSlider('filterDrMax', -maxDist, maxDist,  maxDist);
+
+  updateFilterUI('disp');
+  updateFilterUI('dr');
+  updateFilterMaskedInfo(res);
+}
+
+function onFilterChange(type) {
+  if (type === 'disp') {
+    let lo = parseFloat(document.getElementById('filterDispMin').value);
+    let hi = parseFloat(document.getElementById('filterDispMax').value);
+    if (lo > hi) { // cross-prevention
+      if (document.activeElement.id === 'filterDispMin') lo = hi;
+      else hi = lo;
+      document.getElementById('filterDispMin').value = lo;
+      document.getElementById('filterDispMax').value = hi;
+    }
+    filterRange.dispMin = lo;
+    filterRange.dispMax = hi;
+    updateFilterUI('disp');
+  } else {
+    let lo = parseFloat(document.getElementById('filterDrMin').value);
+    let hi = parseFloat(document.getElementById('filterDrMax').value);
+    if (lo > hi) {
+      if (document.activeElement.id === 'filterDrMin') lo = hi;
+      else hi = lo;
+      document.getElementById('filterDrMin').value = lo;
+      document.getElementById('filterDrMax').value = hi;
+    }
+    filterRange.drMin = lo;
+    filterRange.drMax = hi;
+    updateFilterUI('dr');
+  }
+  if (pairs.length === 0) return;
+  const res = pairs[currentPair].results;
+  updateFilterMaskedInfo(res);
+  renderSVGOnly();
+  buildTable(res);
+  updateYieldBar();
+  buildMiniGrid();
+}
+
+function updateFilterUI(type) {
+  if (type === 'disp') {
+    const lo = parseFloat(document.getElementById('filterDispMin').value);
+    const hi = parseFloat(document.getElementById('filterDispMax').value);
+    const min = parseFloat(document.getElementById('filterDispMin').min);
+    const max = parseFloat(document.getElementById('filterDispMin').max);
+    const range = max - min || 1;
+    const leftPct  = (lo - min) / range * 100;
+    const rightPct = (hi - min) / range * 100;
+    const fill = document.getElementById('filterDispFill');
+    fill.style.left  = leftPct  + '%';
+    fill.style.width = (rightPct - leftPct) + '%';
+    document.getElementById('filterDispLo').textContent    = lo.toFixed(3);
+    document.getElementById('filterDispHi').textContent    = hi.toFixed(3);
+    document.getElementById('filterDispLabel').textContent = `${lo.toFixed(3)} – ${hi.toFixed(3)}`;
+  } else {
+    const lo = parseFloat(document.getElementById('filterDrMin').value);
+    const hi = parseFloat(document.getElementById('filterDrMax').value);
+    const min = parseFloat(document.getElementById('filterDrMin').min);
+    const max = parseFloat(document.getElementById('filterDrMin').max);
+    const range = max - min || 1;
+    const leftPct  = (lo - min) / range * 100;
+    const rightPct = (hi - min) / range * 100;
+    const fill = document.getElementById('filterDrFill');
+    fill.style.left  = leftPct  + '%';
+    fill.style.width = (rightPct - leftPct) + '%';
+    document.getElementById('filterDrLo').textContent    = lo.toFixed(3);
+    document.getElementById('filterDrHi').textContent    = hi.toFixed(3);
+    document.getElementById('filterDrLabel').textContent = `${lo.toFixed(3)} – ${hi.toFixed(3)}`;
+  }
+}
+
+function updateFilterMaskedInfo(res) {
+  let masked = 0;
+  for (const chip of CHIPS) for (const c of CORNERS) {
+    if (isFiltered(res.data[chip][c])) masked++;
+  }
+  const el = document.getElementById('filterMaskedInfo');
+  el.textContent = masked > 0 ? `⚠ ${masked} corner(s) masked` : '';
+}
+
+function resetFilter() {
+  if (pairs.length === 0) return;
+  initFilter(pairs[currentPair].results);
+  renderSVGOnly();
+  buildTable(pairs[currentPair].results);
+  updateYieldBar();
+  buildMiniGrid();
+}
+
+function toggleFilterPanel() {
+  const body  = document.getElementById('filterBody');
+  const arrow = document.getElementById('filterArrow');
+  const open  = body.classList.toggle('open');
+  arrow.textContent = open ? '▾' : '▸';
+}
+
+function togglePairingPanel() {
+  const wrap  = document.getElementById('pairingBody_wrap');
+  const arrow = document.getElementById('pairingArrow');
+  const hidden = wrap.style.display === 'none';
+  wrap.style.display  = hidden ? '' : 'none';
+  arrow.textContent   = hidden ? '▾' : '▸';
+}
+
+// ===============================================
+// Auto-pairing
+// ===============================================
+
+// Extract a canonical key from a filename by stripping extension,
+// dropping before/after/pre/post/b/a tokens, and pure digit groups (timestamps)
+function filenameKey(name) {
+  const stem = name.replace(/\.[^.]+$/, ''); // remove extension
+  const tokens = stem.split(/[\s_\-\.]+/);
+  const DROP = /^(before|after|pre|post|^b$|^a$|front|back|bef|aft)$/i;
+  const TIMESTAMP = /^\d{4,14}$/;
+  return tokens
+    .filter(t => t && !DROP.test(t) && !TIMESTAMP.test(t))
+    .join('_')
+    .toLowerCase() || stem.toLowerCase();
+}
+
+// Build pairing from beforeFiles/afterFiles using filename keys
+// Returns array of {beforeIdx, afterIdx} (-1 = unmatched)
+function buildAutoPairing() {
+  const bKeys = beforeFiles.map((f,i) => ({ key: filenameKey(f.name), i }));
+  const aKeys = afterFiles.map((f,i)  => ({ key: filenameKey(f.name), i }));
+  const used  = new Set();
+  const result = [];
+
+  for (const b of bKeys) {
+    const match = aKeys.find(a => !used.has(a.i) && a.key === b.key);
+    if (match) {
+      result.push({ beforeIdx: b.i, afterIdx: match.i, key: b.key, auto: true });
+      used.add(match.i);
+    } else {
+      result.push({ beforeIdx: b.i, afterIdx: -1, key: b.key, auto: false });
+    }
+  }
+  // Unmatched after files
+  for (const a of aKeys) {
+    if (!used.has(a.i)) {
+      result.push({ beforeIdx: -1, afterIdx: a.i, key: filenameKey(afterFiles[a.i].name), auto: false });
+    }
+  }
+  return result;
+}
+
+// Current manual pairing state (array of {beforeIdx, afterIdx})
+let manualPairing = null; // null = use auto/order
+
+function showPairingPanel() {
+  document.getElementById('pairingPanel').classList.add('show');
+  renderPairingTable(buildAutoPairing());
+}
+
+function hidePairingPanel() {
+  document.getElementById('pairingPanel').classList.remove('show');
+}
+
+function renderPairingTable(pairs_data) {
+  const tbody   = document.getElementById('pairingBody');
+  const bOpts   = beforeFiles.map((f,i) => `<option value="${i}">${escHtml(truncate(f.name,30))}</option>`).join('');
+  const aOpts   = afterFiles.map((f,i)  => `<option value="${i}">${escHtml(truncate(f.name,30))}</option>`).join('');
+  const noneB   = `<option value="-1">— none —</option>`;
+  const noneA   = `<option value="-1">— none —</option>`;
+
+  let html = '';
+  pairs_data.forEach((row, ri) => {
+    const bSel = `<select class="pair-file-sel" id="pb_${ri}" onchange="updatePairingRow(${ri})">${noneB}${bOpts}</select>`;
+    const aSel = `<select class="pair-file-sel" id="pa_${ri}" onchange="updatePairingRow(${ri})">${noneA}${aOpts}</select>`;
+    const ok   = row.beforeIdx >= 0 && row.afterIdx >= 0;
+    const status = ok
+      ? `<span class="pair-status-ok">${row.auto ? '✓ auto' : '✓ set'}</span>`
+      : `<span class="pair-status-warn">⚠ incomplete</span>`;
+    html += `<tr>
+      <td>${ri+1}</td>
+      <td class="pair-key">${escHtml(row.key || '—')}</td>
+      <td>${bSel}</td>
+      <td>${aSel}</td>
+      <td>${status}</td>
+    </tr>`;
+  });
+  tbody.innerHTML = html;
+
+  // Set dropdown values after render
+  pairs_data.forEach((row, ri) => {
+    document.getElementById(`pb_${ri}`).value = row.beforeIdx;
+    document.getElementById(`pa_${ri}`).value = row.afterIdx;
+  });
+
+  // Store current pairing for apply
+  window._currentPairingData = pairs_data;
+}
+
+function updatePairingRow(ri) {
+  const bv = parseInt(document.getElementById(`pb_${ri}`).value);
+  const av = parseInt(document.getElementById(`pa_${ri}`).value);
+  window._currentPairingData[ri].beforeIdx = bv;
+  window._currentPairingData[ri].afterIdx  = av;
+  window._currentPairingData[ri].auto = false;
+  // Update status cell
+  const ok = bv >= 0 && av >= 0;
+  const tr = document.getElementById(`pb_${ri}`).closest('tr');
+  tr.cells[4].innerHTML = ok
+    ? '<span class="pair-status-ok">✓ set</span>'
+    : '<span class="pair-status-warn">⚠ incomplete</span>';
+}
+
+function addPairingRow() {
+  window._currentPairingData = window._currentPairingData || [];
+  window._currentPairingData.push({ beforeIdx:-1, afterIdx:-1, key:'', auto:false });
+  renderPairingTable(window._currentPairingData);
+}
+
+function applyAutoPairing() {
+  renderPairingTable(buildAutoPairing());
+}
+
+function applyOrderPairing() {
+  const n = Math.max(beforeFiles.length, afterFiles.length);
+  const ordered = Array.from({length:n}, (_,i) => ({
+    beforeIdx: i < beforeFiles.length ? i : -1,
+    afterIdx:  i < afterFiles.length  ? i : -1,
+    key: i < beforeFiles.length ? filenameKey(beforeFiles[i].name) : '',
+    auto: false,
+  }));
+  renderPairingTable(ordered);
+}
+
+function applyManualPairing() {
+  const pd = window._currentPairingData || [];
+  const valid = pd.filter(r => r.beforeIdx >= 0 && r.afterIdx >= 0);
+  if (valid.length === 0) { alert('No valid pairs defined.'); return; }
+  manualPairing = valid;
+  hidePairingPanel();
+  recomputePairsFromPairing();
+}
+
+function recomputePairsFromPairing() {
+  const src = manualPairing || [];
+  pairs = [];
+  for (const row of src) {
+    const bf = beforeFiles[row.beforeIdx];
+    const af = afterFiles[row.afterIdx];
+    if (!bf || !af) continue;
+    try {
+      const results = computeResults(bf.data, af.data);
+      pairs.push({ before: bf, after: af, results });
+    } catch(e) {
+      setStatus('Error: ' + e.message, 'err');
+    }
+  }
+  finalizePairs();
+}
+
+// ===============================================
+// File handling
+// ===============================================
+async function readFileText(file) {
+  const buf   = await file.arrayBuffer();
+  const bytes = new Uint8Array(buf);
+  const enc   = (bytes[0] === 0xFF && bytes[1] === 0xFE) ? 'utf-16le' : 'utf-8';
+  return new TextDecoder(enc).decode(buf);
+}
+
+function detectFormat(text) {
+  if (text.includes('LJ_STR_MAT_SP_Parameter') || text.includes('LJ_STR_MAT_SP_Result'))
+    return 'format1';
+  if (/C\d_\d{2}[^"]*X/.test(text) && /C\d_\d{2}[^"]*Y/.test(text))
+    return 'format2';
+  return null;
+}
+
+function countPoints(parsed) {
+  let n = 0;
+  for (const chip of CHIPS) {
+    if (!parsed[chip]) continue;
+    for (const c of CORNERS) {
+      if (parsed[chip][`C${c}_X`] !== undefined) n++;
+    }
+  }
+  return n;
+}
+
+function parseFormat1(text) {
+  const lines = text.replace(/^﻿/, '').trim().split(/\r?\n/);
+  const h  = lines[0].split(',');
+  const pi = h.findIndex(c => c.includes('Parameter'));
+  const ri = h.findIndex(c => c.includes('Result'));
+  const xi = h.findIndex(c => c.includes('X_Coordinate'));
+  const yi = h.findIndex(c => c.includes('Y_Coordinate'));
+  if (pi < 0 || ri < 0) return {};
+  const out = {};
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].split(',');
+    if (cols.length < ri + 1) continue;
+    const param = cols[pi]?.trim();
+    let val = parseFloat(cols[ri]);
+    if (!param || isNaN(val)) continue;
+    if (param.endsWith('_X')) val = -val;
+    const chip = `${cols[xi]?.trim()}${cols[yi]?.trim()}`;
+    if (chip.length < 2) continue;
+    if (!out[chip]) out[chip] = {};
+    out[chip][param] = val;
+  }
+  return out;
+}
+
+function parseFormat2(text) {
+  const out = {};
+  const re1 = /C(\d)_(\d{2}):[^"]*X[^"]*",\s*([-\d.]+)\s*,\s*"[^"]*C\d_\d{2}:[^"]*Y[^"]*",\s*([-\d.]+)/g;
+  const re2 = /Center_C(\d)_(\d{2}):[^"]*XY[^"]*",\s*([-\d.]+)/g;
+  let m;
+  while ((m = re1.exec(text)) !== null) {
+    const [,corner,chip,x,y] = m;
+    if (!out[chip]) out[chip] = {};
+    out[chip][`C${corner}_X`] = parseFloat(x);
+    out[chip][`C${corner}_Y`] = parseFloat(y);
+  }
+  while ((m = re2.exec(text)) !== null) {
+    const [,corner,chip,val] = m;
+    if (!out[chip]) out[chip] = {};
+    out[chip][`Center_C${corner}`] = parseFloat(val);
+  }
+  return out;
+}
+
+async function processFiles(files, slot) {
+  const arr = slot === 'before' ? beforeFiles : afterFiles;
+  for (const file of files) {
+    if (arr.length >= 10) { setStatus('Maximum 10 files per side reached', 'warn'); break; }
+    const text      = await readFileText(file);
+    const fmt       = detectFormat(text);
+    if (!fmt) { setStatus('Unrecognized format: ' + file.name, 'warn'); continue; }
+    const parsed    = fmt === 'format1' ? parseFormat1(text) : parseFormat2(text);
+    const pts       = countPoints(parsed);
+    const fmtLabel  = fmt === 'format1' ? 'Front-scan' : 'Back-scan';
+    const ptLabel   = `${pts}/64`;
+    const warn      = pts < 64 ? ' ⚠' : '';
+    arr.push({ name: file.name, fmt: fmtLabel, data: parsed, pts, ptLabel: ptLabel + warn });
+  }
+  updateFileList(slot);
+  recomputePairs();
+}
+
+function updateFileList(slot) {
+  const arr  = slot === 'before' ? beforeFiles : afterFiles;
+  const el   = document.getElementById('fileList' + cap(slot));
+  const zone = document.getElementById('drop'     + cap(slot));
+  el.innerHTML = arr.map((f, i) =>
+    `<div class="file-item">
+      <span style="color:#94a3b8">${i+1}.</span>
+      ${escHtml(f.name)}
+      <span class="fmt-tag">[${f.fmt} · ${f.ptLabel}]</span>
+      <button class="del-btn" onclick="removeFile('${slot}',${i})" title="Remove">✕</button>
+    </div>`
+  ).join('');
+  zone.classList.toggle('loaded', arr.length > 0);
+}
+
+function removeFile(slot, idx) {
+  if (slot === 'before') beforeFiles.splice(idx, 1);
+  else afterFiles.splice(idx, 1);
+  updateFileList(slot);
+  recomputePairs();
+}
+
+function recomputePairs() {
+  // If both sides have files, show pairing panel first
+  if (beforeFiles.length > 0 && afterFiles.length > 0) {
+    manualPairing = null; // reset manual override
+    // Auto-pair and compute
+    const autoPaired = buildAutoPairing().filter(r => r.beforeIdx >= 0 && r.afterIdx >= 0);
+    pairs = [];
+    for (const row of autoPaired) {
+      const bf = beforeFiles[row.beforeIdx], af = afterFiles[row.afterIdx];
+      try {
+        const results = computeResults(bf.data, af.data);
+        pairs.push({ before: bf, after: af, results });
+      } catch(e) {
+        setStatus('Error: ' + e.message, 'err');
+      }
+    }
+    showPairingPanel();
+  } else {
+    hidePairingPanel();
+    pairs = [];
+  }
+
+  finalizePairs();
+}
+
+function finalizePairs() {
+  if (pairs.length === 0) {
+    const nb = beforeFiles.length, na = afterFiles.length;
+    if (nb === 0 && na === 0) setStatus('Drag & drop or click above to load CSV files');
+    else setStatus(`${nb} before / ${na} after file(s) — confirm pairing above`, 'warn');
+    document.getElementById('results').style.display = 'none';
+    return;
+  }
+
+  if (currentPair >= pairs.length) currentPair = 0;
+  setStatus(`✓ ${pairs.length} pair(s) — ${CHIPS.length} chips × 4 corners = ${CHIPS.length*4} points each`, 'ok');
+  document.getElementById('results').style.display = 'block';
+  buildPairSelector();
+  initFilter(pairs[currentPair].results);
+  resetZoom();
+  renderCurrentView();
+  buildSummaryTable();
+  updateYieldBar();
+}
+
+function buildPairSelector() {
+  const sel = document.getElementById('pairSelect');
+  sel.innerHTML = pairs.map((p, i) =>
+    `<option value="${i}">Pair ${i+1}: ${truncate(p.before.name,22)} ↔ ${truncate(p.after.name,22)}</option>`
+  ).join('');
+  sel.value = currentPair;
+}
+
+// ===============================================
+// Drop handlers
+// ===============================================
+function handleDragOver(e, slot) {
+  e.preventDefault();
+  document.getElementById('drop' + cap(slot)).classList.add('dragover');
+}
+function handleDragLeave(e, slot) {
+  document.getElementById('drop' + cap(slot)).classList.remove('dragover');
+}
+function handleDrop(e, slot) {
+  e.preventDefault();
+  handleDragLeave(e, slot);
+  processFiles([...e.dataTransfer.files], slot);
+}
+function handleFileInput(e, slot) {
+  processFiles([...e.target.files], slot);
+  e.target.value = '';
+}
+
+document.addEventListener('dragover', e => {
+  e.preventDefault();
+  document.getElementById('globalOverlay').classList.add('show');
+});
+document.addEventListener('dragleave', e => {
+  if (!e.relatedTarget) document.getElementById('globalOverlay').classList.remove('show');
+});
+document.addEventListener('drop', e => {
+  e.preventDefault();
+  document.getElementById('globalOverlay').classList.remove('show');
+  const files = [...e.dataTransfer.files];
+  if (files.length === 0) return;
+  if (e.target.closest('.drop-zone')) return;
+  if (files.length === 1) {
+    processFiles(files, beforeFiles.length <= afterFiles.length ? 'before' : 'after');
+  } else {
+    const half = Math.floor(files.length / 2);
+    processFiles(files.slice(0, half), 'before');
+    processFiles(files.slice(half),    'after');
+  }
+});
+
+// ===============================================
+// Compute results
+// ===============================================
+function computeResults(before, after) {
+  const data = {};
+  let maxMag = 0, maxDist = 0;
+  for (const chip of CHIPS) {
+    if (!before[chip] || !after[chip]) throw new Error(`Missing chip ${chip}`);
+    data[chip] = {};
+    for (const c of CORNERS) {
+      const bx = before[chip][`C${c}_X`], by = before[chip][`C${c}_Y`];
+      const ax = after[chip][`C${c}_X`],  ay = after[chip][`C${c}_Y`];
+      const dx = ax - bx, dy = ay - by;
+      const mag   = Math.hypot(dx, dy);
+      const bDist = Math.hypot(bx, by), aDist = Math.hypot(ax, ay);
+      const dd    = aDist - bDist;
+      data[chip][c] = {
+        bx, by, ax, ay, dx, dy, mag,
+        angle: Math.atan2(dy, dx) * 180 / Math.PI,
+        bDist, aDist, dd,
+      };
+      if (mag > maxMag) maxMag = mag;
+      if (Math.abs(dd) > maxDist) maxDist = Math.abs(dd);
+    }
+  }
+  return { data, maxMag, maxDist };
+}
+
+// ===============================================
+// Color helpers
+// ===============================================
+function valToColor(v, max) {
+  const t = Math.min(Math.abs(v) / Math.max(max * 0.8, 0.05), 1);
+  if (t < 0.5) {
+    const g = Math.round(180 + t * 2 * 75);
+    const r = Math.round(t * 2 * 234);
+    return `rgb(${r},${g},80)`;
+  }
+  const r = 234, g = Math.round((1 - (t - 0.5) * 2) * 255);
+  return `rgb(${r},${Math.max(0,g)},60)`;
+}
+
+function getColor(d, res) {
+  if (colorMode === 'mag') return valToColor(d.mag, res.maxMag);
+  return valToColor(d.dd, res.maxDist);
+}
+
+function r1Color(dd, maxDist) {
+  const t = Math.min(Math.abs(dd) / Math.max(maxDist * 0.7, 0.01), 1);
+  if (dd > 0.003) {
+    const r = 255, g = Math.round(200 - t * 160), b = Math.round(60 - t * 60);
+    return `rgb(${r},${Math.max(0,g)},${Math.max(0,b)})`;
+  } else if (dd < -0.003) {
+    const r = Math.round(50 - t * 50), g = Math.round(200 - t * 60), b = 255;
+    return `rgb(${Math.max(0,r)},${Math.max(0,g)},${b})`;
+  }
+  return '#64748b';
+}
+
+// ===============================================
+// SVG coordinate mapping
+// ===============================================
+const VW = 820, VH = 820, MG = 55, DW = VW - 2*MG, DH = VH - 2*MG, CR = 155;
+function tS(cx, cy) {
+  const sx = MG + (CR - cy) / (2*CR) * DW;
+  const sy = MG + (cx + CR) / (2*CR) * DH;
+  return [sx, sy];
+}
+function mmToPx(mm) { return mm / (2*CR) * DW; }
+
+// ===============================================
+// SVG drawing helpers
+// ===============================================
+function arrow(x1, y1, x2, y2, color, sw) {
+  const dx = x2-x1, dy = y2-y1;
+  const len = Math.hypot(dx, dy);
+  if (len < 1) return '';
+  const hl = Math.min(7, len * 0.45);
+  const a  = Math.atan2(dy, dx);
+  const ax1 = x2 - hl*Math.cos(a-0.45), ay1 = y2 - hl*Math.sin(a-0.45);
+  const ax2 = x2 - hl*Math.cos(a+0.45), ay2 = y2 - hl*Math.sin(a+0.45);
+  return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${color}" stroke-width="${sw}" stroke-linecap="round"/>` +
+         `<polygon points="${x2.toFixed(1)},${y2.toFixed(1)} ${ax1.toFixed(1)},${ay1.toFixed(1)} ${ax2.toFixed(1)},${ay2.toFixed(1)}" fill="${color}"/>`;
+}
+
+function circle(cx, cy, r, fill, stroke, sw=1, extras='') {
+  return `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" ${extras}/>`;
+}
+
+function txt(cx, cy, s, color, size, anchor='middle') {
+  return `<text x="${cx.toFixed(1)}" y="${cy.toFixed(1)}" text-anchor="${anchor}" dominant-baseline="middle" fill="${color}" font-size="${size}" font-family="system-ui">${s}</text>`;
+}
+
+// ===============================================
+// Board background
+// ===============================================
+const CHIP_ROWS = [[-130,-74],[-64,-8],[8,64],[74,130]];
+const CHIP_COLS = [[139,77],[67,5],[-5,-67],[-77,-139]];
+
+function drawBoard(mini=false) {
+  let s = '';
+  const [ox, oy] = tS(0, 0);
+  const sw = mini ? 0.5 : 1;
+
+  s += `<line x1="${MG}" y1="${oy.toFixed(1)}" x2="${VW-MG}" y2="${oy.toFixed(1)}" stroke="#1e293b" stroke-width="${sw}"/>`;
+  s += `<line x1="${ox.toFixed(1)}" y1="${MG}" x2="${ox.toFixed(1)}" y2="${VH-MG}" stroke="#1e293b" stroke-width="${sw}"/>`;
+
+  for (let r = 0; r < 4; r++) {
+    for (let c = 0; c < 4; c++) {
+      const [cx1,cx2] = CHIP_ROWS[r], [cy1,cy2] = CHIP_COLS[c];
+      const [sx1,sy1] = tS(cx1, cy1), [sx2,sy2] = tS(cx2, cy2);
+      const rx = Math.min(sx1,sx2), ry = Math.min(sy1,sy2);
+      const rw = Math.abs(sx2-sx1), rh = Math.abs(sy2-sy1);
+      s += `<rect x="${rx.toFixed(1)}" y="${ry.toFixed(1)}" width="${rw.toFixed(1)}" height="${rh.toFixed(1)}" fill="#111827" stroke="#1e3a5f" stroke-width="${sw}" rx="2"/>`;
+      if (!mini) {
+        const chip = `${r+1}${c+1}`;
+        const [mx,my] = tS((cx1+cx2)/2, (cy1+cy2)/2);
+        s += txt(mx, my, chip, '#1e3a5f', 22);
+      }
+    }
+  }
+
+  s += circle(ox, oy, mini ? 3 : 5, '#f59e0b', '#fbbf24', 1);
+  if (!mini) {
+    s += txt(ox+9, oy-9, '(0,0)', '#f59e0b', 9, 'start');
+    for (let v = -100; v <= 100; v += 50) {
+      const [sx_h] = tS(0, v);
+      const [,sy_v] = tS(v, 0);
+      s += txt(sx_h, oy+14, v, '#334155', 9);
+      if (v !== 0) s += txt(ox-14, sy_v, v, '#334155', 9, 'end');
+    }
+  }
+  return s;
+}
+
+// ===============================================
+// Full detail renders
+// ===============================================
+function renderResult1SVG(res) {
+  const {data, maxDist} = res;
+  const [ox, oy] = tS(0, 0);
+  let s = drawBoard(false);
+  s += circle(ox, oy, 9, 'none', '#f59e0b', 2);
+
+  for (const chip of CHIPS) {
+    for (const c of CORNERS) {
+      const d       = data[chip][c];
+      const masked  = isFiltered(d);
+      const fail    = !masked && isFail(d);
+      const color   = masked ? '#334155' : r1Color(d.dd, maxDist);
+      const opacity = masked ? ' opacity="0.25"' : '';
+      const [sx, sy] = tS(d.bx, d.by);
+
+      s += `<line x1="${ox.toFixed(1)}" y1="${oy.toFixed(1)}" x2="${sx.toFixed(1)}" y2="${sy.toFixed(1)}" stroke="#1e3a5f" stroke-width="0.6" stroke-dasharray="4,3" opacity="${masked?'0.15':'0.7'}"/>`;
+
+      if (!masked && Math.abs(d.dd) > 0.001 && d.bDist > 0.001) {
+        const nx = d.bx / d.bDist, ny = d.by / d.bDist;
+        const len = d.dd * arrowScale * mmToPx(1);
+        s += arrow(sx, sy, sx - ny*len, sy + nx*len, color, 2.5);
+      }
+
+      s += circle(sx, sy, 4.5, masked ? '#1e293b' : color, masked ? '#334155' : '#0f172a', 1,
+        `class="hot" data-chip="${chip}" data-c="${c}" data-dx="${d.dx.toFixed(4)}" data-dy="${d.dy.toFixed(4)}" data-mag="${d.mag.toFixed(4)}" data-angle="${d.angle.toFixed(1)}" data-dd="${d.dd.toFixed(4)}" data-fail="${fail}" data-masked="${masked}"${opacity}`);
+
+      if (masked) s += circle(sx, sy, 6.5, 'none', '#475569', 1, `stroke-dasharray="3,2"`);
+      else if (fail) s += circle(sx, sy, 7, 'none', '#ef4444', 1.5);
+
+      if (showLabels && !masked) {
+        const sign = d.dd >= 0 ? '+' : '';
+        const lx = sx + (d.bx > 0 ? 7 : -7);
+        const ly = sy + (d.by > 0 ? -7 : 7);
+        s += txt(lx, ly, `${sign}${d.dd.toFixed(3)}`, fail ? '#ef4444' : color, 8, d.bx > 0 ? 'start' : 'end');
+        s += txt(sx, sy + 14, `C${c}`, '#475569', 7);
+      }
+    }
+  }
+
+  const ly = VH - MG + 22;
+  s += circle(MG+5, ly, 5, '#f97316', '#0f172a');
+  s += txt(MG+14, ly, 'Away (+Δ|r|)', '#f97316', 9, 'start');
+  s += circle(MG+110, ly, 5, '#38bdf8', '#0f172a');
+  s += txt(MG+119, ly, 'Toward (−Δ|r|)', '#38bdf8', 9, 'start');
+  s += circle(MG+225, ly, 5, 'none', '#ef4444', 1.5);
+  s += txt(MG+234, ly, '= FAIL', '#ef4444', 9, 'start');
+  return s;
+}
+
+function renderResult2SVG(res) {
+  const {data} = res;
+  let s = drawBoard(false);
+
+  for (const chip of CHIPS) {
+    for (const c of CORNERS) {
+      const d       = data[chip][c];
+      const masked  = isFiltered(d);
+      const fail    = !masked && isFail(d);
+      const color   = masked ? '#334155' : getColor(d, res);
+      const opacity = masked ? ' opacity="0.25"' : '';
+      const [sx, sy] = tS(d.bx, d.by);
+      const ex = sx - d.dy * mmToPx(1) * arrowScale;
+      const ey = sy + d.dx * mmToPx(1) * arrowScale;
+
+      s += circle(sx, sy, 4, masked ? '#1e293b' : color, masked ? '#334155' : '#0f172a', 1,
+        `class="hot" data-chip="${chip}" data-c="${c}" data-dx="${d.dx.toFixed(4)}" data-dy="${d.dy.toFixed(4)}" data-mag="${d.mag.toFixed(4)}" data-angle="${d.angle.toFixed(1)}" data-dd="${d.dd.toFixed(4)}" data-fail="${fail}" data-masked="${masked}"${opacity}`);
+
+      if (!masked && d.mag > 0.001) s += arrow(sx, sy, ex, ey, color, 1.5);
+      if (masked) s += circle(sx, sy, 6, 'none', '#475569', 1, `stroke-dasharray="3,2"`);
+      else if (fail) s += circle(sx, sy, 7, 'none', '#ef4444', 1.5);
+      if (showLabels && !masked) s += txt(sx-7, sy-7, `C${c}`, '#475569', 7);
+    }
+  }
+  return s;
+}
+
+// ── Good/Bad Map ──────────────────────────────
+function renderGoodBadMapSVG(res) {
+  const {data} = res;
+  let s = '';
+  const [ox, oy] = tS(0,0);
+
+  // Axis lines
+  s += `<line x1="${MG}" y1="${oy.toFixed(1)}" x2="${VW-MG}" y2="${oy.toFixed(1)}" stroke="#1e293b" stroke-width="1"/>`;
+  s += `<line x1="${ox.toFixed(1)}" y1="${MG}" x2="${ox.toFixed(1)}" y2="${VH-MG}" stroke="#1e293b" stroke-width="1"/>`;
+
+  for (let r = 0; r < 4; r++) {
+    for (let c = 0; c < 4; c++) {
+      const chip = `${r+1}${c+1}`;
+      const [cx1,cx2] = CHIP_ROWS[r], [cy1,cy2] = CHIP_COLS[c];
+      const [sx1,sy1] = tS(cx1, cy1), [sx2,sy2] = tS(cx2, cy2);
+      const rx = Math.min(sx1,sx2), ry = Math.min(sy1,sy2);
+      const rw = Math.abs(sx2-sx1), rh = Math.abs(sy2-sy1);
+      const [mx,my] = tS((cx1+cx2)/2, (cy1+cy2)/2);
+
+      let failCount = 0;
+      const cornerResults = CORNERS.map(cv => {
+        const d = data[chip][cv];
+        const f = isFail(d);
+        if (f) failCount++;
+        return { d, f };
+      });
+
+      // Chip background color based on fail count
+      const chipFill = failCount === 0 ? '#052e16' :
+                       failCount <= 2  ? '#2d1700' : '#1c0a0a';
+      const chipStroke = failCount === 0 ? '#166534' :
+                         failCount <= 2  ? '#78350f' : '#7f1d1d';
+      const chipLabel  = failCount === 0 ? '#22c55e' :
+                         failCount <= 2  ? '#eab308' : '#ef4444';
+
+      s += `<rect x="${rx.toFixed(1)}" y="${ry.toFixed(1)}" width="${rw.toFixed(1)}" height="${rh.toFixed(1)}" fill="${chipFill}" stroke="${chipStroke}" stroke-width="2" rx="3"/>`;
+
+      // Chip label
+      s += txt(mx, my - 12, chip, chipLabel, 20);
+      s += txt(mx, my + 10, `${4-failCount}/4`, chipLabel, 13);
+
+      // Corner pass/fail indicators: 2×2 mini squares in bottom area
+      const iqw = 10, iqh = 10, gap = 3;
+      const qx0 = mx - iqw - gap/2, qx1 = mx + gap/2;
+      const qy0 = my + 22, qy1 = qy0 + iqh + gap;
+
+      const qPos = [[qx0,qy0],[qx1,qy0],[qx0,qy1],[qx1,qy1]]; // C1 C2 C3 C4
+      CORNERS.forEach((cv, ci) => {
+        const { d, f } = cornerResults[ci];
+        const [qx, qy] = qPos[ci];
+        const qfill  = f ? '#ef4444' : '#22c55e';
+        s += `<rect x="${qx.toFixed(1)}" y="${qy.toFixed(1)}" width="${iqw}" height="${iqh}" fill="${qfill}" rx="2" opacity="0.85"
+          class="hot" data-chip="${chip}" data-c="${cv}" data-dx="${d.dx.toFixed(4)}" data-dy="${d.dy.toFixed(4)}" data-mag="${d.mag.toFixed(4)}" data-angle="${d.angle.toFixed(1)}" data-dd="${d.dd.toFixed(4)}" data-fail="${f}" style="cursor:pointer"/>`;
+        s += txt(qx + iqw/2, qy + iqh/2, `C${cv}`, '#fff', 7);
+      });
+    }
+  }
+
+  // Center dot
+  s += circle(ox, oy, 5, '#f59e0b', '#fbbf24');
+
+  // Legend
+  const ly = VH - MG + 22;
+  s += `<rect x="${MG}" y="${ly-7}" width="14" height="14" fill="#052e16" stroke="#166534" stroke-width="1.5" rx="2"/>`;
+  s += txt(MG+20, ly, 'All pass', '#22c55e', 10, 'start');
+  s += `<rect x="${MG+95}" y="${ly-7}" width="14" height="14" fill="#2d1700" stroke="#78350f" stroke-width="1.5" rx="2"/>`;
+  s += txt(MG+115, ly, '1-2 fail', '#eab308', 10, 'start');
+  s += `<rect x="${MG+190}" y="${ly-7}" width="14" height="14" fill="#1c0a0a" stroke="#7f1d1d" stroke-width="1.5" rx="2"/>`;
+  s += txt(MG+210, ly, '3-4 fail', '#ef4444', 10, 'start');
+
+  return s;
+}
+
+// ── Thumbnail ─────────────────────────────────
+function renderThumbnailSVG(res, tab) {
+  const {data, maxDist, maxMag} = res;
+  const SC = 30;
+  const [ox, oy] = tS(0, 0);
+  let s = drawBoard(true);
+
+  if (tab === 'goodbad') {
+    for (let r = 0; r < 4; r++) {
+      for (let c = 0; c < 4; c++) {
+        const chip = `${r+1}${c+1}`;
+        const [cx1,cx2] = CHIP_ROWS[r], [cy1,cy2] = CHIP_COLS[c];
+        const [sx1,sy1] = tS(cx1, cy1), [sx2,sy2] = tS(cx2, cy2);
+        const rx = Math.min(sx1,sx2), ry = Math.min(sy1,sy2);
+        const rw = Math.abs(sx2-sx1), rh = Math.abs(sy2-sy1);
+        let fc = 0;
+        CORNERS.forEach(cv => { if (isFail(data[chip][cv])) fc++; });
+        const fill = fc === 0 ? '#052e16' : fc <= 2 ? '#2d1700' : '#1c0a0a';
+        const strk = fc === 0 ? '#166534' : fc <= 2 ? '#78350f' : '#7f1d1d';
+        s += `<rect x="${rx.toFixed(1)}" y="${ry.toFixed(1)}" width="${rw.toFixed(1)}" height="${rh.toFixed(1)}" fill="${fill}" stroke="${strk}" stroke-width="1.5" rx="2"/>`;
+      }
+    }
+    s += circle(ox, oy, 3, '#f59e0b', '#fbbf24', 0.5);
+  } else if (tab === 'result1') {
+    s += circle(ox, oy, 6, 'none', '#f59e0b', 1.5);
+    for (const chip of CHIPS) {
+      for (const c of CORNERS) {
+        const d = data[chip][c], color = r1Color(d.dd, maxDist);
+        const [sx, sy] = tS(d.bx, d.by);
+        if (Math.abs(d.dd) > 0.001 && d.bDist > 0.001) {
+          const nx = d.bx/d.bDist, ny = d.by/d.bDist;
+          const len = d.dd * SC * mmToPx(1);
+          s += arrow(sx, sy, sx-ny*len, sy+nx*len, color, 1.5);
+        }
+        s += circle(sx, sy, 3, color, '#0f172a', 0.5);
+        if (isFail(d)) s += circle(sx, sy, 5, 'none', '#ef4444', 1);
+      }
+    }
+  } else {
+    for (const chip of CHIPS) {
+      for (const c of CORNERS) {
+        const d = data[chip][c];
+        const color = valToColor(colorMode === 'mag' ? d.mag : d.dd, colorMode === 'mag' ? maxMag : maxDist);
+        const [sx, sy] = tS(d.bx, d.by);
+        if (d.mag > 0.001) s += arrow(sx, sy, sx-d.dy*mmToPx(1)*SC, sy+d.dx*mmToPx(1)*SC, color, 1);
+        s += circle(sx, sy, 3, color, '#0f172a', 0.5);
+        if (isFail(d)) s += circle(sx, sy, 5, 'none', '#ef4444', 1);
+      }
+    }
+  }
+  return s;
+}
+
+function buildMiniGrid() {
+  const grid = document.getElementById('miniGrid');
+  let html = '';
+  for (let i = 0; i < 10; i++) {
+    if (i < pairs.length) {
+      const p   = pairs[i];
+      const y   = computeYield(p.results);
+      const sel = i === currentPair ? ' selected' : '';
+      const cp  = parseFloat(y.chipPct);
+      const yClass = cp >= 90 ? 'yield-pass' : cp >= 60 ? 'yield-mid' : 'yield-fail';
+      const cardCls = cp < 60 ? ' fail-card' : cp < 90 ? ' warn-card' : '';
+      const svgC = renderThumbnailSVG(p.results, currentTab);
+      html += `<div class="mini-card${sel}${cardCls}" onclick="selectPair(${i})">
+        <div class="mini-num">
+          <span style="color:#94a3b8">P${i+1}</span>
+          <span class="${yClass}" style="font-size:.65rem">${y.chipPct}%</span>
+        </div>
+        <svg viewBox="0 0 820 820" xmlns="http://www.w3.org/2000/svg">
+          <rect width="820" height="820" fill="#090e1a"/>
+          ${svgC}
+        </svg>
+        <div class="mini-label" title="${escHtml(p.before.name)}">${escHtml(truncate(p.before.name,16))}</div>
+      </div>`;
+    } else {
+      html += `<div class="mini-card-empty"></div>`;
+    }
+  }
+  grid.innerHTML = html;
+}
+
+function selectPair(idx) {
+  currentPair = idx;
+  document.getElementById('pairSelect').value = idx;
+  initFilter(pairs[idx].results);
+  resetZoom();
+  renderCurrentView();
+  document.getElementById('svgWrapper').scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+// ===============================================
+// Render & UI
+// ===============================================
+function renderSVGOnly() {
+  // Re-render SVG content without touching zoom/pan or mini-grid
+  if (pairs.length === 0 || currentTab === 'summary') return;
+  const res = pairs[currentPair].results;
+  let content;
+  if (currentTab === 'result1') content = renderResult1SVG(res);
+  else if (currentTab === 'result2') content = renderResult2SVG(res);
+  else content = renderGoodBadMapSVG(res);
+  document.getElementById('zoomGroup').innerHTML = content;
+  applyTransform();
+  attachTooltips();
+  updateLegend(res);
+}
+
+function renderCurrentView() {
+  if (pairs.length === 0) return;
+  const res = pairs[currentPair].results;
+
+  if (currentTab === 'summary') {
+    buildSummaryTable();
+    return;
+  }
+
+  let content;
+  if (currentTab === 'result1') content = renderResult1SVG(res);
+  else if (currentTab === 'result2') content = renderResult2SVG(res);
+  else content = renderGoodBadMapSVG(res);
+
+  document.getElementById('zoomGroup').innerHTML = content;
+  applyTransform();
+  attachTooltips();
+  updateLegend(res);
+  buildMiniGrid();
+  buildTable(res);
+  updateYieldBar();
+}
+
+function updateLegend(res) {
+  const {maxMag, maxDist} = res;
+  const bar = document.getElementById('legendBar');
+  if (currentTab === 'result1') {
+    bar.className = 'legend-bar diverge';
+    document.getElementById('legendMin').textContent  = '− Closer';
+    document.getElementById('legendMax').textContent  = '+ Away';
+    document.getElementById('legendLabel').textContent = 'Δ|r| color scale';
+    document.getElementById('legendRange').textContent = `max |Δ|r|| = ${maxDist.toFixed(3)} mm`;
+  } else if (currentTab === 'goodbad') {
+    bar.className = 'legend-bar';
+    document.getElementById('legendMin').textContent  = 'Pass';
+    document.getElementById('legendMax').textContent  = 'Fail';
+    document.getElementById('legendLabel').textContent = 'Chip status';
+    document.getElementById('legendRange').textContent = '';
+  } else {
+    bar.className = 'legend-bar';
+    document.getElementById('legendMin').textContent  = 'Min';
+    document.getElementById('legendMax').textContent  = 'Max';
+    document.getElementById('legendLabel').textContent = 'Displacement';
+    const max = colorMode === 'mag' ? maxMag : maxDist;
+    document.getElementById('legendRange').textContent = `0 – ${max.toFixed(3)} mm`;
+  }
+}
+
+function attachTooltips() {
+  const tt = document.getElementById('tooltip');
+  const zg = document.getElementById('zoomGroup');
+
+  zg.addEventListener('mouseover', e => {
+    const el = e.target.closest('.hot');
+    if (!el) return;
+    const d = el.dataset;
+    document.getElementById('ttTitle').textContent  = `Chip ${d.chip} · C${d.c}`;
+    document.getElementById('ttDx').textContent     = `${(+d.dx >= 0?'+':'')}${(+d.dx).toFixed(4)} mm`;
+    document.getElementById('ttDy').textContent     = `${(+d.dy >= 0?'+':'')}${(+d.dy).toFixed(4)} mm`;
+    document.getElementById('ttMag').textContent    = `${(+d.mag).toFixed(4)} mm`;
+    document.getElementById('ttAngle').textContent  = `${(+d.angle).toFixed(1)}°`;
+    document.getElementById('ttDist').textContent   = `${(+d.dd >= 0?'+':'')}${(+d.dd).toFixed(4)} mm`;
+    const pEl = document.getElementById('ttPass');
+    if (d.masked === 'true') {
+      pEl.textContent = 'MASKED'; pEl.className = 'tt-val';
+      pEl.style.color = '#64748b';
+    } else {
+      pEl.textContent = d.fail === 'true' ? 'FAIL' : 'PASS';
+      pEl.className   = `tt-val ${d.fail === 'true' ? 'tt-fail' : ''}`;
+      pEl.style.color = '';
+    }
+    tt.style.display = 'block';
+  });
+  zg.addEventListener('mousemove', e => {
+    tt.style.left = (e.clientX + 14) + 'px';
+    tt.style.top  = (e.clientY - 10) + 'px';
+  });
+  zg.addEventListener('mouseleave', () => { tt.style.display = 'none'; });
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  ['result1','result2','goodbad','summary'].forEach((t,i) => {
+    document.getElementById(`tabBtn${i}`).classList.toggle('active', t === tab);
+  });
+  const isMain = tab !== 'summary';
+  document.getElementById('panelMain').style.display    = isMain ? '' : 'none';
+  document.getElementById('panelSummary').style.display = isMain ? 'none' : '';
+  if (isMain) {
+    resetZoom();
+    renderCurrentView();
+  } else {
+    buildSummaryTable();
+  }
+}
+
+function onPairChange(val) {
+  currentPair = +val;
+  initFilter(pairs[currentPair].results);
+  resetZoom();
+  renderCurrentView();
+}
+
+let scaleRaf = null;
+function onScaleChange(v) {
+  arrowScale = +v;
+  document.getElementById('arrowScaleVal').textContent = v;
+  if (scaleRaf) cancelAnimationFrame(scaleRaf);
+  scaleRaf = requestAnimationFrame(() => { renderSVGOnly(); });
+}
+
+function toggleLabels() {
+  showLabels = !showLabels;
+  const btn = document.getElementById('btnLabels');
+  btn.textContent = showLabels ? 'Show' : 'Hide';
+  btn.classList.toggle('active', showLabels);
+  renderSVGOnly();
+}
+
+function setColorMode(mode) {
+  colorMode = mode;
+  document.getElementById('btnColorMag').classList.toggle('active', mode === 'mag');
+  document.getElementById('btnColorDist').classList.toggle('active', mode === 'dist');
+  renderSVGOnly();
+  buildMiniGrid();
+}
+
+function setStatus(msg, type) {
+  const el = document.getElementById('statusBar');
+  el.textContent = msg;
+  el.className   = type || '';
+}
+
+// ===============================================
+// Zoom / Pan
+// ===============================================
+let zoom = 1, panX = 0, panY = 0;
+let isPanning = false, lastMX = 0, lastMY = 0;
+
+function applyTransform() {
+  document.getElementById('zoomGroup').setAttribute('transform',
+    `translate(${panX},${panY}) scale(${zoom})`);
+}
+
+function resetZoom() {
+  zoom = 1; panX = 0; panY = 0;
+  applyTransform();
+}
+
+(function initZoomPan() {
+  const wrapper = document.getElementById('svgWrapper');
+  const svg     = document.getElementById('boardSVG');
+
+  svg.addEventListener('wheel', e => {
+    e.preventDefault();
+    const rect  = svg.getBoundingClientRect();
+    const mx    = (e.clientX - rect.left)  / rect.width  * 820;
+    const my    = (e.clientY - rect.top)   / rect.height * 820;
+    const delta = e.deltaY < 0 ? 1.15 : 1/1.15;
+    const nz    = Math.min(Math.max(zoom * delta, 0.3), 8);
+    panX = mx - (mx - panX) * (nz / zoom);
+    panY = my - (my - panY) * (nz / zoom);
+    zoom = nz;
+    applyTransform();
+  }, { passive: false });
+
+  svg.addEventListener('mousedown', e => {
+    if (e.button !== 0) return;
+    isPanning = true; lastMX = e.clientX; lastMY = e.clientY;
+    wrapper.classList.add('panning');
+  });
+  window.addEventListener('mousemove', e => {
+    if (!isPanning) return;
+    const rect = svg.getBoundingClientRect();
+    panX += (e.clientX - lastMX) * 820 / rect.width;
+    panY += (e.clientY - lastMY) * 820 / rect.height;
+    lastMX = e.clientX; lastMY = e.clientY;
+    applyTransform();
+  });
+  window.addEventListener('mouseup', () => {
+    isPanning = false;
+    wrapper.classList.remove('panning');
+  });
+
+  let lastTouchDist = 0;
+  svg.addEventListener('touchstart', e => {
+    if (e.touches.length === 1) {
+      isPanning = true;
+      lastMX = e.touches[0].clientX; lastMY = e.touches[0].clientY;
+    } else if (e.touches.length === 2) {
+      isPanning = false;
+      lastTouchDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY);
+    }
+  }, { passive: true });
+  svg.addEventListener('touchmove', e => {
+    e.preventDefault();
+    const rect = svg.getBoundingClientRect();
+    if (e.touches.length === 1 && isPanning) {
+      panX += (e.touches[0].clientX - lastMX) * 820 / rect.width;
+      panY += (e.touches[0].clientY - lastMY) * 820 / rect.height;
+      lastMX = e.touches[0].clientX; lastMY = e.touches[0].clientY;
+      applyTransform();
+    } else if (e.touches.length === 2) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY);
+      const nz = Math.min(Math.max(zoom * dist / lastTouchDist, 0.3), 8);
+      const mx = ((e.touches[0].clientX+e.touches[1].clientX)/2 - rect.left) / rect.width  * 820;
+      const my = ((e.touches[0].clientY+e.touches[1].clientY)/2 - rect.top)  / rect.height * 820;
+      panX = mx - (mx - panX) * (nz / zoom);
+      panY = my - (my - panY) * (nz / zoom);
+      zoom = nz; lastTouchDist = dist;
+      applyTransform();
+    }
+  }, { passive: false });
+  svg.addEventListener('touchend', () => { isPanning = false; });
+})();
+
+// ===============================================
+// Table
+// ===============================================
+function magClass(v, max) {
+  const t = v / max;
+  if (t > 0.6) return 'mag-high';
+  if (t > 0.3) return 'mag-mid';
+  return 'mag-low';
+}
+
+function buildTable(res) {
+  const {data, maxMag} = res;
+  const tbody = document.getElementById('tableBody');
+  let html = '', prevChip = null;
+  for (const chip of CHIPS) {
+    for (const c of CORNERS) {
+      const d       = data[chip][c];
+      const masked  = isFiltered(d);
+      const fail    = !masked && isFail(d);
+      const cls     = c === '1' && prevChip !== null ? ' class="chip-sep"' : '';
+      const mc      = magClass(d.mag, maxMag);
+      const rowCls  = masked ? 'class="row-masked"' : fail ? 'class="row-fail"' : '';
+      const badge   = masked ? '<span style="color:#475569;font-size:.7rem">MASKED</span>'
+                             : `<span class="${fail?'badge-fail':'badge-pass'}">${fail?'FAIL':'PASS'}</span>`;
+      html += `<tr ${rowCls}>
+        <td${cls}>${c === '1' ? `Chip ${chip}` : ''}</td>
+        <td>C${c}</td>
+        <td>${d.bx.toFixed(4)}</td><td>${d.by.toFixed(4)}</td>
+        <td>${d.ax.toFixed(4)}</td><td>${d.ay.toFixed(4)}</td>
+        <td class="${d.dx>=0?'mag-low':'mag-high'}">${d.dx>=0?'+':''}${d.dx.toFixed(4)}</td>
+        <td class="${d.dy>=0?'mag-low':'mag-high'}">${d.dy>=0?'+':''}${d.dy.toFixed(4)}</td>
+        <td class="${mc}">${d.mag.toFixed(4)}</td>
+        <td>${d.angle.toFixed(1)}°</td>
+        <td>${d.bDist.toFixed(4)}</td><td>${d.aDist.toFixed(4)}</td>
+        <td class="${d.dd>=0?'mag-low':'mag-high'}">${d.dd>=0?'+':''}${d.dd.toFixed(4)}</td>
+        <td>${badge}</td>
+      </tr>`;
+    }
+    prevChip = chip;
+  }
+  tbody.innerHTML = html;
+}
+
+// ===============================================
+// Summary table
+// ===============================================
+function buildSummaryTable() {
+  if (pairs.length === 0) return;
+
+  const stats = pairs.map(p => {
+    const {data, maxMag, maxDist} = p.results;
+    let sumMag = 0, sumDist = 0, n = 0;
+    for (const chip of CHIPS) for (const c of CORNERS) {
+      const d = data[chip][c];
+      sumMag += d.mag; sumDist += Math.abs(d.dd); n++;
+    }
+    const y = computeYield(p.results);
+    return {
+      maxMag, avgMag: sumMag/n,
+      maxDist, avgDist: sumDist/n,
+      cornerPct: parseFloat(y.cornerPct),
+      chipPct:   parseFloat(y.chipPct),
+    };
+  });
+
+  const gMaxMag  = Math.max(...stats.map(s => s.maxMag));
+  const gMaxDist = Math.max(...stats.map(s => s.maxDist));
+
+  function cc(v, gmax) {
+    const t = v / Math.max(gmax, 1e-9);
+    return t > 0.6 ? '#ef4444' : t > 0.3 ? '#eab308' : '#22c55e';
+  }
+
+  // Apply sort
+  const { col, asc } = summarySort;
+  const idxs = pairs.map((_,i) => i);
+  idxs.sort((a,b) => {
+    let va, vb;
+    if (col === 0) { va = a; vb = b; }
+    else if (col === 1) { va = pairs[a].before.name; vb = pairs[b].before.name; }
+    else if (col === 2) { va = pairs[a].after.name;  vb = pairs[b].after.name; }
+    else if (col === 3) { va = stats[a].maxMag;  vb = stats[b].maxMag; }
+    else if (col === 4) { va = stats[a].avgMag;  vb = stats[b].avgMag; }
+    else if (col === 5) { va = stats[a].maxDist; vb = stats[b].maxDist; }
+    else if (col === 6) { va = stats[a].avgDist; vb = stats[b].avgDist; }
+    else if (col === 7) { va = stats[a].cornerPct; vb = stats[b].cornerPct; }
+    else if (col === 8) { va = stats[a].chipPct;   vb = stats[b].chipPct; }
+    else if (col === 9) { va = stats[a].chipPct;   vb = stats[b].chipPct; }
+    if (va < vb) return asc ? -1 : 1;
+    if (va > vb) return asc ?  1 : -1;
+    return 0;
+  });
+
+  let html = '';
+  idxs.forEach(i => {
+    const p = pairs[i], s = stats[i];
+    const cp = s.chipPct;
+    const badge = cp >= 90 ? `<span class="badge-pass">PASS</span>` :
+                  cp >= 60 ? `<span class="badge-warn">WARN</span>` :
+                             `<span class="badge-fail">FAIL</span>`;
+    html += `<tr onclick="jumpToPair(${i})">
+      <td>${i+1}</td>
+      <td title="${escHtml(p.before.name)}">${escHtml(truncate(p.before.name,28))}</td>
+      <td title="${escHtml(p.after.name)}">${escHtml(truncate(p.after.name,28))}</td>
+      <td style="color:${cc(s.maxMag,gMaxMag)};font-weight:700">${s.maxMag.toFixed(4)}</td>
+      <td style="color:${cc(s.avgMag,gMaxMag)}">${s.avgMag.toFixed(4)}</td>
+      <td style="color:${cc(s.maxDist,gMaxDist)};font-weight:700">${s.maxDist.toFixed(4)}</td>
+      <td style="color:${cc(s.avgDist,gMaxDist)}">${s.avgDist.toFixed(4)}</td>
+      <td style="color:${cp>=90?'#22c55e':cp>=60?'#eab308':'#ef4444'}">${s.cornerPct.toFixed(1)}%</td>
+      <td style="color:${cp>=90?'#22c55e':cp>=60?'#eab308':'#ef4444'};font-weight:700">${s.chipPct.toFixed(1)}%</td>
+      <td>${badge}</td>
+    </tr>`;
+  });
+  document.getElementById('summaryBody').innerHTML = html;
+
+  buildTrendChart(stats);
+}
+
+function sortSummary(col) {
+  if (summarySort.col === col) summarySort.asc = !summarySort.asc;
+  else { summarySort.col = col; summarySort.asc = col <= 2; }
+  buildSummaryTable();
+}
+
+function jumpToPair(idx) {
+  currentPair = idx;
+  switchTab('result1');
+}
+
+function buildTrendChart(stats) {
+  if (stats.length === 0) return;
+  const svg  = document.getElementById('trendSVG');
+  const W    = svg.parentElement.clientWidth || 600;
+  const H    = 140;
+  const PAD  = { t:10, r:20, b:30, l:50 };
+  const cW   = W - PAD.l - PAD.r;
+  const cH   = H - PAD.t - PAD.b;
+  const maxV = Math.max(...stats.map(s => s.maxMag), 0.001);
+  const n    = stats.length;
+  const bw   = Math.max(8, Math.min(40, cW / n - 4));
+
+  let s = `<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">`;
+  // Y axis grid lines & labels
+  for (let i = 0; i <= 4; i++) {
+    const v = maxV * i / 4;
+    const y = PAD.t + cH - (cH * i / 4);
+    s += `<line x1="${PAD.l}" y1="${y.toFixed(1)}" x2="${W-PAD.r}" y2="${y.toFixed(1)}" stroke="#1e293b" stroke-width="${i===0?1.5:.5}"/>`;
+    s += `<text x="${PAD.l-4}" y="${y.toFixed(1)}" text-anchor="end" dominant-baseline="middle" fill="#475569" font-size="10" font-family="system-ui">${v.toFixed(3)}</text>`;
+  }
+  // Threshold line
+  const { dispT } = getThresh();
+  if (dispT <= maxV) {
+    const ty = PAD.t + cH - (cH * dispT / maxV);
+    s += `<line x1="${PAD.l}" y1="${ty.toFixed(1)}" x2="${W-PAD.r}" y2="${ty.toFixed(1)}" stroke="#ef4444" stroke-width="1" stroke-dasharray="4,3"/>`;
+    s += `<text x="${W-PAD.r+2}" y="${ty.toFixed(1)}" dominant-baseline="middle" fill="#ef4444" font-size="9" font-family="system-ui">Thresh</text>`;
+  }
+  // Bars
+  stats.forEach((st, i) => {
+    const x  = PAD.l + (cW / n) * i + (cW / n - bw) / 2;
+    const bh = (st.maxMag / maxV) * cH;
+    const y  = PAD.t + cH - bh;
+    const fc = st.maxMag > dispT ? '#ef4444' : st.maxMag > dispT*0.7 ? '#eab308' : '#22c55e';
+    s += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw}" height="${bh.toFixed(1)}" fill="${fc}" rx="2" opacity="0.85"/>`;
+    s += `<text x="${(x+bw/2).toFixed(1)}" y="${H-PAD.b+12}" text-anchor="middle" fill="#64748b" font-size="9" font-family="system-ui">P${i+1}</text>`;
+  });
+  s += '</svg>';
+  svg.outerHTML = s;
+}
+
+// ===============================================
+// Export
+// ===============================================
+function exportCSV() {
+  if (pairs.length === 0) return;
+  const res = pairs[currentPair].results;
+  const { data } = res;
+  const rows = ['Chip,Corner,Before X,Before Y,After X,After Y,DX,DY,Displacement,Direction,Before|r|,After|r|,D|r|,Pass/Fail'];
+  for (const chip of CHIPS) {
+    for (const c of CORNERS) {
+      const d = data[chip][c];
+      rows.push([chip, c, d.bx, d.by, d.ax, d.ay, d.dx, d.dy, d.mag, d.angle, d.bDist, d.aDist, d.dd, isFail(d)?'FAIL':'PASS'].join(','));
+    }
+  }
+  const p    = pairs[currentPair];
+  const date = new Date().toISOString().slice(0,10);
+  dlFile(`stretch_pair${currentPair+1}_${date}.csv`, rows.join('\n'), 'text/csv');
+}
+
+function exportSummaryCSV() {
+  if (pairs.length === 0) return;
+  const rows = ['Pair,Before File,After File,Max Displacement,Avg Displacement,Max D|r|,Avg D|r|,Corner Yield%,Chip Yield%,Status'];
+  pairs.forEach((p, i) => {
+    const {data, maxMag, maxDist} = p.results;
+    let sumMag=0, sumDist=0, n=0;
+    for (const chip of CHIPS) for (const c of CORNERS) {
+      const d = data[chip][c]; sumMag+=d.mag; sumDist+=Math.abs(d.dd); n++;
+    }
+    const y = computeYield(p.results);
+    const cp = parseFloat(y.chipPct);
+    rows.push([i+1, p.before.name, p.after.name,
+      maxMag.toFixed(4), (sumMag/n).toFixed(4),
+      maxDist.toFixed(4), (sumDist/n).toFixed(4),
+      y.cornerPct, y.chipPct,
+      cp>=90?'PASS':cp>=60?'WARN':'FAIL'
+    ].join(','));
+  });
+  const date = new Date().toISOString().slice(0,10);
+  dlFile(`stretch_summary_${date}.csv`, rows.join('\n'), 'text/csv');
+}
+
+function exportPNG() {
+  const svg = document.getElementById('boardSVG');
+  const sz  = 1640;
+  const xml = new XMLSerializer().serializeToString(svg);
+  const blob = new Blob([xml], { type:'image/svg+xml' });
+  const url  = URL.createObjectURL(blob);
+  const img  = new Image();
+  img.onload = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = sz; canvas.height = sz;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#090e1a';
+    ctx.fillRect(0, 0, sz, sz);
+    ctx.drawImage(img, 0, 0, sz, sz);
+    URL.revokeObjectURL(url);
+    const pngUrl = canvas.toDataURL('image/png');
+    const date   = new Date().toISOString().slice(0,10);
+    const a      = document.createElement('a');
+    a.href       = pngUrl;
+    a.download   = `stretch_board_P${currentPair+1}_${date}.png`;
+    a.click();
+  };
+  img.src = url;
+}
+
+function dlFile(name, content, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// ===============================================
+// Utilities
+// ===============================================
+function cap(s)         { return s.charAt(0).toUpperCase() + s.slice(1); }
+function truncate(s, n) { return s.length > n ? s.slice(0,n-1)+'…' : s; }
+function escHtml(s)     { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ===============================================
+// Init
+// ===============================================
+loadThresholds();
+</script>
+</body>
+</html>
