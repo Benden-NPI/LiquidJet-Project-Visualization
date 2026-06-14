@@ -349,6 +349,14 @@ const GW = 10, GH = 8;           // floor grid size (gx 0..GW, gy 0..GH)
 const ORX = 418, ORY = 160;      // screen origin for grid corner (0,0) — centred
 const WALL_HEIGHT = 114;
 const FOOSBALL_TABLE = { gx: 7.2, gy: 5.3, w: 1.4, d: 0.8, h: 18 };
+const FOOSBALL_STANDING_X = FOOSBALL_TABLE.gx + FOOSBALL_TABLE.w * 0.54;
+const FOOSBALL_OCCLUSION = {
+  minX: FOOSBALL_TABLE.gx + 0.45,
+  maxX: FOOSBALL_TABLE.gx + FOOSBALL_TABLE.w + 0.7,
+  minY: FOOSBALL_TABLE.gy - 0.55,
+  maxY: FOOSBALL_TABLE.gy + 0.05,
+  depthInset: 0.12,
+};
 
 const isoX = (gx, gy) => ORX + (gx - gy) * TW2;
 const isoY = (gx, gy) => ORY + (gx + gy) * TH2;
@@ -839,19 +847,19 @@ const ROUTINE = {
 // (where the character ends up, not the furniture box itself).
 const WANDER_SPOTS = {
   pantry:   [{ gx: 1.3, gy: 5.9 }, { gx: 1.9, gy: 5.9 }],
-  foosball: [{ gx: 7.95, gy: 5.0 }, { gx: 7.95, gy: 6.4 }],
+  foosball: [{ gx: FOOSBALL_STANDING_X, gy: 5.0 }, { gx: FOOSBALL_STANDING_X, gy: 6.4 }],
 };
 
 function employeeDepth(emp) {
   let depth = emp.cx + emp.cy + 0.55;
   const nearFoosballBackside =
-    emp.cx >= FOOSBALL_TABLE.gx + 0.45 &&
-    emp.cx <= FOOSBALL_TABLE.gx + FOOSBALL_TABLE.w + 0.7 &&
-    emp.cy >= FOOSBALL_TABLE.gy - 0.55 &&
-    emp.cy <= FOOSBALL_TABLE.gy + 0.05;
+    emp.cx >= FOOSBALL_OCCLUSION.minX &&
+    emp.cx <= FOOSBALL_OCCLUSION.maxX &&
+    emp.cy >= FOOSBALL_OCCLUSION.minY &&
+    emp.cy <= FOOSBALL_OCCLUSION.maxY;
   if (nearFoosballBackside) {
     const foosballDepth = FOOSBALL_TABLE.gx + FOOSBALL_TABLE.gy + 0.5;
-    depth = Math.min(depth, foosballDepth - 0.12);
+    depth = Math.min(depth, foosballDepth - FOOSBALL_OCCLUSION.depthInset);
   }
   return depth;
 }
