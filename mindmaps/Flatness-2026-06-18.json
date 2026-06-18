@@ -1,0 +1,37 @@
+{
+  "id": "n385",
+  "text": "In-Line Yield",
+  "x": 0,
+  "y": 0,
+  "children": [
+    {
+      "id": "n384",
+      "text": "Flatness",
+      "x": 148,
+      "y": 0,
+      "children": [
+        {
+          "id": "n387",
+          "text": "Polish Process Develop",
+          "x": 308,
+          "y": -30,
+          "children": []
+        },
+        {
+          "id": "n388",
+          "text": "DOE for Stack location in bonder",
+          "x": 359.44927978515625,
+          "y": 24.521708170572914,
+          "children": []
+        },
+        {
+          "id": "n389",
+          "text": "Brazing Fixture optimize for bending",
+          "x": 359.44927978515625,
+          "y": 72.52170817057291,
+          "children": []
+        }
+      ]
+    }
+  ]
+}
