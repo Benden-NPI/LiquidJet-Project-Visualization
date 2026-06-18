@@ -1,0 +1,235 @@
+{
+  "id": "n4",
+  "text": "Etching",
+  "x": 0,
+  "y": 0,
+  "children": [
+    {
+      "id": "n11",
+      "text": "Oxidation",
+      "x": 160,
+      "y": -322,
+      "children": [
+        {
+          "id": "n5",
+          "text": "Defect Type",
+          "x": 372,
+          "y": -506,
+          "children": [
+            {
+              "id": "n7",
+              "text": "Big Area Oxidation",
+              "x": 656,
+              "y": -552,
+              "children": []
+            },
+            {
+              "id": "n8",
+              "text": "Dot type",
+              "x": 656,
+              "y": -506,
+              "children": []
+            },
+            {
+              "id": "n9",
+              "text": "Wiping marks",
+              "x": 656,
+              "y": -460,
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "n3",
+          "text": "Long Term",
+          "x": 372,
+          "y": -368,
+          "children": [
+            {
+              "id": "n36",
+              "text": "Online Passivation",
+              "x": 656,
+              "y": -414,
+              "children": []
+            },
+            {
+              "id": "n39",
+              "text": "2 side Plasma",
+              "x": 656,
+              "y": -368,
+              "children": []
+            },
+            {
+              "id": "n40",
+              "text": "Inline H2 reaction",
+              "x": 656,
+              "y": -322,
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "n2",
+          "text": "Supply",
+          "x": 372,
+          "y": -230,
+          "children": [
+            {
+              "id": "n1",
+              "text": "Cleanroom 10K",
+              "x": 656,
+              "y": -276,
+              "children": []
+            },
+            {
+              "id": "n10",
+              "text": "Simple Passivation",
+              "x": 656,
+              "y": -230,
+              "children": []
+            },
+            {
+              "id": "n35",
+              "text": "Dry Storage",
+              "x": 656,
+              "y": -184,
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "n37",
+          "text": "Short Term",
+          "x": 372,
+          "y": -138,
+          "children": [
+            {
+              "id": "n38",
+              "text": "Rework",
+              "x": 656,
+              "y": -138,
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "n13",
+      "text": "Scretch",
+      "x": 160,
+      "y": 92,
+      "children": [
+        {
+          "id": "n15",
+          "text": "Zone Define",
+          "x": 372,
+          "y": -46,
+          "children": [
+            {
+              "id": "n19",
+              "text": "Zone A :  Function Impact (Base Frame)",
+              "x": 656,
+              "y": -92,
+              "children": []
+            },
+            {
+              "id": "n20",
+              "text": "Zone B : Might Not Imact (Base Inner Area)",
+              "x": 656,
+              "y": -46,
+              "children": []
+            },
+            {
+              "id": "n21",
+              "text": "Zone C : No Impact (Dummy Area)",
+              "x": 656,
+              "y": 0,
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "n16",
+          "text": "Right Spec Study",
+          "x": 372,
+          "y": 92,
+          "children": [
+            {
+              "id": "n22",
+              "text": "Controlable Scratch Depth for Limit",
+              "x": 656,
+              "y": 46,
+              "children": []
+            },
+            {
+              "id": "n23",
+              "text": "Judgement",
+              "x": 656,
+              "y": 138,
+              "children": [
+                {
+                  "id": "n25",
+                  "text": "Aging by D-CTCP",
+                  "x": 920,
+                  "y": 92,
+                  "children": []
+                },
+                {
+                  "id": "n26",
+                  "text": "BPT/WHT/PCT",
+                  "x": 920,
+                  "y": 138,
+                  "children": []
+                },
+                {
+                  "id": "n27",
+                  "text": "Helium Test",
+                  "x": 920,
+                  "y": 184,
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "n17",
+          "text": "Root Cause",
+          "x": 372,
+          "y": 230,
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "n18",
+      "text": "Deformation",
+      "x": 160,
+      "y": 322,
+      "children": [
+        {
+          "id": "n28",
+          "text": "Design PDK",
+          "x": 372,
+          "y": 276,
+          "children": []
+        },
+        {
+          "id": "n29",
+          "text": "In-line Handling",
+          "x": 372,
+          "y": 322,
+          "children": []
+        },
+        {
+          "id": "n30",
+          "text": "Finish Good Stacking",
+          "x": 372,
+          "y": 368,
+          "children": []
+        }
+      ]
+    }
+  ]
+}
