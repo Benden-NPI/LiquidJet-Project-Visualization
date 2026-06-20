@@ -80,7 +80,7 @@ if (existsSync(cpTemplate) && existsSync(cpSource)) {
 
 // 4) Copy standalone portal pages → dist/ (static, no substitutions).
 //    These are self-contained interactive apps reached from the office walls.
-const staticPages = ["ai-debate.html", "flatness-summary.html", "stretch-analysis.html"];
+const staticPages = ["ai-debate.html", "flatness-summary.html", "stretch-analysis.html", "football.html"];
 let staticPageCount = 0;
 for (const page of staticPages) {
   const src = join(root, "portal", page);
