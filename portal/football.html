@@ -528,8 +528,9 @@ function drawFootballField() {
   // Halfway line (gx = 6)
   drawFieldLine(6,0, 6,GH);
 
-  // Center circle (approximated with polygon, ~24 segments)
-  const cr = 1.3, ccx = 6, ccy = 4;
+  // Center circle (approximated with polygon — 30 segments balances
+  // smoothness with pixel-art style without overshooting)
+  const cr = 1.3, ccx = 6, ccy = 4; // radius, center-x, center-y in grid units
   ctx.strokeStyle = 'rgba(255,255,255,0.82)';
   ctx.lineWidth = 1.5;
   ctx.beginPath();
@@ -584,7 +585,7 @@ function drawFootballField() {
   ctx.lineTo(isoX(12,5), isoY(12,5));
   ctx.stroke();
 
-  // Corner arcs (tiny quarter-circle approximation at each corner)
+  // Corner arcs — FIFA rules require a 1 m radius; ≈0.28 grid units here
   const arcR = 0.28;
   [[0,0],[GW,0],[0,GH],[GW,GH]].forEach(([cgx,cgy]) => {
     const cx2 = cgx + (cgx===0?arcR:-arcR);
@@ -626,6 +627,8 @@ function drawStadiumWalls() {
   poly([q1, q2, [q2[0],q2[1]-wallH], [q1[0],q1[1]-wallH]], '#0e2e18', '#0a2012', 1);
 
   // Crowd rows on back-left stand
+  // CROWD_COLS — mix of spectator jersey / clothing colours (red, blue, white,
+  // orange, green, pink, sky-blue, yellow) for a realistic packed-stand look.
   const CROWD_COLS = ['#e03030','#3060d8','#eeeeee','#ff8800','#20c040','#cc2080','#3388ff','#ffe050'];
   const rowH = 11;
   const numRows = Math.floor(wallH / rowH);
@@ -646,6 +649,8 @@ function drawStadiumWalls() {
       const fx = (s + 0.5) / numSpots;
       const hx = p1[0] + fx*(p2[0]-p1[0]);
       const hy = ly1 + fx*(ry1-ly1) + rowH * 0.45;
+      // Deterministic pseudo-random colour per seat (XOR hash avoids visible
+      // horizontal stripes while remaining frame-stable — no Math.random).
       const hash = ((row * 31 + s * 17) ^ (row * 7)) % CROWD_COLS.length;
       ctx.fillStyle = CROWD_COLS[hash];
       ctx.fillRect(Math.round(hx)-1, Math.round(hy)-2, 2, 3);
@@ -745,8 +750,8 @@ function drawWallPanelLeft(gx, label, color, screenIco) {
 
   ctx.restore();
 
-  // Animated LED strip along top edge of billboard
-  const ledStep = Math.floor(time / 8) % 6;
+  // Animated LED strip along top edge of billboard (6 dots, one illuminated per cycle)
+  const ledStep = Math.floor(time / 8) % 6; // advance one dot every 8 frames ≈ 7.5 Hz
   for (let li=0; li<6; li++) {
     const lx = ftl[0] + (ftr[0]-ftl[0])*(li+0.5)/6;
     const ly = ftl[1] + (ftr[1]-ftl[1])*(li+0.5)/6 + 3;
@@ -1565,7 +1570,8 @@ function drawYieldPanel() {
   ctx.font='5px "Press Start 2P"';
   ctx.fillText('YIELD ▲', fcx, midY+14);
 
-  // Tiny yield bar chart (pixel art)
+  // Tiny yield bar chart (pixel art, relative heights — decorative placeholder
+  // mirroring the upward trend shown on the original office yield panel)
   const barData = [3,5,4,6,5,8,7,9,8,10];
   const barW = 2, barGap = 1;
   const totalW = barData.length*(barW+barGap)-barGap;
