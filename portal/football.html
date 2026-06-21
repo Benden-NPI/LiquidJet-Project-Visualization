@@ -2,9 +2,9 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8" />
-<title>LiquidJet · Office</title>
+<title>LiquidJet · FIFA 2026 ⚽</title>
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<meta name="description" content="LiquidJet 專案總門戶：45° 等角像素辦公室。" />
+<meta name="description" content="LiquidJet FIFA 2026 特別版：45° 等角像素足球場。" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><path d='M32 6 L18 30 L46 30 Z' fill='%23ffffff'/><path d='M14 30 L50 30 L57 50 L40 58 L22 56 L9 46 Z' fill='%237cc4ff'/></svg>" />
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
@@ -12,8 +12,8 @@
 * { box-sizing:border-box; margin:0; padding:0; image-rendering:pixelated; }
 html, body { height:100%; }
 body {
-  background:#0a0a1a;
-  color:#ccddff;
+  background:#071507;
+  color:#ccffcc;
   font-family:'Press Start 2P', monospace;
   display:flex; flex-direction:column; align-items:center;
   min-height:100dvh; overflow-x:hidden;
@@ -30,23 +30,23 @@ body::before {
 
 #title {
   color:#ffe066; font-size:11px; letter-spacing:2px; margin:6px 0 4px;
-  text-shadow:2px 2px #996600, 0 0 18px rgba(255,224,102,.4);
+  text-shadow:2px 2px #448800, 0 0 18px rgba(80,255,80,.4);
   animation:blink 3s step-end infinite; text-align:center; flex-shrink:0;
 }
-#subtitle { color:#4488ff; font-size:6px; letter-spacing:2px; margin-bottom:8px; flex-shrink:0; }
+#subtitle { color:#44cc44; font-size:6px; letter-spacing:2px; margin-bottom:8px; flex-shrink:0; }
 
-/* office viewport */
+/* football field viewport */
 #stage-wrapper { position:relative; width:min(900px,100vw); flex-shrink:0; }
 #stage {
   position:absolute; top:0; left:0; width:900px; height:560px;
-  background:#11111f; border:4px solid #2a2a4a;
-  box-shadow:0 0 0 4px #0a0a1a, 0 0 40px #3333aa44;
+  background:#0d1a0d; border:4px solid #2a4a2a;
+  box-shadow:0 0 0 4px #071507, 0 0 40px #33aa3344;
   overflow:hidden; transform-origin:top left;
 }
 #scene { position:absolute; inset:0; }
 
 #hint {
-  color:#4a4a6a; font-size:6px; margin-top:6px; text-align:center;
+  color:#3a6a3a; font-size:6px; margin-top:6px; text-align:center;
   animation:blink 1.6s step-end infinite; flex-shrink:0; line-height:1.8;
 }
 
@@ -241,8 +241,8 @@ footer a:hover { color:#4488ff; }
 </head>
 <body>
 
-<div id="title">★ LIQUIDJET OFFICE ★</div>
-<div id="subtitle">45° ISOMETRIC · BENDEN NPI</div>
+<div id="title">⚽ LIQUIDJET × FIFA 2026 ⚽</div>
+<div id="subtitle">45° ISOMETRIC · FOOTBALL EDITION · BENDEN NPI</div>
 
 <div id="stage-wrapper">
   <div id="stage">
@@ -250,18 +250,18 @@ footer a:hover { color:#4488ff; }
   </div>
 </div>
 
-<div id="hint">▼ 點員工看名片 · 點物件進功能 ▼</div>
+<div id="hint">▼ 點員工看名片 · 點看板進功能 · ⚽ FIFA 2026 特別版 ▼</div>
 
 <div id="legend">
-  <span class="leg"><span class="sw" style="background:#4466ff"></span>🎨 畫板 = PROJECT VIZ</span>
-  <span class="leg"><span class="sw" style="background:#44cc88"></span>📈 數據牆 = YIELD</span>
-  <span class="leg"><span class="sw" style="background:#ffaa44"></span>🛡️ 公告板 = CONTROL PLAN</span>
-  <span class="leg"><span class="sw" style="background:#66ddee"></span>📐 平整度 = FLATNESS SUMMARY</span>
-  <span class="leg"><span class="sw" style="background:#ffcc66"></span>📏 衝刺指標 = STRETCH</span>
+  <span class="leg"><span class="sw" style="background:#4466ff"></span>🎨 廣告板 = PROJECT VIZ</span>
+  <span class="leg"><span class="sw" style="background:#44cc88"></span>📈 廣告板 = YIELD</span>
+  <span class="leg"><span class="sw" style="background:#ffaa44"></span>🛡️ 廣告板 = CONTROL PLAN</span>
+  <span class="leg"><span class="sw" style="background:#66ddee"></span>📐 廣告板 = FLATNESS SUMMARY</span>
+  <span class="leg"><span class="sw" style="background:#ffcc66"></span>📏 廣告板 = STRETCH</span>
   <span class="leg"><span class="sw" style="background:#ff44aa"></span>💬 會議桌 = AI 辯論</span>
   <span class="leg"><span class="sw" style="background:#88ccff"></span>☕ 茶水間 = AI 閒聊</span>
   <span class="leg"><span class="sw" style="background:#2aa84a"></span>⚽ 手足球 = AI 放鬆</span>
-  <span class="leg"><span class="sw" style="background:#44aa44"></span>⚽ <a href="football.html" style="color:#44aa44">FIFA 2026 版</a></span>
+  <span class="leg"><span class="sw" style="background:#44cc44"></span>🏠 <a href="index.html" style="color:#44cc44">回辦公室</a></span>
 </div>
 
 <!-- employee info card -->
@@ -430,31 +430,31 @@ const rgbStr = (c) => `rgb(${c[0]},${c[1]},${c[2]})`;
 // Layout: 4 columns × 2 rows along the back of the room — balances the
 // composition against the front-centred meeting room.
 const EMPLOYEES = [
-  { name:'MORGAN', role:'Integration Eng.',     roleZh:'整合工程',     gx:0.7, gy:0.9, hair:[0x33,0x55,0xcc], skin:[0xff,0xcc,0x99], shirt:[0x44,0x88,0xff],
+  { name:'MORGAN', role:'Integration Eng.',     roleZh:'整合工程',     gx:0.7, gy:0.9, hair:[0x33,0x55,0xcc], skin:[0xff,0xcc,0x99], shirt:[0x74,0xac,0xdf],
     desc:'統籌各製程模組之間的銜接，確保系統整合順暢。' },
-  { name:'EVAN',   role:'Failure Analysis Eng.', roleZh:'失效分析',     gx:2.7, gy:0.9, hair:[0x88,0x44,0x22], skin:[0xff,0xdd,0xaa], shirt:[0xcc,0x55,0x44],
+  { name:'EVAN',   role:'Failure Analysis Eng.', roleZh:'失效分析',     gx:2.7, gy:0.9, hair:[0x88,0x44,0x22], skin:[0xff,0xdd,0xaa], shirt:[0x74,0xac,0xdf],
     desc:'追查不良根因，從失效現象逆推到製程與材料。' },
-  { name:'BRIAN',  role:'Bonding Process Eng.',  roleZh:'接合製程',     gx:4.7, gy:0.9, hair:[0x22,0x22,0x33], skin:[0xee,0xcc,0xbb], shirt:[0x44,0xaa,0x88],
+  { name:'BRIAN',  role:'Bonding Process Eng.',  roleZh:'接合製程',     gx:4.7, gy:0.9, hair:[0x22,0x22,0x33], skin:[0xee,0xcc,0xbb], shirt:[0x74,0xac,0xdf],
     desc:'負責 bonding 製程參數與良率，盯緊介面品質。' },
-  { name:'JACOB',  role:'Mechanical Eng.',       roleZh:'機構工程',     gx:6.7, gy:0.9, hair:[0x44,0x33,0x22], skin:[0xff,0xdd,0xbb], shirt:[0x88,0x88,0x55],
+  { name:'JACOB',  role:'Mechanical Eng.',       roleZh:'機構工程',     gx:6.7, gy:0.9, hair:[0x44,0x33,0x22], skin:[0xff,0xdd,0xbb], shirt:[0x74,0xac,0xdf],
     desc:'設計治具與機構，讓設備與夾持穩定可靠。' },
   // Front row is STAGGERED +1 column vs the back row, so each back-row
   // employee falls into the gap between two front desks and stays visible
   // instead of being hidden directly behind a front desk + laptop.
-  { name:'JOY',    role:'Etching Process Eng.',  roleZh:'蝕刻製程',     gx:1.7, gy:2.9, hair:[0x99,0x22,0x77], skin:[0xff,0xcc,0xaa], shirt:[0xff,0x88,0xcc],
+  { name:'JOY',    role:'Etching Process Eng.',  roleZh:'蝕刻製程',     gx:1.7, gy:2.9, hair:[0x99,0x22,0x77], skin:[0xff,0xcc,0xaa], shirt:[0x74,0xac,0xdf],
     desc:'掌控 etching 製程窗口與均勻度，雕琢每一條線路。' },
-  { name:'JASON',  role:'Test Eng.',             roleZh:'測試工程',     gx:3.7, gy:2.9, hair:[0x22,0x44,0x66], skin:[0xff,0xcc,0x99], shirt:[0x44,0xcc,0xcc],
+  { name:'JASON',  role:'Test Eng.',             roleZh:'測試工程',     gx:3.7, gy:2.9, hair:[0x22,0x44,0x66], skin:[0xff,0xcc,0x99], shirt:[0x74,0xac,0xdf],
     desc:'建立量測與測試流程，把資料變成可信的判斷。' },
-  { name:'MZ',     role:'Quality Eng.',          roleZh:'品質工程',     gx:5.7, gy:2.9, hair:[0x33,0x33,0x33], skin:[0xee,0xcc,0xbb], shirt:[0xaa,0x66,0xff],
+  { name:'MZ',     role:'Quality Eng.',          roleZh:'品質工程',     gx:5.7, gy:2.9, hair:[0x33,0x33,0x33], skin:[0xee,0xcc,0xbb], shirt:[0x74,0xac,0xdf],
     desc:'守住品質底線，管控 CTQ、PFMEA 與反應計畫。' },
-  { name:'LISA',   role:'Planner',               roleZh:'生產規劃',     gx:7.7, gy:2.9, hair:[0xaa,0x66,0x22], skin:[0xff,0xdd,0xaa], shirt:[0xff,0xbb,0x44],
+  { name:'LISA',   role:'Planner',               roleZh:'生產規劃',     gx:7.7, gy:2.9, hair:[0xaa,0x66,0x22], skin:[0xff,0xdd,0xaa], shirt:[0x74,0xac,0xdf],
     desc:'排程與資源規劃，讓 milestone 一個個準時落地。' },
   // Risk — 5th column of the staggered FRONT row.
-  { name:'RISK',   role:'Risk Analysis Eng.',    roleZh:'風險分析',     gx:9.7, gy:2.9, hair:[0x55,0x44,0x88], skin:[0xf2,0xcf,0xa5], shirt:[0xff,0x77,0x66],
+  { name:'RISK',   role:'Risk Analysis Eng.',    roleZh:'風險分析',     gx:9.7, gy:2.9, hair:[0x55,0x44,0x88], skin:[0xf2,0xcf,0xa5], shirt:[0x74,0xac,0xdf],
     desc:'辨識風險、分級衝擊與機率，提出可執行的緩解與監控方案。' },
   // Benden — Project Lead — 5th column of the BACK row, aligned with the others.
   // He only walks over to the meeting table when a debate is convened.
-  { name:'BENDEN', role:'Project Lead',          roleZh:'專案負責人',   gx:8.7, gy:0.9, hair:[0x22,0x22,0x22], skin:[0xff,0xcc,0x99], shirt:[0xff,0xe0,0x66],
+  { name:'BENDEN', role:'Project Lead',          roleZh:'專案負責人',   gx:8.7, gy:0.9, hair:[0x22,0x22,0x22], skin:[0xff,0xcc,0x99], shirt:[0x74,0xac,0xdf],
     desc:'LiquidJet 專案負責人，統籌全局、拍板決策。' },
 ];
 
@@ -495,83 +495,281 @@ let hotspots = [];     // rebuilt every frame: {bbox, kind, ref}
 let hoverHot = null;
 
 // ════════════════════════════════════════════
-//  DRAW: FLOOR + WALLS
+//  DRAW: FOOTBALL FIELD (FIFA 2026 特別版)
 // ════════════════════════════════════════════
-function drawFloor() {
+function drawFieldLine(gx1, gy1, gx2, gy2) {
+  ctx.strokeStyle = 'rgba(255,255,255,0.82)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(isoX(gx1, gy1), isoY(gx1, gy1));
+  ctx.lineTo(isoX(gx2, gy2), isoY(gx2, gy2));
+  ctx.stroke();
+}
+
+function drawFootballField() {
+  // Alternating green stripes (columns of 2 grid units)
   for (let gy = 0; gy < GH; gy++) {
     for (let gx = 0; gx < GW; gx++) {
       const A=[isoX(gx,gy),isoY(gx,gy)], B=[isoX(gx+1,gy),isoY(gx+1,gy)];
       const C=[isoX(gx+1,gy+1),isoY(gx+1,gy+1)], D=[isoX(gx,gy+1),isoY(gx,gy+1)];
-      // meeting-room zone (front-centre) gets a distinct rug colour
-      const inMeeting = gx >= 4 && gx < 7 && gy >= 4;
-      let base = ((gx+gy)%2===0) ? '#23233e' : '#1c1c34';
-      if (inMeeting) base = ((gx+gy)%2===0) ? '#2a1830' : '#241028';
-      poly([A,B,C,D], base, '#15152a', 1);
+      const stripe = Math.floor(gx / 2) % 2;
+      const base = stripe === 0 ? '#277038' : '#2d7a3e';
+      poly([A,B,C,D], base, '#246633', 1);
     }
   }
-  // meeting room label on the rug
-  ctx.fillStyle = '#aa4488'; ctx.font = '6px "Press Start 2P"'; ctx.textAlign = 'center';
-  const ml = [isoX(5.5, 6.2), isoY(5.5, 6.2)];
-  ctx.fillText('MEETING ROOM', ml[0], ml[1]);
+
+  // ── White field markings ──
+  // Outer boundary (edges of the grid)
+  drawFieldLine(0,0, GW,0);   // top edge (gy=0)
+  drawFieldLine(0,0, 0,GH);   // left edge (gx=0)
+  drawFieldLine(GW,0, GW,GH); // right edge (gx=GW)
+  drawFieldLine(0,GH, GW,GH); // bottom edge (gy=GH)
+
+  // Halfway line (gx = 6)
+  drawFieldLine(6,0, 6,GH);
+
+  // Center circle (approximated with polygon — 30 segments balances
+  // smoothness with pixel-art style without overshooting)
+  const cr = 1.3, ccx = 6, ccy = 4; // radius, center-x, center-y in grid units
+  ctx.strokeStyle = 'rgba(255,255,255,0.82)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  for (let i = 0; i <= 30; i++) {
+    const ang = (i / 30) * Math.PI * 2;
+    const px = ccx + cr * Math.cos(ang);
+    const py = ccy + cr * Math.sin(ang);
+    if (i === 0) ctx.moveTo(isoX(px,py), isoY(px,py));
+    else         ctx.lineTo(isoX(px,py), isoY(px,py));
+  }
+  ctx.stroke();
+
+  // Center spot
+  ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  const cSpot = [isoX(6,4), isoY(6,4)];
+  ctx.fillRect(cSpot[0]-2, cSpot[1]-2, 4, 4);
+
+  // Left penalty box (gx=0..2.5, gy=1.5..6.5)
+  drawFieldLine(0,1.5, 2.5,1.5);
+  drawFieldLine(2.5,1.5, 2.5,6.5);
+  drawFieldLine(2.5,6.5, 0,6.5);
+  // Left goal area (gx=0..1.3, gy=2.5..5.5)
+  drawFieldLine(0,2.5, 1.3,2.5);
+  drawFieldLine(1.3,2.5, 1.3,5.5);
+  drawFieldLine(1.3,5.5, 0,5.5);
+  // Left penalty spot
+  ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  const lPenSpot = [isoX(1.9,4), isoY(1.9,4)];
+  ctx.fillRect(lPenSpot[0]-2, lPenSpot[1]-2, 4, 4);
+
+  // Right penalty box (gx=9.5..12, gy=1.5..6.5)
+  drawFieldLine(12,1.5, 9.5,1.5);
+  drawFieldLine(9.5,1.5, 9.5,6.5);
+  drawFieldLine(9.5,6.5, 12,6.5);
+  // Right goal area (gx=10.7..12, gy=2.5..5.5)
+  drawFieldLine(12,2.5, 10.7,2.5);
+  drawFieldLine(10.7,2.5, 10.7,5.5);
+  drawFieldLine(10.7,5.5, 12,5.5);
+  // Right penalty spot
+  const rPenSpot = [isoX(10.1,4), isoY(10.1,4)];
+  ctx.fillRect(rPenSpot[0]-2, rPenSpot[1]-2, 4, 4);
+
+  // Goal posts (gx=0, gy=3..5  and  gx=12, gy=3..5) drawn as white lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(isoX(0,3), isoY(0,3));
+  ctx.lineTo(isoX(0,5), isoY(0,5));
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(isoX(12,3), isoY(12,3));
+  ctx.lineTo(isoX(12,5), isoY(12,5));
+  ctx.stroke();
+
+  // Corner arcs — FIFA rules require a 1 m radius; ≈0.28 grid units here
+  const arcR = 0.28;
+  [[0,0],[GW,0],[0,GH],[GW,GH]].forEach(([cgx,cgy]) => {
+    const cx2 = cgx + (cgx===0?arcR:-arcR);
+    const cy2 = cgy + (cgy===0?arcR:-arcR);
+    const startAng = Math.atan2(isoY(cgx,cgy)-isoY(cx2,cy2), isoX(cgx,cgy)-isoX(cx2,cy2));
+    ctx.strokeStyle = 'rgba(255,255,255,0.75)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (let i=0;i<=8;i++) {
+      const a = (i/8)*Math.PI/2;
+      const px = cgx + arcR*Math.cos(a + startAng - Math.PI/4*(cgx===0?1:-1));
+      const py = cgy + arcR*Math.sin(a + startAng - Math.PI/4*(cgy===0?1:-1));
+      if(i===0) ctx.moveTo(isoX(px,py),isoY(px,py));
+      else       ctx.lineTo(isoX(px,py),isoY(px,py));
+    }
+    ctx.stroke();
+  });
+
+  // FIFA 2026 watermark on center circle
+  ctx.save();
+  ctx.globalAlpha = 0.22;
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '7px "Press Start 2P"'; ctx.textAlign = 'center';
+  ctx.fillText('⚽ FIFA 2026', isoX(6,4), isoY(6,4) + 4);
+  ctx.restore();
 }
 
-function drawWalls() {
+// ════════════════════════════════════════════
+//  DRAW: STADIUM STANDS (replaces drawWalls)
+// ════════════════════════════════════════════
+function drawStadiumWalls() {
   const wallH = WALL_HEIGHT;
-  // back-left wall (gy = 0 edge)
   const p1=[isoX(0,0),isoY(0,0)], p2=[isoX(GW,0),isoY(GW,0)];
-  poly([p1, p2, [p2[0],p2[1]-wallH], [p1[0],p1[1]-wallH]], '#1a1a30', '#0f0f1e', 1);
-  // back-right wall (gx = 0 edge)
   const q1=[isoX(0,0),isoY(0,0)], q2=[isoX(0,GH),isoY(0,GH)];
-  poly([q1, q2, [q2[0],q2[1]-wallH], [q1[0],q1[1]-wallH]], '#14142a', '#0f0f1e', 1);
-  // skirting highlight
-  poly([[p1[0],p1[1]-wallH],[p2[0],p2[1]-wallH],[p2[0],p2[1]-wallH+3],[p1[0],p1[1]-wallH+3]], '#2a2a4a');
-  poly([[q1[0],q1[1]-wallH],[q2[0],q2[1]-wallH],[q2[0],q2[1]-wallH+3],[q1[0],q1[1]-wallH+3]], '#22223e');
-  // ceiling lights along back-left wall
+
+  // Back-left stand (along gy=0 sideline) — blue/royal section
+  poly([p1, p2, [p2[0],p2[1]-wallH], [p1[0],p1[1]-wallH]], '#10244e', '#0a1a3e', 1);
+  // Back-right stand (along gx=0 sideline) — dark green section
+  poly([q1, q2, [q2[0],q2[1]-wallH], [q1[0],q1[1]-wallH]], '#0e2e18', '#0a2012', 1);
+
+  // Crowd rows on back-left stand
+  // CROWD_COLS — mix of spectator jersey / clothing colours (red, blue, white,
+  // orange, green, pink, sky-blue, yellow) for a realistic packed-stand look.
+  const CROWD_COLS = ['#e03030','#3060d8','#eeeeee','#ff8800','#20c040','#cc2080','#3388ff','#ffe050'];
+  const rowH = 11;
+  const numRows = Math.floor(wallH / rowH);
+  for (let row = 0; row < numRows; row++) {
+    const rowBase = '#10244e';
+    // Interpolate left/right end coordinates at this row band
+    const rY = row / numRows;
+    const ly1 = p1[1] - wallH + row * rowH;
+    const ry1 = p2[1] - wallH + row * rowH;
+    const ly2 = ly1 + rowH - 1;
+    const ry2 = ry1 + rowH - 1;
+    // Alternating row band shade
+    const bandCol = row % 2 === 0 ? '#122a56' : '#0e2048';
+    poly([[p1[0],ly1],[p2[0],ry1],[p2[0],ry2],[p1[0],ly2]], bandCol, '#0a1a3e', 1);
+    // Crowd pixel "heads" (deterministic hash, 2px each)
+    const numSpots = 28;
+    for (let s = 0; s < numSpots; s++) {
+      const fx = (s + 0.5) / numSpots;
+      const hx = p1[0] + fx*(p2[0]-p1[0]);
+      const hy = ly1 + fx*(ry1-ly1) + rowH * 0.45;
+      // Deterministic pseudo-random colour per seat (XOR hash avoids visible
+      // horizontal stripes while remaining frame-stable — no Math.random).
+      const hash = ((row * 31 + s * 17) ^ (row * 7)) % CROWD_COLS.length;
+      ctx.fillStyle = CROWD_COLS[hash];
+      ctx.fillRect(Math.round(hx)-1, Math.round(hy)-2, 2, 3);
+    }
+  }
+
+  // Crowd rows on back-right stand
+  for (let row = 0; row < numRows; row++) {
+    const ly1 = q1[1] - wallH + row * rowH;
+    const ry1 = q2[1] - wallH + row * rowH;
+    const ly2 = ly1 + rowH - 1;
+    const ry2 = ry1 + rowH - 1;
+    const bandCol = row % 2 === 0 ? '#102a1a' : '#0e2416';
+    poly([[q1[0],ly1],[q2[0],ry1],[q2[0],ry2],[q1[0],ly2]], bandCol, '#0a1a10', 1);
+    const numSpots = 18;
+    for (let s = 0; s < numSpots; s++) {
+      const fx = (s + 0.5) / numSpots;
+      const hx = q1[0] + fx*(q2[0]-q1[0]);
+      const hy = ly1 + fx*(ry1-ly1) + rowH * 0.45;
+      const hash = ((row * 23 + s * 13) ^ (row * 11)) % CROWD_COLS.length;
+      ctx.fillStyle = CROWD_COLS[hash];
+      ctx.fillRect(Math.round(hx)-1, Math.round(hy)-2, 2, 3);
+    }
+  }
+
+  // Stadium floodlights along top of back-left stand
   for (let i = 0; i < 4; i++) {
     const lg = 1.5 + i*3;
-    const lp = [isoX(lg,0), isoY(lg,0)-wallH+14];
-    ctx.fillStyle = '#b8e0ff'; ctx.fillRect(lp[0]-14, lp[1], 28, 5);
-    ctx.save(); ctx.shadowColor='#4499ff'; ctx.shadowBlur=14;
-    ctx.fillRect(lp[0]-14, lp[1], 28, 5); ctx.restore();
+    const lp = [isoX(lg,0), isoY(lg,0)-wallH+10];
+    // Light housing
+    ctx.fillStyle = '#445566'; ctx.fillRect(lp[0]-16, lp[1]-4, 32, 4);
+    // Floodlight glow
+    ctx.fillStyle = '#ffffcc'; ctx.fillRect(lp[0]-14, lp[1], 28, 6);
+    ctx.save(); ctx.shadowColor='#ffff88'; ctx.shadowBlur=24;
+    ctx.fillStyle = '#ffffcc'; ctx.fillRect(lp[0]-14, lp[1], 28, 6); ctx.restore();
+    // Support beam
+    ctx.fillStyle = '#556677'; ctx.fillRect(lp[0]-2, lp[1]+6, 4, 10);
   }
 }
 
 // ════════════════════════════════════════════
-//  DRAW: WALL FEATURES (Viz / Yield / Control Plan)
+//  DRAW: TALL SIDELINE BILLBOARD (FIFA 2026 廣告牌)
+//  Freestanding LED board at the field sideline (gy≈0 edge).
+//  Same call signature / return as the original drawWallPanelLeft.
 // ════════════════════════════════════════════
-// A framed panel mounted on the back-left wall (gy=0), centred at grid gx.
 function drawWallPanelLeft(gx, label, color, screenIco) {
-  const wallH = WALL_HEIGHT, panelH = 52, panelHalf = 0.92;
-  // back-left wall (gy=0) slopes down toward +gx in iso: rgt.y > lft.y.
-  // Build the panel as a parallelogram aligned with that slope so the frame
-  // sits flush against the wall.
-  const lft = [isoX(gx-panelHalf,0), isoY(gx-panelHalf,0)];
-  const rgt = [isoX(gx+panelHalf,0), isoY(gx+panelHalf,0)];
-  const slope = rgt[1] - lft[1];
-  const topYL = lft[1] - wallH + 16;
-  const topYR = topYL + slope;
-  const pts = [
-    [lft[0], topYL],         [rgt[0], topYR],
-    [rgt[0], topYR + panelH], [lft[0], topYL + panelH],
-  ];
+  const bW=1.8, bD=0.18, bH=96;
+  const bGx = gx - bW/2, bGy = 0.01;
   const hovered = hoverHot && hoverHot.kind==='feature' && hoverHot.label===label;
-  poly(pts, '#06060f', hovered?color:'#000', hovered?3:2);
-  // inner glow fill (inset parallelogram)
-  poly([[pts[0][0]+4,pts[0][1]+4],[pts[1][0]-4,pts[1][1]+4],[pts[2][0]-4,pts[2][1]-4],[pts[3][0]+4,pts[3][1]-4]],
-       hovered ? color+'33' : '#0a0a18');
-  // icon + label — centred horizontally; Y follows wall midline
-  const cxMid = (lft[0]+rgt[0])/2;
-  const midTop = (topYL + topYR) / 2;
+
+  // Board body (dark frame + inner face)
+  drawBox(bGx, bGy, bW, bD, bH,
+    '#0a1122',
+    hovered ? '#1a2a3a' : '#080e1a',
+    hovered ? '#1a3050' : '#0c1a2e',
+    hovered ? color : '#1a2a3a');
+
+  // Front face (left face of box = +gy side = viewer-facing)
+  const fGy = bGy + bD;
+  const fl = [isoX(bGx,    fGy), isoY(bGx,    fGy)];
+  const fr = [isoX(bGx+bW, fGy), isoY(bGx+bW, fGy)];
+  const ftl = [fl[0], fl[1]-bH];
+  const ftr = [fr[0], fr[1]-bH];
+
+  // LED screen fill (inset 3px)
+  const ins=3;
+  poly([
+    [fl[0]+ins, fl[1]-ins],
+    [fr[0]-ins, fr[1]-ins],
+    [ftr[0]-ins, ftr[1]+ins],
+    [ftl[0]+ins, ftl[1]+ins],
+  ], hovered ? '#001428' : '#000a1c', hovered ? color+'44' : '#002244');
+
+  // Content
+  const fcx = (fl[0]+fr[0])*0.5;
+  const topY = (ftl[1]+ftr[1])*0.5;
+  const botY = (fl[1]+fr[1])*0.5;
+  const midY = (topY+botY)*0.5;
+
+  const pulse = 0.82 + 0.18*Math.sin(time*0.07 + gx*0.5);
+  ctx.save(); ctx.globalAlpha = pulse;
   ctx.textAlign='center';
-  ctx.font='16px "Press Start 2P"';
-  ctx.fillText(screenIco, cxMid, midTop + 26);
+
+  // Top FIFA 2026 stripe
+  ctx.fillStyle = hovered ? '#ffe066' : '#aacc44';
+  ctx.font='4px "Press Start 2P"';
+  ctx.fillText('⚽ FIFA 2026', fcx, topY + (botY-topY)*0.12 + 4);
+
+  // Main icon
+  ctx.font='13px "Press Start 2P"';
+  ctx.fillText(screenIco, fcx, midY - 4);
+
+  // Label
   ctx.fillStyle = hovered ? '#ffe066' : color;
   ctx.font='5px "Press Start 2P"';
-  ctx.fillText(label, cxMid, midTop + panelH - 6);
-  // hit-test bbox covers the full slanted parallelogram
-  const minY = Math.min(pts[0][1], pts[1][1]);
-  const maxY = Math.max(pts[2][1], pts[3][1]);
-  return { x:lft[0], y:minY, w:rgt[0]-lft[0], h:maxY-minY };
+  ctx.fillText(label, fcx, midY+14);
+
+  ctx.restore();
+
+  // Animated LED strip along top edge of billboard (6 dots, one illuminated per cycle)
+  const ledStep = Math.floor(time / 8) % 6; // advance one dot every 8 frames ≈ 7.5 Hz
+  for (let li=0; li<6; li++) {
+    const lx = ftl[0] + (ftr[0]-ftl[0])*(li+0.5)/6;
+    const ly = ftl[1] + (ftr[1]-ftl[1])*(li+0.5)/6 + 3;
+    ctx.fillStyle = li===ledStep ? (hovered?'#ffe066':color) : '#0a1a22';
+    ctx.fillRect(lx-1, ly-1, 2, 2);
+  }
+
+  // Two support poles from board base
+  [[0.28],[0.72]].forEach(([fx]) => {
+    const px = fl[0]+(fr[0]-fl[0])*fx;
+    const py = fl[1]+(fr[1]-fl[1])*fx;
+    ctx.strokeStyle='#3a5060'; ctx.lineWidth=2.5;
+    ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px, py+16); ctx.stroke();
+  });
+
+  const minX = Math.min(ftl[0],ftr[0],fl[0],fr[0]);
+  const maxX = Math.max(ftl[0],ftr[0],fl[0],fr[0]);
+  return { x:minX, y:Math.min(ftl[1],ftr[1]), w:maxX-minX, h:Math.max(fl[1],fr[1])-Math.min(ftl[1],ftr[1]) };
 }
 
 // ════════════════════════════════════════════
@@ -920,10 +1118,13 @@ function drawChar(cx, cy, emp, idle) {
   ctx.fillStyle='#111'; ctx.fillRect(cx-4, py-37, 2, 3); ctx.fillRect(cx+2, py-37, 2, 3);
   // mouth
   ctx.fillStyle='#aa6655'; ctx.fillRect(cx-2, py-31, 4, 2);
-  // body / shirt
-  ctx.fillStyle=rgbStr(emp.shirt); ctx.fillRect(cx-8, py-28, 16, 18);
+  // body / shirt — Argentina vertical stripes (light blue + white)
+  for (let si = 0; si < 4; si++) {
+    ctx.fillStyle = si % 2 === 0 ? rgbStr(emp.shirt) : '#ffffff';
+    ctx.fillRect(cx - 8 + si * 4, py - 28, 4, 18);
+  }
   // arms
-  ctx.fillStyle=shade(emp.shirt,0.8);
+  ctx.fillStyle=rgbStr(emp.shirt);
   ctx.fillRect(cx-11, py-26, 4, 12); ctx.fillRect(cx+7, py-26, 4, 12);
   // legs
   ctx.fillStyle='#33334a'; ctx.fillRect(cx-6, py-10, 5, 10); ctx.fillRect(cx+1, py-10, 5, 10);
@@ -1269,8 +1470,8 @@ function render() {
   ctx.clearRect(0, 0, W, H);
   const hot = [];
 
-  drawFloor();
-  drawWalls();
+  drawFootballField();
+  drawStadiumWalls();
 
   // wall features (deepest — draw right after walls).
   // Four framed panels along the back-left wall, spaced between the 4-column
@@ -1322,88 +1523,94 @@ function render() {
   requestAnimationFrame(render);
 }
 
-// Yield = framed line-chart panel on the back-right wall (gx=0)
+// Yield = tall sideline LED billboard on the back-right wall (gx=0 edge)
 function drawYieldPanel() {
   const f = FEATURES.yield;
-  const wallH = WALL_HEIGHT, panelH = 56, gy = 2.4, half = 1.05;
-  const topY = isoY(0, gy) - wallH + 14;
-  const a = [isoX(0, gy-half), isoY(0, gy-half)];  // right edge (smaller gy)
-  const b = [isoX(0, gy+half), isoY(0, gy+half)];  // left edge  (larger gy)
-  // Panel parallelogram aligned with the wall's iso slope
-  const pts = [
-    [a[0], topY],
-    [b[0], topY + (b[1]-a[1])],
-    [b[0], topY + panelH + (b[1]-a[1])],
-    [a[0], topY + panelH],
-  ];
+  const bH=96, bW=0.18, bD=1.8, bGy=2.4-bD/2, bGx=0.01;
   const hovered = hoverHot && hoverHot.kind==='feature' && hoverHot.label===f.label;
-  poly(pts, '#050d05', hovered ? f.color : '#152515', hovered ? 3 : 2);
 
-  // Surface coordinate mapping: u=0→right(a), u=1→left(b); v=0→top, v=1→bottom
-  const pp = (u, v) => [
-    pts[0][0] + u*(pts[1][0]-pts[0][0]) + v*(pts[3][0]-pts[0][0]),
-    pts[0][1] + u*(pts[1][1]-pts[0][1]) + v*(pts[3][1]-pts[0][1]),
-  ];
+  // Board body — thin slab along the gx=0 edge, facing +gx (toward viewer)
+  drawBox(bGx, bGy, bW, bD, bH,
+    '#0a1122',
+    hovered ? '#1a3050' : '#0c1a2e',
+    hovered ? '#1a2a3a' : '#080e1a',
+    hovered ? f.color : '#1a2a3a');
 
-  // Yield trend data — realistically bumpy but clearly rising
-  const data = [0.30, 0.38, 0.34, 0.46, 0.42, 0.54, 0.50, 0.64, 0.62, 0.77];
-  const n = data.length;
-  const mx0=0.07, mx1=0.93, my0=0.24, my1=0.87;
+  // Front face = right face of this box (+gx direction, viewer-facing from this side)
+  const fGx = bGx + bW;
+  const ft = [isoX(fGx, bGy),    isoY(fGx, bGy)];      // top-right (small gy)
+  const fb = [isoX(fGx, bGy+bD), isoY(fGx, bGy+bD)];   // bottom-left (large gy)
+  const ftt = [ft[0], ft[1]-bH];
+  const fbt = [fb[0], fb[1]-bH];
 
-  // Reversed u: data[0] (low) at left (u=mx1), data[n-1] (high) at right (u=mx0)
-  // → chart reads left-to-right as upward trend
-  const cpts = data.map((val, i) => {
-    const u = mx1 - (i/(n-1)) * (mx1-mx0);
-    const v = my0 + (1-val) * (my1-my0);
-    return pp(u, v);
+  // LED screen fill
+  const ins=3;
+  poly([
+    [ft[0]-ins, ft[1]-ins],
+    [fb[0]+ins, fb[1]-ins],
+    [fbt[0]+ins, fbt[1]+ins],
+    [ftt[0]-ins, ftt[1]+ins],
+  ], hovered ? '#001428' : '#000a1c', hovered ? f.color+'44' : '#002244');
+
+  // Content: yield chart pixels on the face
+  const fcx = (ft[0]+fb[0])*0.5;
+  const topY = (ftt[1]+fbt[1])*0.5;
+  const botY = (ft[1]+fb[1])*0.5;
+  const midY = (topY+botY)*0.5;
+
+  const pulse = 0.82 + 0.18*Math.sin(time*0.07 + 0.5);
+  ctx.save(); ctx.globalAlpha = pulse;
+  ctx.textAlign='center';
+
+  ctx.fillStyle = hovered ? '#ffe066' : '#aacc44';
+  ctx.font='4px "Press Start 2P"';
+  ctx.fillText('⚽ FIFA 2026', fcx, topY + (botY-topY)*0.10 + 4);
+
+  ctx.font='13px "Press Start 2P"';
+  ctx.fillText('📈', fcx, midY - 4);
+
+  ctx.fillStyle = hovered ? '#ffe066' : f.color;
+  ctx.font='5px "Press Start 2P"';
+  ctx.fillText('YIELD ▲', fcx, midY+14);
+
+  // Tiny yield bar chart (pixel art, relative heights — decorative placeholder
+  // mirroring the upward trend shown on the original office yield panel)
+  const barData = [3,5,4,6,5,8,7,9,8,10];
+  const barW = 2, barGap = 1;
+  const totalW = barData.length*(barW+barGap)-barGap;
+  const barBaseX = fcx - totalW/2;
+  const barBaseY = botY - (botY-topY)*0.12;
+  barData.forEach((v, i) => {
+    const bx = barBaseX + i*(barW+barGap);
+    const bh = v * 1.3;
+    ctx.fillStyle = i === barData.length-1
+      ? (hovered?'#bbffcc':'#66ee88')
+      : (hovered?'#66ee88':'#33aa55');
+    ctx.fillRect(bx, barBaseY-bh, barW, bh);
   });
 
-  // Area fill below line
-  const botLeft = pp(mx1, my1);
-  const botRight = pp(mx0, my1);
-  ctx.beginPath();
-  ctx.moveTo(botLeft[0], botLeft[1]);
-  cpts.forEach(p => ctx.lineTo(p[0], p[1]));
-  ctx.lineTo(botRight[0], botRight[1]);
-  ctx.closePath();
-  ctx.fillStyle = hovered ? 'rgba(68,255,140,0.18)' : 'rgba(38,170,75,0.16)';
-  ctx.fill();
+  ctx.restore();
 
-  // Trend line
-  ctx.beginPath();
-  ctx.moveTo(cpts[0][0], cpts[0][1]);
-  cpts.slice(1).forEach(p => ctx.lineTo(p[0], p[1]));
-  ctx.strokeStyle = hovered ? '#88ffaa' : '#44cc66';
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-  ctx.lineWidth = 1;
-
-  // Data dots
-  cpts.forEach((p, i) => {
-    ctx.fillStyle = i === n-1 ? '#bbffcc' : (hovered ? '#66ee88' : '#33aa55');
-    ctx.fillRect(p[0]-1.5, p[1]-1.5, 3, 3);
-  });
-
-  // Animated lightning bolt above highest (rightmost) point
-  const peak = cpts[n-1];
-  const boltOn = Math.floor(time / 16) % 4 !== 0;
-  if (boltOn) {
-    const bx = peak[0], by = peak[1] - 4;
-    const bolt = [[2,0],[3,0],[4,0],[1,2],[2,2],[3,2],[2,4],[3,4],[1,6],[2,6]];
-    ctx.fillStyle = hovered ? '#ffff88' : '#aaff44';
-    bolt.forEach(([dx,dy]) => ctx.fillRect(bx-2+dx, by-10+dy, 1, 1));
-    ctx.fillStyle = `rgba(140,255,60,${0.22 + 0.14*Math.sin(time*0.11)})`;
-    ctx.fillRect(bx-4, by-12, 12, 12);
+  // Animated LED strip along top
+  const ledStep = Math.floor(time / 8) % 6;
+  for (let li=0; li<6; li++) {
+    const lx = ftt[0] + (fbt[0]-ftt[0])*(li+0.5)/6;
+    const ly = ftt[1] + (fbt[1]-ftt[1])*(li+0.5)/6 + 3;
+    ctx.fillStyle = li===ledStep ? (hovered?'#ffe066':f.color) : '#0a1a22';
+    ctx.fillRect(lx-1, ly-1, 2, 2);
   }
 
-  // Label centred along top of panel surface
-  const lp = pp(0.5, 0.10);
-  ctx.fillStyle = hovered ? '#ffe066' : f.color;
-  ctx.font = '5px "Press Start 2P"'; ctx.textAlign = 'center';
-  ctx.fillText('YIELD ▲', lp[0], lp[1]);
+  // Two support poles
+  [[0.28],[0.72]].forEach(([fy]) => {
+    const px = ft[0]+(fb[0]-ft[0])*fy;
+    const py = ft[1]+(fb[1]-ft[1])*fy;
+    ctx.strokeStyle='#3a5060'; ctx.lineWidth=2.5;
+    ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px, py+16); ctx.stroke();
+  });
 
-  const minX=Math.min(a[0],b[0]), maxX=Math.max(a[0],b[0]);
-  return { bbox:{x:minX, y:topY, w:maxX-minX, h:panelH+(b[1]-a[1])}, kind:'feature', label:f.label, ref:f };
+  const minX=Math.min(ft[0],fb[0],ftt[0],fbt[0]);
+  const maxX=Math.max(ft[0],fb[0],ftt[0],fbt[0]);
+  return { bbox:{x:minX, y:Math.min(ftt[1],fbt[1]), w:maxX-minX, h:Math.max(ft[1],fb[1])-Math.min(ftt[1],fbt[1])}, kind:'feature', label:f.label, ref:f };
 }
 
 requestAnimationFrame(render);
