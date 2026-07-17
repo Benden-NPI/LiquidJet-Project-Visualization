@@ -1,0 +1,116 @@
+{
+  "id": "root",
+  "text": "DOE List — Key Risk Problems (LiquidJet)",
+  "children": [
+    {
+      "id": "p1",
+      "text": "🔴 High｜Shrinkage 收縮",
+      "children": [
+        {
+          "id": "p1a",
+          "text": "Purpose: 蝕刻前穩定 Cu sheet 尺寸",
+          "children": [
+            { "id": "d2046", "text": "DOE2046｜3 runs: 750→825→825°C (140min stable + 90min load)｜硬態銅箔｜B2-A｜6/25–7/8 due 7/10｜Brian", "children": [] },
+            { "id": "d0004", "text": "DOE0004｜750°C + 10t load｜硬態銅箔 (0.15×3 / 0.3×10 / 0.5×6)｜B1-A｜7/9–7/16 due 7/22｜Brian", "children": [] },
+            { "id": "d2048", "text": "DOE2048｜2 runs: 750→825°C｜64AA (FM) SP/J1/I1/I2/O1/O2｜B2-B｜6/25–7/1 due 7/16｜Brian", "children": [] },
+            { "id": "d0007", "text": "DOE0007｜750°C 確認熱處理後可否蝕刻｜硬態銅箔疊 62A 結構｜B3-A｜7/19–7/20｜Brian", "children": [] }
+          ]
+        },
+        {
+          "id": "p1b",
+          "text": "Purpose: 銅箔硬→軟研究（晶粒成長 / 再結晶）",
+          "children": [
+            { "id": "d0001", "text": "DOE0001｜650°C, 24–48hr｜硬態銅箔疊 62A｜指標: Stretch/晶粒/硬度｜B2-B｜7/8–7/14 due 7/17｜Brian", "children": [] },
+            { "id": "d0001a", "text": "DOE0001a｜650°C, 24–48hr｜Cu+Graphene 0.3mm ×3｜B2-B｜7/8–7/14 due 7/17｜Brian", "children": [] },
+            { "id": "d0006", "text": "DOE0006｜825°C, 24–48hr｜Cu+Graphene 0.3mm ×10｜B1-B｜7/15–7/17｜Brian", "children": [] },
+            { "id": "d0014", "text": "DOE0014｜複跑 DOE0001 條件 @825°C｜硬態銅箔疊 62A｜B2-B｜7/17–7/19｜Brian", "children": [] },
+            { "id": "d0014a", "text": "DOE0014a｜複跑 DOE0001a 條件 @825°C｜Cu+Graphene ×3｜B2-B｜7/17–7/19｜Brian", "children": [] }
+          ]
+        },
+        {
+          "id": "p1c",
+          "text": "Purpose: 擴散接合 recipe 優化",
+          "children": [
+            { "id": "d0002", "text": "DOE0002｜680°C, 20t, 600min load｜升溫 3.5°C/s, 160°C 通 Ar｜62AA(FM) 10 sets｜指標: 脫層/void + Stretch｜B4-A｜7/30–8/6｜Brian", "children": [] },
+            { "id": "d0010", "text": "DOE0010｜2025 recipe: 800°C, 450min（降溫+降時）｜62AA 10 sets｜B2-A｜7/21–7/28｜Brian", "children": [] },
+            { "id": "d0011", "text": "DOE0011｜825°C, 450min（降時）｜62AA 10 sets｜B2-A｜7/27–7/31｜Brian", "children": [] },
+            { "id": "d0012", "text": "DOE0012｜750°C, <24hr（降時）｜62AA 10 sets｜B3-A｜7/30–8/2｜Brian", "children": [] },
+            { "id": "d0013", "text": "DOE0013｜<825°C, <24hr（降時）｜62AA 10 sets｜B2-A｜8/3–8/6｜Brian", "children": [] }
+          ]
+        },
+        {
+          "id": "p1d",
+          "text": "Purpose: 同方向性材料",
+          "children": [
+            { "id": "d0008", "text": "DOE0008｜825°C｜62AA(FM) 10 sets｜B4-A｜7/20–7/28｜Brian", "children": [] }
+          ]
+        },
+        {
+          "id": "p1e",
+          "text": "Purpose: 改變 bonding 順序",
+          "children": [
+            { "id": "d0009", "text": "DOE0009｜825°C｜1st run: bottom + I1+I2 → 2nd run: middle plate｜62AA(FM) 10 sets｜B2-A｜7/17–7/22｜Brian", "children": [] }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "p2",
+      "text": "🔴 High｜FM Quality Issue",
+      "children": [
+        {
+          "id": "p2a",
+          "text": "Purpose: 確認 FM 品質問題材料",
+          "children": [
+            { "id": "p2a1", "text": "（未編號）｜3 次 bonding｜64AA 1 set｜指標: Stretch + OM 接合品質｜B2｜未排程", "children": [] },
+            { "id": "d0005", "text": "DOE0005｜3 次 bonding｜62AA 1 set｜指標: Stretch + OM 接合品質｜B1-A｜7/17–7/22｜Brian + MZ", "children": [] }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "p3",
+      "text": "🔴 High｜Material Softening 材料軟化",
+      "children": [
+        {
+          "id": "p3a",
+          "text": "Purpose: 擴散接合後維持材料剛性",
+          "children": [
+            { "id": "p3a1", "text": "導入 Gildcop｜供應來源調查中｜指標: 平坦度 / 硬度 / 降伏強度", "children": [] },
+            { "id": "p3a2", "text": "導入 Cu-Graphene｜供應來源調查中｜指標: 平坦度 / 硬度 / 降伏強度", "children": [] }
+          ]
+        },
+        {
+          "id": "p3b",
+          "text": "Purpose: 蝕刻前穩定 Cu sheet 尺寸（軟態路線）",
+          "children": [
+            { "id": "p3b1", "text": "依 DOE0001 結果挑選最佳條件｜軟態銅箔｜等待採購｜TBD｜指標: Stretch/晶粒/硬度", "children": [] }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "p4",
+      "text": "🔴 High｜Oxidation 氧化",
+      "children": [
+        { "id": "d0003", "text": "DOE0003｜新化學品處理（chemical fine tuning）｜FM 蝕刻+處理品｜指標: 目視檢查｜On the line", "children": [] },
+        { "id": "p4b", "text": "除氧化處理｜化學清洗 vs 電漿蝕刻｜FM/TG 蝕刻片 (62AA)｜指標: 目視檢查", "children": [] },
+        { "id": "p4c", "text": "表面保護｜Passivation coating｜FM/TG 蝕刻片 (62AA)｜指標: 目視檢查", "children": [] }
+      ]
+    },
+    {
+      "id": "p5",
+      "text": "🟢 Low｜Flatness 平坦度",
+      "children": [
+        {
+          "id": "p5a",
+          "text": "Purpose: 板內變異最小化",
+          "children": [
+            { "id": "p5a1", "text": "疊放位置對調：bottom→middle, middle→base｜64AA 蝕刻片 (FM/TG)｜指標: 平坦度", "children": [] },
+            { "id": "p5a2", "text": "上下翻轉（flip upside down）｜64AA 蝕刻片 (FM/TG)｜指標: 平坦度", "children": [] }
+          ]
+        }
+      ]
+    }
+  ]
+}
