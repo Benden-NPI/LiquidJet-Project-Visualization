@@ -1,0 +1,51 @@
+<div class="modal-mask" id="importMask">
+  <div class="modal">
+    <h2>匯入心智圖 <span id="impKind" class="pill">尚未選檔</span></h2>
+
+    <div class="imp-drop" id="impDrop">
+      <div class="t">拖檔案到這裡，或 <b>選擇檔案</b></div>
+      <div class="hint" style="margin-top:4px;">.xmind · .mmd · .json · .md</div>
+      <input type="file" id="impFile" accept=".xmind,.mmd,.json,.md,.markdown" style="display:none;" />
+    </div>
+
+    <div id="impErr" class="imp-err" style="display:none;"></div>
+
+    <div id="impBody" style="display:none;">
+      <div class="imp-file" id="impFileInfo"></div>
+
+      <div class="row" id="impSheetRow" style="display:none;">
+        <label>選擇工作表</label>
+        <div class="imp-sheets" id="impSheets"></div>
+      </div>
+
+      <div class="row" id="impOptRow" style="display:none;">
+        <label>匯入選項（XMind）</label>
+        <div class="imp-opts">
+          <label class="imp-ck"><input type="checkbox" id="impOptMarkers" checked /> 標記轉文字前綴 <span class="n" id="impNMarkers"></span></label>
+          <label class="imp-ck"><input type="checkbox" id="impOptNotes" checked /> 備註成子節點 <span class="n" id="impNNotes"></span></label>
+          <label class="imp-ck"><input type="checkbox" id="impOptDetached" /> 浮動主題 <span class="n" id="impNDetached"></span></label>
+          <label class="imp-ck"><input type="checkbox" id="impOptSummaries" /> 摘要節點 <span class="n" id="impNSummaries"></span></label>
+        </div>
+      </div>
+
+      <div class="row">
+        <label>放到畫布的方式</label>
+        <div class="imp-modes">
+          <button type="button" class="imp-mode active" data-mode="replace">取代目前心智圖</button>
+          <button type="button" class="imp-mode" data-mode="child">掛在選取節點下</button>
+        </div>
+      </div>
+
+      <div class="imp-warn" id="impWarn" style="display:none;"></div>
+    </div>
+
+    <div class="actions">
+      <span style="flex:1;"></span>
+      <button id="btnImportCancel">取消</button>
+      <button id="btnImportApply" class="primary" disabled>匯入</button>
+    </div>
+  </div>
+</div>
+
+<div class="imp-veil" id="impVeil"><div class="box">放開以匯入心智圖</div></div>
+

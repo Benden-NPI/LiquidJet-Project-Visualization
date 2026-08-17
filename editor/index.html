@@ -94,6 +94,36 @@
   .modal .pill.ok { color:var(--accent2); border-color:var(--accent2); }
   .modal .pill.bad { color:var(--danger); border-color:var(--danger); }
 
+
+  /* ---------- Import ---------- */
+  .imp-drop { border:1px dashed var(--border); border-radius:10px; padding:18px; text-align:center; cursor:pointer; transition:border-color .12s, background .12s; }
+  .imp-drop:hover, .imp-drop.hot { border-color:var(--accent); background:var(--panel2); }
+  .imp-drop .t { font-size:13px; }
+  .imp-drop .t b { color:var(--accent); }
+  .imp-file { font-size:12px; color:var(--muted); margin:12px 0 2px; word-break:break-all; }
+  .imp-file b { color:var(--text); font-weight:500; }
+  .imp-sheets { display:flex; flex-direction:column; gap:6px; }
+  .imp-sheet { display:flex; align-items:center; gap:10px; border:1px solid var(--border); border-radius:8px; padding:8px 10px; cursor:pointer; background:var(--panel2); }
+  .imp-sheet:hover { border-color:var(--accent); }
+  .imp-sheet.active { border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent); }
+  .imp-sheet .m { flex:1; min-width:0; }
+  .imp-sheet .t { font-size:13px; }
+  .imp-sheet .d { font-size:11.5px; color:var(--muted); margin-top:2px; }
+  .imp-sheet .tag { font-size:10.5px; color:var(--muted); border:1px solid var(--border); border-radius:99px; padding:1px 7px; }
+  .imp-opts { display:grid; grid-template-columns:1fr 1fr; gap:7px 14px; }
+  .modal .imp-ck { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text); cursor:pointer; }
+  .modal .imp-ck input { width:auto; margin:0; }
+  .imp-ck .n { color:var(--muted); }
+  .imp-modes { display:flex; gap:6px; }
+  .imp-modes button { flex:1; }
+  .imp-modes button.active { border-color:var(--accent); color:var(--accent); }
+  .imp-warn { font-size:11.5px; line-height:1.6; color:var(--warn); border:1px solid var(--border); border-left:2px solid var(--warn); border-radius:0 8px 8px 0; padding:8px 10px; margin-bottom:14px; }
+  .imp-err { color:var(--danger); font-size:12px; margin:10px 0 0; line-height:1.5; }
+  .imp-veil { position:fixed; inset:0; z-index:300; display:none; align-items:center; justify-content:center;
+    background:#0b0e14cc; backdrop-filter:blur(2px); font-size:15px; color:var(--text); pointer-events:none; }
+  .imp-veil.open { display:flex; }
+  .imp-veil .box { border:2px dashed var(--accent); border-radius:14px; padding:26px 40px; background:var(--panel); }
+
   .ai-panel { background:var(--panel); border-left:1px solid var(--border); overflow:hidden; display:flex; flex-direction:column; }
   .ai-head { padding:10px 12px; border-bottom:1px solid var(--border); }
   .ai-head .title { font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; }
@@ -175,6 +205,7 @@
       <option value="md">.md（含 mermaid）</option>
     </select>
     <button id="btnSave" class="primary" title="儲存 (Ctrl+S)">💾 儲存</button>
+    <button id="btnImport" title="匯入 .xmind / .mmd / .json / .md">⬇ 匯入</button>
     <button id="btnExportSvg" title="下載 SVG">SVG</button>
     <button id="btnExportPng" title="下載 PNG">PNG</button>
     <button id="btnAI" title="觸發 AI 建議（僅草稿，不會自動提交）" aria-label="觸發 AI 建議（僅草稿，不會自動提交）">AI Suggest</button>
@@ -325,6 +356,57 @@
     </div>
   </div>
 </div>
+
+<div class="modal-mask" id="importMask">
+  <div class="modal">
+    <h2>匯入心智圖 <span id="impKind" class="pill">尚未選檔</span></h2>
+
+    <div class="imp-drop" id="impDrop">
+      <div class="t">拖檔案到這裡，或 <b>選擇檔案</b></div>
+      <div class="hint" style="margin-top:4px;">.xmind · .mmd · .json · .md</div>
+      <input type="file" id="impFile" accept=".xmind,.mmd,.json,.md,.markdown" style="display:none;" />
+    </div>
+
+    <div id="impErr" class="imp-err" style="display:none;"></div>
+
+    <div id="impBody" style="display:none;">
+      <div class="imp-file" id="impFileInfo"></div>
+
+      <div class="row" id="impSheetRow" style="display:none;">
+        <label>選擇工作表</label>
+        <div class="imp-sheets" id="impSheets"></div>
+      </div>
+
+      <div class="row" id="impOptRow" style="display:none;">
+        <label>匯入選項（XMind）</label>
+        <div class="imp-opts">
+          <label class="imp-ck"><input type="checkbox" id="impOptMarkers" checked /> 標記轉文字前綴 <span class="n" id="impNMarkers"></span></label>
+          <label class="imp-ck"><input type="checkbox" id="impOptNotes" checked /> 備註成子節點 <span class="n" id="impNNotes"></span></label>
+          <label class="imp-ck"><input type="checkbox" id="impOptDetached" /> 浮動主題 <span class="n" id="impNDetached"></span></label>
+          <label class="imp-ck"><input type="checkbox" id="impOptSummaries" /> 摘要節點 <span class="n" id="impNSummaries"></span></label>
+        </div>
+      </div>
+
+      <div class="row">
+        <label>放到畫布的方式</label>
+        <div class="imp-modes">
+          <button type="button" class="imp-mode active" data-mode="replace">取代目前心智圖</button>
+          <button type="button" class="imp-mode" data-mode="child">掛在選取節點下</button>
+        </div>
+      </div>
+
+      <div class="imp-warn" id="impWarn" style="display:none;"></div>
+    </div>
+
+    <div class="actions">
+      <span style="flex:1;"></span>
+      <button id="btnImportCancel">取消</button>
+      <button id="btnImportApply" class="primary" disabled>匯入</button>
+    </div>
+  </div>
+</div>
+
+<div class="imp-veil" id="impVeil"><div class="box">放開以匯入心智圖</div></div>
 
 <script type="module">
 import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
@@ -791,6 +873,10 @@ document.addEventListener("click", closeContextMenu);
 // ---------- Keyboard ----------
 document.addEventListener("keydown", (e) => {
   if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+  if (document.querySelector(".modal-mask.open")) {
+    if (e.key === "Escape") { closeSettings(); closeImport(); }
+    return;
+  }
   if ((e.ctrlKey||e.metaKey) && e.key.toLowerCase() === "s") { e.preventDefault(); save(); return; }
   if ((e.ctrlKey||e.metaKey) && e.key.toLowerCase() === "z") { e.preventDefault(); e.shiftKey?redo():undo(); return; }
   if ((e.ctrlKey||e.metaKey) && e.key.toLowerCase() === "y") { e.preventDefault(); redo(); return; }
@@ -1900,31 +1986,9 @@ function toMmd() {
   return lines.join("\n");
 }
 function parseMmd(text) {
-  const lines = text.replace(/\r/g,"").split("\n");
-  let i = 0; while (i < lines.length && !/^\s*mindmap/i.test(lines[i])) i++; i++;
-  function unwrap(s) {
-    s = s.trim();
-    let m = s.match(/^["']?(?:[\w-]+)?["']?\s*\(\(\s*"?(.*?)"?\s*\)\)$/); if (m) return m[1];
-    m = s.match(/^["']?(?:[\w-]+)?["']?\s*\(\s*"?(.*?)"?\s*\)$/); if (m) return m[1];
-    m = s.match(/^["']?(?:[\w-]+)?["']?\s*\[\s*"?(.*?)"?\s*\]$/); if (m) return m[1];
-    m = s.match(/^["']?(?:[\w-]+)?["']?\s*\{\s*"?(.*?)"?\s*\}$/); if (m) return m[1];
-    m = s.match(/^"(.*)"$/); if (m) return m[1];
-    return s;
-  }
-  const stack = []; let root = null;
-  for (; i < lines.length; i++) {
-    const raw = lines[i]; if (!raw.trim()) continue;
-    if (/^\s*::icon\(/.test(raw)) continue;
-    const lead = raw.length - raw.trimStart().length;
-    const depth = Math.floor(lead / 2);
-    const n = mkNode(unwrap(raw.trimStart()));
-    if (!root) { root = n; stack.push({depth, node:n}); continue; }
-    while (stack.length && stack[stack.length-1].depth >= depth) stack.pop();
-    const parent = stack[stack.length-1]?.node || root;
-    parent.children.push(n);
-    stack.push({depth, node:n});
-  }
-  return root || mkNode("Empty");
+  // Delegates to the import parser: handles tab / 4-space / mixed indent,
+  // every mermaid node shape, ::icon, :::class, %% comments and md strings.
+  return impParseMmd(text) || mkNode("Empty");
 }
 
 // ---------- Export images ----------
@@ -2000,6 +2064,490 @@ $("btnExportPng").onclick = async () => {
   c.toBlob((b) => downloadBlob(b, ($("fname").value || "mindmap") + ".png"), "image/png");
   URL.revokeObjectURL(url);
 };
+
+// ---------- Import (.xmind / .mmd / .json / .md) ----------
+// Everything runs in the browser: .xmind is a zip, unpacked with the native
+// DecompressionStream, so no extra library and the page stays a single file.
+
+const IMP = {
+  name: "", size: 0, kind: null,
+  buffer: null,            // ArrayBuffer, kept so options can re-convert
+  sheets: [], sheetIdx: 0,
+  mode: "replace",
+  opts: { markers:true, notes:true, detached:false, summaries:false }
+};
+
+// Collapse to a single line: a raw newline inside a title would break the
+// indentation-based .mmd format on export.
+function impOneLine(s) {
+  return String(s == null ? "" : s).replace(/\r/g,"").replace(/[\n\t]+/g," ").replace(/\s{2,}/g," ").trim();
+}
+
+/* ----- mermaid mindmap ----- */
+const IMP_SHAPES = [
+  /^\(\(([\s\S]*)\)\)$/,   // ((circle))
+  /^\)\)([\s\S]*)\(\($/,   // ))bang((
+  /^\{\{([\s\S]*)\}\}$/,   // {{hexagon}}
+  /^\[([\s\S]*)\]$/,       // [square]
+  /^\(([\s\S]*)\)$/,       // (rounded)
+  /^\)([\s\S]*)\($/,       // )cloud(
+  /^\{([\s\S]*)\}$/        // {rhombus}
+];
+function impUnquote(s) {
+  s = String(s).trim();
+  let m = s.match(/^"\s*`([\s\S]*)`\s*"$/);          // markdown string
+  if (m) s = m[1].replace(/\*\*|__|\*|_/g, "");
+  else {
+    m = s.match(/^"([\s\S]*)"$/) || s.match(/^'([\s\S]*)'$/);
+    if (m) s = m[1];
+  }
+  return s.replace(/\\"/g, '"').replace(/<br\s*\/?>/gi, " ").trim();
+}
+function impStripShape(s) {
+  s = s.trim();
+  const m = s.match(/^([\w\-]*)\s*([\(\[\{\)][\s\S]*)$/);   // optional leading id
+  const body = m ? m[2] : s;
+  for (const re of IMP_SHAPES) { const g = body.match(re); if (g) return impUnquote(g[1]); }
+  return impUnquote(s);
+}
+// Column-based indentation, so 2-space, 4-space, tab and mixed files all work.
+function impLeadCols(line, tab) {
+  let col = 0;
+  for (const ch of line) {
+    if (ch === " ") col++;
+    else if (ch === "\t") col += (tab - (col % tab));
+    else break;
+  }
+  return col;
+}
+function impParseMmd(text, tabSize = 4) {
+  const raw = String(text).replace(/\r\n?/g, "\n").split("\n");
+  const lines = [];
+  let started = false, sawHeader = false;
+  for (const r0 of raw) {
+    if (!r0.trim()) continue;
+    if (/^\s*%%/.test(r0)) continue;
+    if (!started) {
+      const m = r0.match(/^\s*mindmap\b(.*)$/i);
+      if (m) { started = true; sawHeader = true; const rest = m[1].trim(); if (rest) lines.push({ col:0, text:rest }); }
+      continue;
+    }
+    const t = r0.trim();
+    if (/^::icon\(/.test(t)) continue;      // ::icon(fa fa-book) on its own line
+    if (/^:::/.test(t)) continue;           // :::className
+    if (/^(classDef|class)\b/.test(t)) continue;
+    const line = r0.replace(/\s+::icon\([^)]*\)\s*$/, "").replace(/\s+:::[\w\- ]+\s*$/, "").replace(/\s+%%.*$/, "");
+    lines.push({ col: impLeadCols(line, tabSize), text: line.trim() });
+  }
+  // Files without a `mindmap` header: treat the whole thing as an outline.
+  if (!sawHeader) {
+    for (const r0 of raw) {
+      if (!r0.trim() || /^\s*%%/.test(r0)) continue;
+      lines.push({ col: impLeadCols(r0, tabSize), text: r0.trim() });
+    }
+  }
+  if (!lines.length) return null;
+
+  let root = null; const stack = [];
+  for (const ln of lines) {
+    const node = mkNode(impOneLine(impStripShape(ln.text)) || "(未命名)");
+    if (!root) { root = node; stack.push({ col: ln.col, node }); continue; }
+    while (stack.length > 1 && stack[stack.length-1].col >= ln.col) stack.pop();
+    if (stack.length === 1 && ln.col <= stack[0].col) {   // sibling of root -> keep under root
+      stack[0].node.children.push(node);
+      stack.push({ col: ln.col + 1, node });
+      continue;
+    }
+    stack[stack.length-1].node.children.push(node);
+    stack.push({ col: ln.col, node });
+  }
+  return root;
+}
+
+/* ----- markdown ----- */
+function impParseMd(text) {
+  const src = String(text).replace(/\r\n?/g, "\n");
+  const fence = src.match(/```(?:mermaid|mmd)\s*\n([\s\S]*?)```/i);
+  if (fence) return impParseMmd(fence[1]);
+  let root = null; const stack = [];
+  for (const line of src.split("\n")) {
+    let m = line.match(/^(#{1,6})\s+(.*)$/), depth, txt;
+    if (m) { depth = m[1].length - 1; txt = m[2]; }
+    else {
+      m = line.match(/^(\s*)[-*+]\s+(.*)$/);
+      if (!m) continue;
+      depth = 6 + Math.floor(m[1].replace(/\t/g, "  ").length / 2);
+      txt = m[2];
+    }
+    const node = mkNode(impOneLine(txt.replace(/\*\*|__|`/g, "")) || "(未命名)");
+    if (!root) { root = node; stack.push({ depth, node }); continue; }
+    while (stack.length > 1 && stack[stack.length-1].depth >= depth) stack.pop();
+    stack[stack.length-1].node.children.push(node);
+    stack.push({ depth, node });
+  }
+  return root;
+}
+
+/* ----- editor json ----- */
+function impParseJson(text) {
+  const d = JSON.parse(text);
+  const src = Array.isArray(d) ? d[0] : d;
+  (function fix(n) {
+    n.id = n.id || newId();
+    n.text = impOneLine(n.text != null ? n.text : (n.title || "")) || "(未命名)";
+    n.children = n.children || [];
+    n.x = typeof n.x === "number" ? n.x : null;
+    n.y = typeof n.y === "number" ? n.y : null;
+    n.w = n.w || 0; n.h = n.h || 0;
+    n.children.forEach(fix);
+  })(src);
+  return src;
+}
+
+/* ----- minimal zip reader (store + deflate) ----- */
+async function impZipEntry(buf, wanted) {
+  const dv = new DataView(buf), u8 = new Uint8Array(buf), len = u8.length;
+  let eocd = -1;
+  for (let i = len - 22; i >= 0 && i >= len - 22 - 65535; i--) {
+    if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  }
+  if (eocd < 0) throw new Error("不是有效的 .xmind（找不到 zip 目錄）");
+  let count = dv.getUint16(eocd + 10, true), cdOff = dv.getUint32(eocd + 16, true);
+  if (cdOff === 0xffffffff || count === 0xffff) {          // zip64
+    for (let i = eocd - 20; i >= 0; i--) {
+      if (dv.getUint32(i, true) === 0x07064b50) {
+        const z64 = Number(dv.getBigUint64(i + 8, true));
+        count = Number(dv.getBigUint64(z64 + 32, true));
+        cdOff = Number(dv.getBigUint64(z64 + 48, true));
+        break;
+      }
+    }
+  }
+  const dec = new TextDecoder("utf-8");
+  let p = cdOff;
+  for (let i = 0; i < count; i++) {
+    if (dv.getUint32(p, true) !== 0x02014b50) break;
+    const method = dv.getUint16(p + 10, true);
+    const csize  = dv.getUint32(p + 20, true);
+    const nlen   = dv.getUint16(p + 28, true);
+    const elen   = dv.getUint16(p + 30, true);
+    const clen   = dv.getUint16(p + 32, true);
+    const lho    = dv.getUint32(p + 42, true);
+    const name   = dec.decode(u8.subarray(p + 46, p + 46 + nlen));
+    if (name === wanted) {
+      if (dv.getUint32(lho, true) !== 0x04034b50) throw new Error("zip local header 損毀");
+      const start = lho + 30 + dv.getUint16(lho + 26, true) + dv.getUint16(lho + 28, true);
+      const raw = u8.subarray(start, start + csize);
+      if (method === 0) return dec.decode(raw);
+      if (method !== 8) throw new Error("不支援的壓縮方式 " + method);
+      if (typeof DecompressionStream !== "function") throw new Error("此瀏覽器不支援 DecompressionStream，請用較新版 Chrome / Edge / Firefox");
+      const stream = new Blob([raw]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+      return dec.decode(new Uint8Array(await new Response(stream).arrayBuffer()));
+    }
+    p += 46 + nlen + elen + clen;
+  }
+  throw new Error("zip 內找不到 " + wanted);
+}
+
+/* ----- xmind ----- */
+const IMP_PRIORITY = ["", "①","②","③","④","⑤","⑥","⑦","⑧","⑨"];
+function impMarkerPrefix(topic, opts) {
+  if (!opts.markers) return "";
+  const ids = (topic.markers || []).map(m => m && m.markerId).filter(Boolean);
+  const out = [];
+  if (ids.includes("task-done")) out.push("✔");
+  else if (ids.some(id => /^task-(start|oct|quarter|3oct|half|5oct|3quar|7oct)$/.test(id))) out.push("◐");
+  const pr = ids.map(id => (id.match(/^priority-(\d)$/) || [])[1]).filter(Boolean)[0];
+  if (pr) out.push(IMP_PRIORITY[+pr] || ("(" + pr + ")"));
+  if (ids.some(id => /^flag-/.test(id))) out.push("🚩");
+  if (ids.some(id => /^star-/.test(id))) out.push("★");
+  return out.length ? out.join("") + " " : "";
+}
+function impTopicTitle(topic) {
+  if (topic.title != null && String(topic.title).trim()) return String(topic.title);
+  const at = topic.attributedTitle;                       // rich text runs
+  if (Array.isArray(at)) return at.map(p => (p.spans || []).map(s => s.text || "").join("")).join(" ");
+  return "";
+}
+function impNoteText(topic) {
+  const n = topic.notes;
+  if (!n) return "";
+  if (n.plain && n.plain.content) return n.plain.content;
+  if (n.realHTML && n.realHTML.content) return String(n.realHTML.content).replace(/<li>/gi, " • ").replace(/<[^>]+>/g, " ");
+  return "";
+}
+function impConvertTopic(topic, opts, st) {
+  st.nodes++;
+  if ((topic.markers || []).length) st.markers++;
+  // An empty title would export as a blank .mmd line and take its subtree
+  // down with it, so give it a visible placeholder.
+  let label = impOneLine(impMarkerPrefix(topic, opts) + impTopicTitle(topic));
+  if (!label) { label = "(未命名)"; st.untitled++; }
+  const node = mkNode(label);
+  const nt = impOneLine(impNoteText(topic));
+  if (nt) { st.notes++; if (opts.notes) node.children.push(mkNode("📝 " + nt)); }
+  const ch = topic.children || {};
+  for (const c of ch.attached  || []) node.children.push(impConvertTopic(c, opts, st));
+  for (const c of ch.summary   || []) { st.summaries++; if (opts.summaries) node.children.push(impConvertTopic(c, opts, st)); }
+  for (const c of ch.detached  || []) { st.detached++;  if (opts.detached)  node.children.push(impConvertTopic(c, opts, st)); }
+  return node;
+}
+async function impReadXmind(buf, opts) {
+  let json = null;
+  try { json = await impZipEntry(buf, "content.json"); } catch (e) { json = null; }
+  if (json) {
+    const list = JSON.parse(json);
+    return (Array.isArray(list) ? list : [list]).map((sh, i) => {
+      const st = { nodes:0, notes:0, summaries:0, detached:0, untitled:0, markers:0,
+                   relationships: (sh.relationships || []).length, multiline:0 };
+      const root = impConvertTopic(sh.rootTopic || {}, opts, st);
+      st.multiline = impCountMultiline(sh.rootTopic || {});
+      return { title: impOneLine(sh.title) || ("工作表 " + (i+1)), root, stats: st, count: impCount(root) };
+    });
+  }
+  // Legacy XMind 8 keeps the tree in content.xml. (Newer files also ship a
+  // content.xml, but it only holds an "upgrade your XMind" warning.)
+  const xml = await impZipEntry(buf, "content.xml");
+  const doc = new DOMParser().parseFromString(xml, "text/xml");
+  const sheets = [...doc.getElementsByTagName("sheet")];
+  if (!sheets.length) throw new Error("無法辨識的 .xmind 內容");
+  return sheets.map((sh, i) => {
+    const st = { nodes:0, notes:0, summaries:0, detached:0, untitled:0, markers:0, relationships:0, multiline:0 };
+    const walk = (el) => {
+      st.nodes++;
+      const titleEl = [...el.children].find(c => c.tagName === "title");
+      const txt = titleEl ? titleEl.textContent : "";
+      if (/\n/.test(txt)) st.multiline++;
+      const node = mkNode(impOneLine(txt) || "(未命名)");
+      const kids = [...el.children].find(c => c.tagName === "children");
+      if (kids) for (const ts of [...kids.children]) {
+        const type = ts.getAttribute("type");
+        if (type === "detached") st.detached++;
+        if (type === "summary")  st.summaries++;
+        if (type === "attached" || (type === "detached" && opts.detached) || (type === "summary" && opts.summaries)) {
+          for (const t of [...ts.children]) node.children.push(walk(t));
+        }
+      }
+      return node;
+    };
+    const topicEl = [...sh.children].find(c => c.tagName === "topic");
+    const root = topicEl ? walk(topicEl) : mkNode("Empty");
+    const shTitle = [...sh.children].find(c => c.tagName === "title");
+    return { title: impOneLine(shTitle ? shTitle.textContent : "") || ("工作表 " + (i+1)), root, stats: st, count: impCount(root) };
+  });
+}
+function impCountMultiline(topic) {
+  let n = 0;
+  (function w(t) {
+    if (/\n/.test(String(t.title || ""))) n++;
+    const ch = t.children || {};
+    for (const arr of Object.values(ch)) for (const c of arr) w(c);
+  })(topic);
+  return n;
+}
+function impCount(n) { let c = 0; (function w(x){ c++; x.children.forEach(w); })(n); return c; }
+
+/* ----- dialog ----- */
+function impReset() {
+  IMP.name = ""; IMP.size = 0; IMP.kind = null; IMP.buffer = null;
+  IMP.sheets = []; IMP.sheetIdx = 0; IMP.mode = "replace";
+  $("impBody").style.display = "none";
+  $("impErr").style.display = "none";
+  $("impKind").textContent = "尚未選檔";
+  $("impKind").className = "pill";
+  $("btnImportApply").disabled = true;
+  $("btnImportApply").textContent = "匯入";
+  $("impFile").value = "";
+  [...document.querySelectorAll(".imp-mode")].forEach(b => b.classList.toggle("active", b.dataset.mode === "replace"));
+}
+function openImport() { impReset(); $("importMask").classList.add("open"); }
+function closeImport() { $("importMask").classList.remove("open"); }
+
+function impError(msg) {
+  $("impErr").textContent = msg;
+  $("impErr").style.display = "";
+  $("impBody").style.display = "none";
+  $("btnImportApply").disabled = true;
+}
+
+async function impLoadFile(file) {
+  if (!file) return;
+  impReset();
+  $("importMask").classList.add("open");
+  IMP.name = file.name; IMP.size = file.size;
+  const lower = file.name.toLowerCase();
+  try {
+    if (lower.endsWith(".xmind")) {
+      IMP.kind = "xmind";
+      IMP.buffer = await file.arrayBuffer();
+      IMP.sheets = await impReadXmind(IMP.buffer, IMP.opts);
+      IMP.sheetIdx = IMP.sheets.reduce((best, s, i, a) => s.count > a[best].count ? i : best, 0);
+    } else {
+      const text = await file.text();
+      let root;
+      if (lower.endsWith(".json")) { IMP.kind = "json"; root = impParseJson(text); }
+      else if (/\.(md|markdown)$/.test(lower)) { IMP.kind = "md"; root = impParseMd(text); }
+      else if (lower.endsWith(".mmd")) { IMP.kind = "mmd"; root = impParseMmd(text); }
+      else {                                            // unknown extension: sniff
+        if (/^\s*[\[{]/.test(text)) { IMP.kind = "json"; root = impParseJson(text); }
+        else if (/```(mermaid|mmd)/i.test(text)) { IMP.kind = "md"; root = impParseMd(text); }
+        else if (/^\s*mindmap/im.test(text)) { IMP.kind = "mmd"; root = impParseMmd(text); }
+        else { IMP.kind = "md"; root = impParseMd(text); }
+      }
+      if (!root) throw new Error("檔案內容無法解析成心智圖");
+      IMP.sheets = [{ title: file.name, root, stats: null, count: impCount(root) }];
+      IMP.sheetIdx = 0;
+    }
+  } catch (e) {
+    impError("讀取失敗：" + e.message);
+    return;
+  }
+  impRender();
+}
+
+async function impReconvert() {
+  if (IMP.kind !== "xmind" || !IMP.buffer) return;
+  const keep = IMP.sheetIdx;
+  try { IMP.sheets = await impReadXmind(IMP.buffer, IMP.opts); }
+  catch (e) { impError("讀取失敗：" + e.message); return; }
+  IMP.sheetIdx = Math.min(keep, IMP.sheets.length - 1);
+  impRender();
+}
+
+function impRender() {
+  const KIND = { xmind:"XMind", mmd:"Mermaid .mmd", json:"編輯器 .json", md:"Markdown" };
+  $("impKind").textContent = KIND[IMP.kind] || "檔案";
+  $("impKind").className = "pill ok";
+  $("impErr").style.display = "none";
+  $("impBody").style.display = "";
+  $("impFileInfo").innerHTML = "<b>" + impEsc(IMP.name) + "</b> · " + impKB(IMP.size);
+
+  const multi = IMP.sheets.length > 1;
+  $("impSheetRow").style.display = multi ? "" : "none";
+  if (multi) {
+    const host = $("impSheets"); host.innerHTML = "";
+    IMP.sheets.forEach((s, i) => {
+      const d = document.createElement("div");
+      d.className = "imp-sheet" + (i === IMP.sheetIdx ? " active" : "");
+      d.innerHTML = '<div class="m"><div class="t">' + impEsc(s.title) + '</div>'
+        + '<div class="d">root：' + impEsc(s.root.text) + ' · ' + s.count + ' 節點</div></div>'
+        + (s.count <= 6 ? '<span class="tag">可能是空樣板</span>' : '');
+      d.onclick = () => { IMP.sheetIdx = i; impRender(); };
+      host.appendChild(d);
+    });
+  }
+
+  const st = IMP.sheets[IMP.sheetIdx].stats;
+  $("impOptRow").style.display = (IMP.kind === "xmind") ? "" : "none";
+  if (st) {
+    $("impNMarkers").textContent   = st.markers   ? st.markers   : "";
+    $("impNNotes").textContent     = st.notes     ? st.notes     : "";
+    $("impNDetached").textContent  = st.detached  ? st.detached  : "";
+    $("impNSummaries").textContent = st.summaries ? st.summaries : "";
+  }
+
+  const warn = [];
+  if (st) {
+    if (st.relationships) warn.push(st.relationships + " 條關聯線無法轉換，將被忽略");
+    if (st.multiline)     warn.push(st.multiline + " 個多行標題會壓成單行");
+    if (st.untitled)      warn.push(st.untitled + " 個空白標題會標成「(未命名)」");
+    if (!IMP.opts.detached  && st.detached)  warn.push(st.detached + " 個浮動主題不會匯入");
+    if (!IMP.opts.summaries && st.summaries) warn.push(st.summaries + " 個摘要節點不會匯入");
+  }
+  $("impWarn").style.display = warn.length ? "" : "none";
+  $("impWarn").textContent = warn.join("；");
+
+  $("btnImportApply").disabled = false;
+  $("btnImportApply").textContent = "匯入 " + IMP.sheets[IMP.sheetIdx].count + " 個節點";
+}
+
+function impEsc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c])); }
+function impKB(n) { return n < 1024 ? n + " B" : (n < 1048576 ? Math.round(n/1024) + " KB" : (n/1048576).toFixed(1) + " MB"); }
+function impSafeName(s) {
+  return String(s).replace(/\.(xmind|mmd|json|md|markdown)$/i, "").replace(/[\\\/:*?"<>|]/g, "-").trim().slice(0, 60) || "imported";
+}
+
+function impApply() {
+  const sheet = IMP.sheets[IMP.sheetIdx];
+  if (!sheet) return;
+  // The tree was built with live mkNode ids; clone through JSON so re-importing
+  // the same file twice can't share node objects.
+  const root = JSON.parse(JSON.stringify(sheet.root));
+
+  if (IMP.mode === "child") {
+    const target = findNode(selectedId);
+    if (!target) { alert("請先選一個節點。"); return; }
+    walkTree(root, (n) => { n.x = null; n.y = null; });
+    target.node.children.push(root);
+    selectedId = root.id;
+  } else {
+    if (isDirty() && !confirm("尚未儲存，要捨棄變更嗎？")) return;
+    tree = root;
+    walkTree(tree, (n) => { n.x = null; n.y = null; });
+    selectedId = tree.id;
+    currentFile = null;
+    history.length = 0; histIdx = -1;
+    // Keep the source filename so it's obvious where the map came from;
+    // multi-sheet files get the sheet name appended to stay unique.
+    $("fname").value = impSafeName(IMP.name) + (IMP.sheets.length > 1 ? "-" + impSafeName(sheet.title) : "");
+  }
+  ensureSelection();
+  ensureLayout();
+  pushHistory();
+  render(true);
+  updateStatus();
+  closeImport();
+}
+
+$("btnImport").onclick = openImport;
+$("btnImportCancel").onclick = closeImport;
+$("btnImportApply").onclick = impApply;
+$("importMask").addEventListener("click", (e) => { if (e.target.id === "importMask") closeImport(); });
+$("impDrop").onclick = () => $("impFile").click();
+$("impFile").onchange = (e) => impLoadFile(e.target.files[0]);
+[...document.querySelectorAll(".imp-mode")].forEach(b => {
+  b.onclick = () => {
+    IMP.mode = b.dataset.mode;
+    [...document.querySelectorAll(".imp-mode")].forEach(x => x.classList.toggle("active", x === b));
+  };
+});
+["impOptMarkers","impOptNotes","impOptDetached","impOptSummaries"].forEach(id => {
+  $(id).onchange = () => {
+    IMP.opts = {
+      markers: $("impOptMarkers").checked,
+      notes: $("impOptNotes").checked,
+      detached: $("impOptDetached").checked,
+      summaries: $("impOptSummaries").checked
+    };
+    impReconvert();
+  };
+});
+
+// Drop a file anywhere on the page.
+let impDragDepth = 0;
+const IMP_EXT = /\.(xmind|mmd|json|md|markdown)$/i;
+window.addEventListener("dragenter", (e) => {
+  if (![...(e.dataTransfer?.types || [])].includes("Files")) return;
+  e.preventDefault(); impDragDepth++; $("impVeil").classList.add("open");
+});
+window.addEventListener("dragover", (e) => {
+  if (![...(e.dataTransfer?.types || [])].includes("Files")) return;
+  e.preventDefault(); e.dataTransfer.dropEffect = "copy";
+  $("impDrop").classList.toggle("hot", e.target === $("impDrop"));
+});
+window.addEventListener("dragleave", () => {
+  if (--impDragDepth <= 0) { impDragDepth = 0; $("impVeil").classList.remove("open"); }
+});
+window.addEventListener("drop", (e) => {
+  const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+  if (!f) return;
+  e.preventDefault();
+  impDragDepth = 0;
+  $("impVeil").classList.remove("open");
+  $("impDrop").classList.remove("hot");
+  if (!IMP_EXT.test(f.name)) { openImport(); impError("不支援的副檔名：" + f.name + "（可用 .xmind / .mmd / .json / .md）"); return; }
+  impLoadFile(f);
+});
 
 // ---------- Toolbar wiring ----------
 $("btnAddChild").onclick = () => selectedId && addChild(selectedId);
