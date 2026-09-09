@@ -119,6 +119,10 @@
   .imp-modes button.active { border-color:var(--accent); color:var(--accent); }
   .imp-warn { font-size:11.5px; line-height:1.6; color:var(--warn); border:1px solid var(--border); border-left:2px solid var(--warn); border-radius:0 8px 8px 0; padding:8px 10px; margin-bottom:14px; }
   .imp-err { color:var(--danger); font-size:12px; margin:10px 0 0; line-height:1.5; }
+  .imp-paste textarea { width:100%; box-sizing:border-box; resize:vertical; min-height:90px;
+    background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:8px;
+    padding:8px 10px; font:12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .imp-paste textarea:focus { outline:none; border-color:var(--accent); }
   .imp-veil { position:fixed; inset:0; z-index:300; display:none; align-items:center; justify-content:center;
     background:#0b0e14cc; backdrop-filter:blur(2px); font-size:15px; color:var(--text); pointer-events:none; }
   .imp-veil.open { display:flex; }
@@ -365,6 +369,16 @@
       <div class="t">拖檔案到這裡，或 <b>選擇檔案</b></div>
       <div class="hint" style="margin-top:4px;">.xmind · .mmd · .json · .md</div>
       <input type="file" id="impFile" accept=".xmind,.mmd,.json,.md,.markdown" style="display:none;" />
+    </div>
+
+    <div class="imp-paste">
+      <div class="hint" style="margin:10px 0 4px;">或直接貼上 Mermaid mindmap / Markdown / JSON 文字：</div>
+      <textarea id="impText" rows="6" spellcheck="false"
+        placeholder="mindmap&#10;  root((LiquidJet))&#10;    Equipment&#10;      Grinder&#10;    Process&#10;      Bonding"></textarea>
+      <div style="display:flex; gap:8px; margin-top:6px; align-items:center;">
+        <button type="button" id="btnImpParseText">解析文字</button>
+        <span class="hint">支援 mermaid mindmap 語法、```mermaid 區塊、# / - 大綱、編輯器 JSON（Ctrl+Enter 快速解析）</span>
+      </div>
     </div>
 
     <div id="impErr" class="imp-err" style="display:none;"></div>
@@ -2358,6 +2372,7 @@ function impReset() {
   $("btnImportApply").disabled = true;
   $("btnImportApply").textContent = "匯入";
   $("impFile").value = "";
+  if ($("impText")) $("impText").value = "";
   [...document.querySelectorAll(".imp-mode")].forEach(b => b.classList.toggle("active", b.dataset.mode === "replace"));
 }
 function openImport() { impReset(); $("importMask").classList.add("open"); }
@@ -2400,6 +2415,35 @@ async function impLoadFile(file) {
     }
   } catch (e) {
     impError("讀取失敗：" + e.message);
+    return;
+  }
+  impRender();
+}
+
+function impSniffParse(text) {
+  // Same detection order as impLoadFile's unknown-extension branch.
+  if (/^\s*[\[{]/.test(text))                return { kind: "json", root: impParseJson(text) };
+  if (/```(mermaid|mmd)/i.test(text))        return { kind: "md",   root: impParseMd(text) };
+  if (/^\s*mindmap/im.test(text))            return { kind: "mmd",  root: impParseMmd(text) };
+  return { kind: "md", root: impParseMd(text) || impParseMmd(text) };
+}
+
+function impLoadText(text) {
+  const src = String(text || "");
+  if (!src.trim()) { impError("請先貼上文字內容"); return; }
+  // Keep dialog open; reset parse state but preserve the textarea.
+  IMP.name = ""; IMP.size = 0; IMP.kind = null; IMP.buffer = null;
+  IMP.sheets = []; IMP.sheetIdx = 0;
+  try {
+    const { kind, root } = impSniffParse(src);
+    if (!root) throw new Error("文字內容無法解析成心智圖");
+    IMP.kind = kind;
+    IMP.name = String(root.text || "pasted");   // becomes the filename on replace-import
+    IMP.size = new Blob([src]).size;
+    IMP.sheets = [{ title: root.text || "貼上的文字", root, stats: null, count: impCount(root) }];
+    IMP.sheetIdx = 0;
+  } catch (e) {
+    impError("解析失敗：" + e.message);
     return;
   }
   impRender();
@@ -2505,6 +2549,11 @@ $("btnImportApply").onclick = impApply;
 $("importMask").addEventListener("click", (e) => { if (e.target.id === "importMask") closeImport(); });
 $("impDrop").onclick = () => $("impFile").click();
 $("impFile").onchange = (e) => impLoadFile(e.target.files[0]);
+$("btnImpParseText").onclick = () => impLoadText($("impText").value);
+$("impText").addEventListener("keydown", (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); impLoadText($("impText").value); }
+  e.stopPropagation();   // don't trigger canvas shortcuts (Tab/Enter/Del) while typing here
+});
 [...document.querySelectorAll(".imp-mode")].forEach(b => {
   b.onclick = () => {
     IMP.mode = b.dataset.mode;
